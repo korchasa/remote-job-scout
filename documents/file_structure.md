@@ -22,7 +22,6 @@ remote-job-scout/
 ├── Dockerfile                  # Docker container configuration
 ├── run                         # Executable file for launching
 ├── run.ts                      # TypeScript CLI implementation
-├── tmp/                        # Temporary files and experimental scripts
 ├── documents/                  # Project documentation
 │   ├── design.md              # Software design specification
 │   ├── file_structure.md      # File structure (this file)
@@ -99,11 +98,14 @@ remote-job-scout/
 ### Source Code (src/)
 
 - **controllers/** - Request handlers and controller logic
-  - `collectionController.ts` - Multi-stage search API controller with progress tracking ✅
+  - `collectionController.ts` - Multi-stage search API controller with progress
+    tracking ✅
 - **database/** - Database operations and models (planned for Stage 2)
 - **services/** - Application business services
-  - `jobCollectionService.ts` - Multi-source job collection with parallel processing ✅
-  - `multiStageSearchOrchestrator.ts` - Coordinates collection, filtering, and enrichment stages ✅
+  - `jobCollectionService.ts` - Multi-source job collection with parallel
+    processing ✅
+  - `multiStageSearchOrchestrator.ts` - Coordinates collection, filtering, and
+    enrichment stages ✅
   - `filteringService.ts` - Preliminary job filtering by user settings ✅
   - `enrichmentService.ts` - LLM data enrichment with OpenAI integration ✅
   - `settingsService.ts` - Complete settings management with validation ✅
@@ -112,14 +114,17 @@ remote-job-scout/
     - `linkedin.ts` - LinkedIn job scraper with retry logic ✅
     - `openai-web-search.ts` - OpenAI WebSearch integration for global search ✅
 - **types/** - TypeScript type definitions
-  - `database.ts` - Database operation types with multi-stage progress support ✅
+  - `database.ts` - Database operation types with multi-stage progress support
+    ✅
   - `scrapers.ts` - Scraper interface definitions and job post types ✅
   - `settings.ts` - Comprehensive settings type definitions ✅
 - **utils/** - Helper functions and utilities (planned for future stages)
 - **web/** - Web interface components
-  - `app.js` - Client application with multi-stage progress UI and real-time updates ✅
+  - `app.js` - Client application with multi-stage progress UI and real-time
+    updates ✅
   - `index.html` - Responsive HTML interface with stage visualization ✅
-  - `server.ts` - Deno serve-compatible web server with multi-stage API endpoints ✅
+  - `server.ts` - Deno serve-compatible web server with multi-stage API
+    endpoints ✅
 
 ### Documentation (documents/)
 
@@ -145,7 +150,8 @@ remote-job-scout/
 - `enrichmentService_test.ts` - LLM enrichment service unit tests ✅
 - `filteringService_test.ts` - Job filtering service unit tests ✅
 - `jobCollectionService_test.ts` - Job collection service unit tests ✅
-- `multiStageSearchOrchestrator_test.ts` - Multi-stage orchestrator unit tests ✅
+- `multiStageSearchOrchestrator_test.ts` - Multi-stage orchestrator unit tests
+  ✅
 - `scrapers_test.ts` - Job scraper implementations unit tests ✅
 - `settings_test.ts` - Settings service unit tests ✅
 
@@ -180,16 +186,19 @@ remote-job-scout/
 ### External Dependencies
 
 - **Docker** - Containerization with live reload and auto-restart
-- **JobSpy** - Python library for job scraping reference and architecture inspiration
+- **JobSpy** - Python library for job scraping reference and architecture
+  inspiration
 - **OpenAI API** - LLM integration for job data enrichment
-- **Deno runtime** - Modern JavaScript/TypeScript runtime with built-in web server
+- **Deno runtime** - Modern JavaScript/TypeScript runtime with built-in web
+  server
 - **TypeScript** - Development with strict type checking and advanced types
 - **Chota CSS** - Lightweight responsive CSS framework
 - **Playwright MCP** - Browser automation for advanced scraping (planned)
 
 ### Current Implementation Status
 
-- ✅ **Multi-Stage Search Process** - Complete orchestrator with progress tracking
+- ✅ **Multi-Stage Search Process** - Complete orchestrator with progress
+  tracking
 - ✅ **Job Collection** - Indeed, LinkedIn, OpenAI WebSearch scrapers
 - ✅ **Job Filtering** - Settings-based filtering with blacklists and whitelists
 - ✅ **LLM Enrichment** - OpenAI integration for job data enhancement

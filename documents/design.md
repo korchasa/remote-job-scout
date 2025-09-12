@@ -57,8 +57,9 @@
   - `CollectionController` for search initiation & progress tracking
   - `FilteringService` for preliminary job filtering
   - `EnrichmentService` for LLM data enrichment
-  - REST API endpoints: `/api/multi-stage/search`, `/api/multi-stage/progress/{id}`,
-    `/api/multi-stage/stop/{id}`, `/api/search`, `/api/progress/{id}`, `/api/stop/{id}`
+  - REST API endpoints: `/api/multi-stage/search`,
+    `/api/multi-stage/progress/{id}`, `/api/multi-stage/stop/{id}`,
+    `/api/search`, `/api/progress/{id}`, `/api/stop/{id}`
   - Real-time progress monitoring with error reporting
   - Asynchronous job processing with session management
   - Support for stopping process at any stage

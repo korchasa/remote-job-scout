@@ -2,9 +2,35 @@
  * Enrichment Service Tests
  */
 
-import { assertEquals, assert } from "https://deno.land/std@0.208.0/testing/asserts.ts";
-import { EnrichmentService, EnrichmentResult } from "../src/services/enrichmentService.ts";
-import { Vacancy, SearchRequest } from "../src/types/database.ts";
+import {
+  assert,
+  assertEquals,
+} from "https://deno.land/std@0.208.0/testing/asserts.ts";
+import {
+  EnrichmentResult,
+  EnrichmentService,
+} from "../src/services/enrichmentService.ts";
+import { SearchRequest, Vacancy } from "../src/types/database.ts";
+
+// Test class to access protected methods
+class TestEnrichmentService extends EnrichmentService {
+  public testCallOpenAI(
+    prompt: string,
+  ): Promise<{ success: boolean; content?: string; error?: string }> {
+    return this.callOpenAI(prompt);
+  }
+
+  public testParseVacancyData(vacancy: Vacancy): Record<string, unknown> {
+    return this.parseVacancyData(vacancy);
+  }
+
+  public testBuildEnrichmentPrompt(
+    vacancy: Vacancy,
+    settings: SearchRequest["settings"],
+  ): string {
+    return this.buildEnrichmentPrompt(vacancy, settings);
+  }
+}
 
 Deno.test("EnrichmentService - handles missing API key", async () => {
   const enrichmentService = new EnrichmentService();
@@ -46,7 +72,10 @@ Deno.test("EnrichmentService - handles missing API key", async () => {
     },
   };
 
-  const result: EnrichmentResult = await enrichmentService.enrichVacancies(vacancies, settings);
+  const result: EnrichmentResult = await enrichmentService.enrichVacancies(
+    vacancies,
+    settings,
+  );
 
   assert(!result.success, "Should fail without API key");
   assert(result.errors.length > 0, "Should have error message");
@@ -54,7 +83,7 @@ Deno.test("EnrichmentService - handles missing API key", async () => {
 });
 
 Deno.test("EnrichmentService - processes vacancies without enrichment", async () => {
-  const enrichmentService = new EnrichmentService();
+  const enrichmentService = new TestEnrichmentService();
   enrichmentService.setOpenAIKey("test-key"); // Set API key to avoid early return
 
   const vacancies: Vacancy[] = [
@@ -95,26 +124,38 @@ Deno.test("EnrichmentService - processes vacancies without enrichment", async ()
   };
 
   // Mock the OpenAI call to simulate failure
-  const originalCallOpenAI = (enrichmentService as any).callOpenAI;
-  (enrichmentService as any).callOpenAI = async () => ({
-    success: false,
-    error: "Mock API failure",
-  });
+  const originalCallOpenAI = enrichmentService.testCallOpenAI;
+  enrichmentService.testCallOpenAI = () =>
+    Promise.resolve({
+      success: false,
+      error: "Mock API failure",
+    });
 
-  const result: EnrichmentResult = await enrichmentService.enrichVacancies(vacancies, settings);
+  const result: EnrichmentResult = await enrichmentService.enrichVacancies(
+    vacancies,
+    settings,
+  );
 
   // Restore original method
-  (enrichmentService as any).callOpenAI = originalCallOpenAI;
+  enrichmentService.testCallOpenAI = originalCallOpenAI;
 
   // The service should still succeed overall, but record the failure
   assert(result.success, "Should succeed even with API failures");
-  assertEquals(result.enrichedCount, 0, "Should not enrich any vacancies due to mock failure");
+  assertEquals(
+    result.enrichedCount,
+    0,
+    "Should not enrich any vacancies due to mock failure",
+  );
   assertEquals(result.failedCount, 1, "Should count failed enrichments");
-  assertEquals(result.enrichedVacancies.length, 1, "Should return original vacancy");
+  assertEquals(
+    result.enrichedVacancies.length,
+    1,
+    "Should return original vacancy",
+  );
 });
 
-Deno.test("EnrichmentService - parses vacancy data correctly", async () => {
-  const enrichmentService = new EnrichmentService();
+Deno.test("EnrichmentService - parses vacancy data correctly", () => {
+  const enrichmentService = new TestEnrichmentService();
 
   const vacancy: Vacancy = {
     id: "1",
@@ -132,14 +173,14 @@ Deno.test("EnrichmentService - parses vacancy data correctly", async () => {
     }),
   };
 
-  const parsedData = (enrichmentService as any).parseVacancyData(vacancy);
+  const parsedData = enrichmentService.testParseVacancyData(vacancy);
 
   assertEquals(parsedData.company, "Test Company");
   assertEquals(parsedData.location, "New York, USA");
 });
 
-Deno.test("EnrichmentService - handles malformed vacancy data", async () => {
-  const enrichmentService = new EnrichmentService();
+Deno.test("EnrichmentService - handles malformed vacancy data", () => {
+  const enrichmentService = new TestEnrichmentService();
 
   const vacancy: Vacancy = {
     id: "1",
@@ -154,14 +195,21 @@ Deno.test("EnrichmentService - handles malformed vacancy data", async () => {
     data: "invalid json",
   };
 
-  const parsedData = (enrichmentService as any).parseVacancyData(vacancy);
+  const parsedData = enrichmentService.testParseVacancyData(vacancy);
 
-  assertEquals(typeof parsedData, "object", "Should return object for malformed data");
-  assert(Object.keys(parsedData).length === 0, "Should return empty object for malformed data");
+  assertEquals(
+    typeof parsedData,
+    "object",
+    "Should return object for malformed data",
+  );
+  assert(
+    Object.keys(parsedData).length === 0,
+    "Should return empty object for malformed data",
+  );
 });
 
-Deno.test("EnrichmentService - builds correct enrichment prompt", async () => {
-  const enrichmentService = new EnrichmentService();
+Deno.test("EnrichmentService - builds correct enrichment prompt", () => {
+  const enrichmentService = new TestEnrichmentService();
 
   const vacancy: Vacancy = {
     id: "1",
@@ -194,15 +242,21 @@ Deno.test("EnrichmentService - builds correct enrichment prompt", async () => {
     },
   };
 
-  const prompt = (enrichmentService as any).buildEnrichmentPrompt(vacancy, settings);
+  const prompt = enrichmentService.testBuildEnrichmentPrompt(
+    vacancy,
+    settings,
+  );
 
-  assert(prompt.includes("Senior Software Engineer"), "Should include job title");
+  assert(
+    prompt.includes("Senior Software Engineer"),
+    "Should include job title",
+  );
   assert(prompt.includes("Test Corp"), "Should include company name");
   assert(prompt.includes("JSON format"), "Should specify JSON output format");
 });
 
 Deno.test("EnrichmentService - handles empty vacancies array", async () => {
-  const enrichmentService = new EnrichmentService();
+  const enrichmentService = new TestEnrichmentService();
   enrichmentService.setOpenAIKey("test-key");
 
   const settings: SearchRequest["settings"] = {

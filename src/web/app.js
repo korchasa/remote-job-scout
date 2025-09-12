@@ -28,7 +28,6 @@ const DEFAULT_USER_SETTINGS = {
 };
 
 // DOM elements
-const settingsContainer = document.getElementById("settings-container");
 const startSearchButton = document.getElementById("start-search");
 const progressSection = document.querySelector(".progress-section");
 const overallProgressBar = document.getElementById("overall-progress-bar");
@@ -56,102 +55,34 @@ function saveSettings(settings) {
 
 // Render settings UI
 function renderSettings(settings) {
-  settingsContainer.innerHTML = `
-    <div class="row">
-      <div class="col">
-        <h3>🎯 Search Positions</h3>
-        <textarea id="search-positions" rows="3" placeholder="Software Engineer, Frontend Developer, etc.">${
-    settings.searchPositions.join(", ")
-  }</textarea>
-      </div>
-    </div>
+  // Fill in the form fields
+  document.getElementById("search-positions").value = settings.searchPositions
+    .join(", ");
+  document.getElementById("blacklist-companies").value = settings.filters
+    .blacklistedCompanies.join(", ");
+  document.getElementById("blacklist-words-title").value = settings.filters
+    .blacklistedWordsTitle.join(", ");
+  document.getElementById("blacklist-words-description").value = settings
+    .filters.blacklistedWordsDescription.join(", ");
 
-    <div class="row">
-      <div class="col-6">
-        <h3>🚫 Blacklisted Companies</h3>
-        <textarea id="blacklist-companies" rows="3" placeholder="Company names to exclude">${
-    settings.filters.blacklistedCompanies.join(", ")
-  }</textarea>
-      </div>
-      <div class="col-6">
-        <h3>🚫 Blacklisted Words (Titles)</h3>
-        <textarea id="blacklist-words-title" rows="3" placeholder="Words to exclude from titles">${
-    settings.filters.blacklistedWordsTitle.join(", ")
-  }</textarea>
-      </div>
-    </div>
+  // Update checkboxes
+  document.getElementById("source-linkedin").checked = settings.sources.jobSites
+    .includes("linkedin");
+  document.getElementById("source-indeed").checked = settings.sources.jobSites
+    .includes("indeed");
+  document.getElementById("source-glassdoor").checked = settings.sources
+    .jobSites.includes("glassdoor");
 
-    <div class="row">
-      <div class="col">
-        <h3>🚫 Blacklisted Words (Descriptions)</h3>
-        <textarea id="blacklist-words-description" rows="3" placeholder="Words to exclude from descriptions">${
-    settings.filters.blacklistedWordsDescription.join(", ")
-  }</textarea>
-      </div>
-    </div>
+  // OpenAI settings
+  document.getElementById("openai-api-key").value =
+    settings.sources.openaiWebSearch?.apiKey || "";
+  document.getElementById("global-search").checked =
+    settings.sources.openaiWebSearch?.globalSearch || false;
 
-    <div class="row">
-      <div class="col-6">
-        <h3>🌍 Country Filters</h3>
-        <div id="country-filters">
-          ${renderCountryFilters(settings.filters.countries)}
-        </div>
-        <button id="add-country" class="button outline">+ Add Country</button>
-      </div>
-      <div class="col-6">
-        <h3>🗣️ Language Requirements</h3>
-        <div id="language-requirements">
-          ${renderLanguageRequirements(settings.filters.languages)}
-        </div>
-        <button id="add-language" class="button outline">+ Add Language</button>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col">
-        <h3>⏰ Work Time Filter</h3>
-        <div id="work-time-filter">
-          ${renderWorkTimeFilter(settings.filters.workTime)}
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col">
-        <h3>🌍 Sources</h3>
-        <label><input type="checkbox" id="source-linkedin" ${
-    settings.sources.jobSites.includes("linkedin") ? "checked" : ""
-  }> LinkedIn</label>
-        <label><input type="checkbox" id="source-indeed" ${
-    settings.sources.jobSites.includes("indeed") ? "checked" : ""
-  }> Indeed</label>
-        <label><input type="checkbox" id="source-glassdoor" ${
-    settings.sources.jobSites.includes("glassdoor") ? "checked" : ""
-  }> Glassdoor</label>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col">
-        <h3>🤖 OpenAI WebSearch</h3>
-        <input type="password" id="openai-api-key" placeholder="API Key" value="${
-    settings.sources.openaiWebSearch?.apiKey || ""
-  }">
-        <label><input type="checkbox" id="global-search" ${
-    settings.sources.openaiWebSearch?.globalSearch ? "checked" : ""
-  }> Global Search</label>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col">
-        <button id="reset-settings" class="button outline">🔄 Reset to Defaults</button>
-        <button id="export-settings" class="button outline">📤 Export Settings</button>
-        <input type="file" id="import-settings" accept=".json" style="display: none">
-        <button id="import-settings-btn" class="button outline">📥 Import Settings</button>
-      </div>
-    </div>
-  `;
+  // Render dynamic filters
+  renderCountryFilters(settings.filters.countries);
+  renderLanguageRequirements(settings.filters.languages);
+  renderWorkTimeFilter(settings.filters.workTime);
 
   // Bind new event handlers
   bindDynamicEvents(settings);
@@ -159,13 +90,16 @@ function renderSettings(settings) {
 
 // Render country filters
 function renderCountryFilters(countries) {
+  const container = document.getElementById("country-filters");
+
   if (!countries || countries.length === 0) {
-    return '<p class="text-muted">No country filters set</p>';
+    container.innerHTML = '<p class="text-muted">No country filters set</p>';
+    return;
   }
 
-  return countries.map((country, index) => `
-    <div class="country-filter-item" style="margin-bottom: 0.5rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-      <input type="text" value="${country.name}" placeholder="Country name" style="margin-right: 0.5rem;" data-country-index="${index}">
+  container.innerHTML = countries.map((country, index) => `
+    <div class="dynamic-item">
+      <input type="text" value="${country.name}" placeholder="Country name" data-country-index="${index}">
       <select data-country-type="${index}">
         <option value="blacklist" ${
     country.type === "blacklist" ? "selected" : ""
@@ -174,20 +108,24 @@ function renderCountryFilters(countries) {
     country.type === "whitelist" ? "selected" : ""
   }>Whitelist</option>
       </select>
-      <button class="button outline small" onclick="removeCountryFilter(${index})" style="margin-left: 0.5rem;">🗑️</button>
+      <button class="button outline small" onclick="removeCountryFilter(${index})">🗑️</button>
     </div>
   `).join("");
 }
 
 // Render language requirements
 function renderLanguageRequirements(languages) {
+  const container = document.getElementById("language-requirements");
+
   if (!languages || languages.length === 0) {
-    return '<p class="text-muted">No language requirements set</p>';
+    container.innerHTML =
+      '<p class="text-muted">No language requirements set</p>';
+    return;
   }
 
-  return languages.map((lang, index) => `
-    <div class="language-requirement-item" style="margin-bottom: 0.5rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-      <input type="text" value="${lang.language}" placeholder="Language" style="margin-right: 0.5rem;" data-lang-index="${index}">
+  container.innerHTML = languages.map((lang, index) => `
+    <div class="dynamic-item">
+      <input type="text" value="${lang.language}" placeholder="Language" data-lang-index="${index}">
       <select data-lang-level="${index}">
         <option value="Beginner" ${
     lang.level === "Beginner" ? "selected" : ""
@@ -202,22 +140,25 @@ function renderLanguageRequirements(languages) {
     lang.level === "Native" ? "selected" : ""
   }>Native</option>
       </select>
-      <button class="button outline small" onclick="removeLanguageRequirement(${index})" style="margin-left: 0.5rem;">🗑️</button>
+      <button class="button outline small" onclick="removeLanguageRequirement(${index})">🗑️</button>
     </div>
   `).join("");
 }
 
 // Render work time filter
 function renderWorkTimeFilter(workTime) {
+  const container = document.getElementById("work-time-filter");
+
   if (!workTime) {
-    return `
+    container.innerHTML = `
       <p class="text-muted">No work time restrictions</p>
       <button id="enable-work-time" class="button outline small">Set Work Time Filter</button>
     `;
+    return;
   }
 
-  return `
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
+  container.innerHTML = `
+    <div style="display: flex; gap: var(--spacing-sm); align-items: center; flex-wrap: wrap;">
       <label>Start: <input type="time" id="work-start" value="${workTime.start}"></label>
       <label>End: <input type="time" id="work-end" value="${workTime.end}"></label>
       <label>Timezone: <input type="text" id="work-timezone" value="${workTime.timezone}" placeholder="UTC+0"></label>
@@ -253,7 +194,9 @@ function updateSettingsFromUI() {
   ) => s.trim()).filter((s) => s);
 
   // Country filters
-  const countryItems = document.querySelectorAll(".country-filter-item");
+  const countryItems = document.querySelectorAll(
+    "#country-filters .dynamic-item",
+  );
   settings.filters.countries = Array.from(countryItems).map((item, index) => {
     const nameInput = item.querySelector(`[data-country-index="${index}"]`);
     const typeSelect = item.querySelector(`[data-country-type="${index}"]`);
@@ -264,7 +207,9 @@ function updateSettingsFromUI() {
   }).filter((country) => country.name);
 
   // Language requirements
-  const langItems = document.querySelectorAll(".language-requirement-item");
+  const langItems = document.querySelectorAll(
+    "#language-requirements .dynamic-item",
+  );
   settings.filters.languages = Array.from(langItems).map((item, index) => {
     const langInput = item.querySelector(`[data-lang-index="${index}"]`);
     const levelSelect = item.querySelector(`[data-lang-level="${index}"]`);
@@ -279,12 +224,16 @@ function updateSettingsFromUI() {
   const workEnd = document.getElementById("work-end");
   const workTimezone = document.getElementById("work-timezone");
 
-  if (workStart && workEnd && workTimezone) {
+  if (
+    workStart && workEnd && workTimezone && workStart.value && workEnd.value
+  ) {
     settings.filters.workTime = {
       start: workStart.value,
       end: workEnd.value,
       timezone: workTimezone.value,
     };
+  } else {
+    settings.filters.workTime = undefined;
   }
 
   // Sources
@@ -322,8 +271,8 @@ async function startSearch() {
 
   // Reset UI
   resetProgressUI();
-  progressSection.style.display = "block";
-  resultsSection.style.display = "none";
+  progressSection.classList.remove("hidden");
+  resultsSection.classList.add("hidden");
 
   // Generate session ID
   currentSessionId = Date.now().toString();
@@ -344,7 +293,8 @@ async function startSearch() {
 
       // Start progress monitoring
       startProgressMonitoring();
-      progressInfo.textContent = `Multi-stage search started! Session: ${result.session_id}`;
+      progressInfo.textContent =
+        `Multi-stage search started! Session: ${result.session_id}`;
       stopSearchButton.style.display = "inline-block";
     } else {
       throw new Error("Search failed");
@@ -384,7 +334,7 @@ function resetProgressUI() {
   currentStageElement.textContent = "Preparing...";
 
   // Reset all stage items
-  document.querySelectorAll(".stage-item").forEach(item => {
+  document.querySelectorAll(".stage-item").forEach((item) => {
     const statusElement = item.querySelector(".stage-status");
     const progressFill = item.querySelector(".stage-progress-fill");
     const detailsElement = item.querySelector(".stage-details");
@@ -404,6 +354,8 @@ function resetProgressUI() {
   });
 
   stopSearchButton.style.display = "none";
+  progressSection.classList.add("hidden");
+  resultsSection.classList.add("hidden");
 }
 
 // Start progress monitoring
@@ -416,7 +368,9 @@ function startProgressMonitoring() {
     if (!currentSessionId) return;
 
     try {
-      const response = await fetch(`/api/multi-stage/progress/${currentSessionId}`);
+      const response = await fetch(
+        `/api/multi-stage/progress/${currentSessionId}`,
+      );
       if (response.ok) {
         const progress = await response.json();
         updateProgressUI(progress);
@@ -446,9 +400,10 @@ function updateProgressUI(progress) {
     collecting: "📥 Collection",
     filtering: "🔍 Filtering",
     enriching: "🤖 Enrichment",
-    completed: "✅ Completed"
+    completed: "✅ Completed",
   };
-  currentStageElement.textContent = stageNames[progress.currentStage] || progress.currentStage;
+  currentStageElement.textContent = stageNames[progress.currentStage] ||
+    progress.currentStage;
 
   // Update stage details
   Object.entries(progress.stages).forEach(([stageName, stageProgress]) => {
@@ -460,7 +415,8 @@ function updateProgressUI(progress) {
     const detailsElement = stageElement.querySelector(".stage-details");
 
     // Update status
-    statusElement.textContent = stageProgress.status.charAt(0).toUpperCase() + stageProgress.status.slice(1);
+    statusElement.textContent = stageProgress.status.charAt(0).toUpperCase() +
+      stageProgress.status.slice(1);
     statusElement.className = `stage-status ${stageProgress.status}`;
 
     // Update progress bar
@@ -470,14 +426,19 @@ function updateProgressUI(progress) {
     let detailsText = "";
     if (stageProgress.status === "running") {
       if (stageProgress.itemsProcessed && stageProgress.itemsTotal) {
-        detailsText = `Processing ${stageProgress.itemsProcessed}/${stageProgress.itemsTotal} items...`;
+        detailsText =
+          `Processing ${stageProgress.itemsProcessed}/${stageProgress.itemsTotal} items...`;
       } else {
         detailsText = "Running...";
       }
     } else if (stageProgress.status === "completed") {
-      detailsText = `Completed: ${stageProgress.itemsProcessed || 0} items processed`;
+      detailsText = `Completed: ${
+        stageProgress.itemsProcessed || 0
+      } items processed`;
     } else if (stageProgress.status === "failed") {
-      detailsText = `Failed: ${stageProgress.errors?.join(", ") || "Unknown error"}`;
+      detailsText = `Failed: ${
+        stageProgress.errors?.join(", ") || "Unknown error"
+      }`;
     } else if (stageProgress.status === "stopped") {
       detailsText = "Stopped by user";
     }
@@ -493,9 +454,12 @@ function updateProgressUI(progress) {
     stopSearchButton.style.display = "none";
 
     if (progress.currentStage === "completed") {
-      progressInfo.textContent = `✅ Search completed! Overall progress: ${progress.overallProgress}%`;
+      progressInfo.innerHTML =
+        `<p>✅ Search completed! Overall progress: ${progress.overallProgress}%</p>`;
+      resultsSection.classList.remove("hidden");
     } else {
-      progressInfo.textContent = `🛑 Search ${progress.currentStage}. Overall progress: ${progress.overallProgress}%`;
+      progressInfo.innerHTML =
+        `<p>🛑 Search ${progress.currentStage}. Overall progress: ${progress.overallProgress}%</p>`;
     }
   }
 }

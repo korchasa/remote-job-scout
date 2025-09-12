@@ -3,7 +3,11 @@
  * Обрабатывает HTTP запросы для сбора вакансий
  */
 
-import { SearchRequest, SearchResponse, MultiStageProgress } from "../types/database.ts";
+import {
+  MultiStageProgress,
+  SearchRequest,
+  SearchResponse,
+} from "../types/database.ts";
 import {
   CollectionProgress,
   JobCollectionService,
@@ -118,9 +122,12 @@ export class CollectionController {
       // Запускаем процесс в фоне
       (async () => {
         try {
-          const result = await this.multiStageOrchestrator.startMultiStageSearch(request);
+          const result = await this.multiStageOrchestrator
+            .startMultiStageSearch(request);
           console.log(
-            `✅ Multi-stage search completed for session ${request.session_id}: ${result.success ? 'SUCCESS' : 'FAILED'}`,
+            `✅ Multi-stage search completed for session ${request.session_id}: ${
+              result.success ? "SUCCESS" : "FAILED"
+            }`,
           );
         } catch (error) {
           console.error(
@@ -140,7 +147,9 @@ export class CollectionController {
       return Promise.resolve({
         success: false,
         session_id: request.session_id,
-        message: `Failed to start multi-stage search: ${(error as Error).message}`,
+        message: `Failed to start multi-stage search: ${
+          (error as Error).message
+        }`,
       });
     }
   }
@@ -155,7 +164,9 @@ export class CollectionController {
   /**
    * Остановить многоэтапный поиск
    */
-  stopMultiStageSearch(sessionId: string): { success: boolean; message: string } {
+  stopMultiStageSearch(
+    sessionId: string,
+  ): { success: boolean; message: string } {
     const stopped = this.multiStageOrchestrator.stopProcess(sessionId);
 
     if (stopped) {

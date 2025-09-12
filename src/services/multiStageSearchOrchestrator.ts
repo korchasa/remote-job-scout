@@ -3,10 +3,17 @@
  * Координирует выполнение многоэтапного процесса поиска вакансий
  */
 
-import { SearchRequest, MultiStageProgress, StageProgress, ProcessingStage } from "../types/database.ts";
-import { JobCollectionService, CollectionResult } from "./jobCollectionService.ts";
-import { FilteringService, FilteringResult } from "./filteringService.ts";
-import { EnrichmentService, EnrichmentResult } from "./enrichmentService.ts";
+import {
+  MultiStageProgress,
+  SearchRequest,
+  Vacancy,
+} from "../types/database.ts";
+import {
+  CollectionResult,
+  JobCollectionService,
+} from "./jobCollectionService.ts";
+import { FilteringResult, FilteringService } from "./filteringService.ts";
+import { EnrichmentResult, EnrichmentService } from "./enrichmentService.ts";
 
 export interface OrchestratorResult {
   success: boolean;
@@ -33,7 +40,9 @@ export class MultiStageSearchOrchestrator {
   /**
    * Запускает полный многоэтапный процесс поиска
    */
-  async startMultiStageSearch(request: SearchRequest): Promise<OrchestratorResult> {
+  async startMultiStageSearch(
+    request: SearchRequest,
+  ): Promise<OrchestratorResult> {
     const { session_id, settings } = request;
     const startTime = new Date().toISOString();
 
@@ -44,9 +53,27 @@ export class MultiStageSearchOrchestrator {
       overallProgress: 0,
       stageProgress: 0,
       stages: {
-        collecting: { status: "pending", progress: 0, itemsProcessed: 0, itemsTotal: 0, errors: [] },
-        filtering: { status: "pending", progress: 0, itemsProcessed: 0, itemsTotal: 0, errors: [] },
-        enriching: { status: "pending", progress: 0, itemsProcessed: 0, itemsTotal: 0, errors: [] },
+        collecting: {
+          status: "pending",
+          progress: 0,
+          itemsProcessed: 0,
+          itemsTotal: 0,
+          errors: [],
+        },
+        filtering: {
+          status: "pending",
+          progress: 0,
+          itemsProcessed: 0,
+          itemsTotal: 0,
+          errors: [],
+        },
+        enriching: {
+          status: "pending",
+          progress: 0,
+          itemsProcessed: 0,
+          itemsTotal: 0,
+          errors: [],
+        },
       },
       startTime,
       isComplete: false,
@@ -64,18 +91,25 @@ export class MultiStageSearchOrchestrator {
     };
 
     try {
-      console.log(`🚀 Starting multi-stage search process for session ${session_id}`);
+      console.log(
+        `🚀 Starting multi-stage search process for session ${session_id}`,
+      );
 
       // Stage 1: Collection
-      const collectionResult = await this.executeCollectionStage(request, progress);
+      const collectionResult = await this.executeCollectionStage(
+        request,
+        progress,
+      );
       result.collectionResult = collectionResult;
 
-      if (!collectionResult.success || collectionResult.vacancies.length === 0) {
+      if (
+        !collectionResult.success || collectionResult.vacancies.length === 0
+      ) {
         throw new Error("Collection stage failed or returned no vacancies");
       }
 
       // Stage 2: Filtering
-      const filteringResult = await this.executeFilteringStage(
+      const filteringResult = this.executeFilteringStage(
         collectionResult.vacancies,
         settings,
         progress,
@@ -83,11 +117,16 @@ export class MultiStageSearchOrchestrator {
       result.filteringResult = filteringResult;
 
       if (!filteringResult.success) {
-        console.warn("⚠️ Filtering stage had errors, continuing with available data");
+        console.warn(
+          "⚠️ Filtering stage had errors, continuing with available data",
+        );
       }
 
       // Stage 3: Enrichment (если настроен OpenAI и есть вакансии для обогащения)
-      if (settings.sources.openaiWebSearch?.apiKey && filteringResult.filteredVacancies.length > 0) {
+      if (
+        settings.sources.openaiWebSearch?.apiKey &&
+        filteringResult.filteredVacancies.length > 0
+      ) {
         const enrichmentResult = await this.executeEnrichmentStage(
           filteringResult.filteredVacancies,
           settings,
@@ -120,7 +159,10 @@ export class MultiStageSearchOrchestrator {
       result.errors.push((error as Error).message);
       result.finalProgress = progress;
 
-      console.error(`❌ Multi-stage search failed for session ${session_id}:`, error);
+      console.error(
+        `❌ Multi-stage search failed for session ${session_id}:`,
+        error,
+      );
       return result;
     } finally {
       // Очищаем активные процессы через некоторое время
@@ -156,7 +198,9 @@ export class MultiStageSearchOrchestrator {
     progress.canStop = false;
     progress.errors.push(`Process stopped at ${currentStage} stage`);
 
-    console.log(`🛑 Process stopped for session ${sessionId} at ${currentStage} stage`);
+    console.log(
+      `🛑 Process stopped for session ${sessionId} at ${currentStage} stage`,
+    );
     return true;
   }
 
@@ -190,13 +234,18 @@ export class MultiStageSearchOrchestrator {
 
       // Отслеживаем прогресс сбора
       const progressInterval = setInterval(() => {
-        const collectionProgress = this.collectionService.getProgress(session_id);
+        const collectionProgress = this.collectionService.getProgress(
+          session_id,
+        );
         if (collectionProgress) {
           progress.stages.collecting.progress = Math.round(
-            (collectionProgress.sourcesCompleted / collectionProgress.totalSources) * 100,
+            (collectionProgress.sourcesCompleted /
+              collectionProgress.totalSources) * 100,
           );
-          progress.stages.collecting.itemsProcessed = collectionProgress.jobsCollected;
-          progress.stages.collecting.itemsTotal = collectionProgress.jobsCollected; // Обновляем по мере сбора
+          progress.stages.collecting.itemsProcessed =
+            collectionProgress.jobsCollected;
+          progress.stages.collecting.itemsTotal =
+            collectionProgress.jobsCollected; // Обновляем по мере сбора
           progress.stageProgress = progress.stages.collecting.progress;
           progress.overallProgress = 10 + (progress.stageProgress * 0.3); // 10-40% за сбор
         }
@@ -205,12 +254,16 @@ export class MultiStageSearchOrchestrator {
       const result = await collectionPromise;
       clearInterval(progressInterval);
 
-      progress.stages.collecting.status = result.success ? "completed" : "failed";
+      progress.stages.collecting.status = result.success
+        ? "completed"
+        : "failed";
       progress.stages.collecting.endTime = new Date().toISOString();
       progress.stages.collecting.itemsTotal = result.totalCollected;
       progress.stages.collecting.errors = result.errors;
 
-      console.log(`📥 Collection stage completed: ${result.totalCollected} jobs collected`);
+      console.log(
+        `📥 Collection stage completed: ${result.totalCollected} jobs collected`,
+      );
 
       return result;
     } catch (error) {
@@ -225,23 +278,30 @@ export class MultiStageSearchOrchestrator {
   /**
    * Выполняет стадию фильтрации
    */
-  private async executeFilteringStage(
-    vacancies: any[],
+  private executeFilteringStage(
+    vacancies: Vacancy[],
     settings: SearchRequest["settings"],
     progress: MultiStageProgress,
-  ): Promise<FilteringResult> {
+  ): FilteringResult {
     progress.currentStage = "filtering";
     progress.stages.filtering.status = "running";
     progress.stages.filtering.startTime = new Date().toISOString();
     progress.stages.filtering.itemsTotal = vacancies.length;
     progress.overallProgress = 40; // Переходим к 40%
 
-    console.log(`🔍 Starting filtering stage with ${vacancies.length} vacancies`);
+    console.log(
+      `🔍 Starting filtering stage with ${vacancies.length} vacancies`,
+    );
 
     try {
-      const result = await this.filteringService.filterVacancies(vacancies, settings);
+      const result = this.filteringService.filterVacancies(
+        vacancies,
+        settings,
+      );
 
-      progress.stages.filtering.status = result.success ? "completed" : "failed";
+      progress.stages.filtering.status = result.success
+        ? "completed"
+        : "failed";
       progress.stages.filtering.endTime = new Date().toISOString();
       progress.stages.filtering.progress = 100;
       progress.stages.filtering.itemsProcessed = result.totalProcessed;
@@ -249,7 +309,9 @@ export class MultiStageSearchOrchestrator {
       progress.stageProgress = 100;
       progress.overallProgress = 70; // 70% после фильтрации
 
-      console.log(`🔍 Filtering stage completed: ${result.filteredCount} passed, ${result.skippedCount} skipped`);
+      console.log(
+        `🔍 Filtering stage completed: ${result.filteredCount} passed, ${result.skippedCount} skipped`,
+      );
 
       return result;
     } catch (error) {
@@ -265,7 +327,7 @@ export class MultiStageSearchOrchestrator {
    * Выполняет стадию обогащения
    */
   private async executeEnrichmentStage(
-    vacancies: any[],
+    vacancies: Vacancy[],
     settings: SearchRequest["settings"],
     progress: MultiStageProgress,
   ): Promise<EnrichmentResult> {
@@ -275,17 +337,26 @@ export class MultiStageSearchOrchestrator {
     progress.stages.enriching.itemsTotal = vacancies.length;
     progress.overallProgress = 70; // Переходим к 70%
 
-    console.log(`🤖 Starting enrichment stage with ${vacancies.length} vacancies`);
+    console.log(
+      `🤖 Starting enrichment stage with ${vacancies.length} vacancies`,
+    );
 
     // Настраиваем OpenAI
     if (settings.sources.openaiWebSearch?.apiKey) {
-      this.enrichmentService.setOpenAIKey(settings.sources.openaiWebSearch.apiKey);
+      this.enrichmentService.setOpenAIKey(
+        settings.sources.openaiWebSearch.apiKey,
+      );
     }
 
     try {
-      const result = await this.enrichmentService.enrichVacancies(vacancies, settings);
+      const result = await this.enrichmentService.enrichVacancies(
+        vacancies,
+        settings,
+      );
 
-      progress.stages.enriching.status = result.success ? "completed" : "failed";
+      progress.stages.enriching.status = result.success
+        ? "completed"
+        : "failed";
       progress.stages.enriching.endTime = new Date().toISOString();
       progress.stages.enriching.progress = 100;
       progress.stages.enriching.itemsProcessed = result.totalProcessed;
@@ -293,7 +364,9 @@ export class MultiStageSearchOrchestrator {
       progress.stageProgress = 100;
       progress.overallProgress = 100; // 100% после обогащения
 
-      console.log(`🤖 Enrichment stage completed: ${result.enrichedCount} enriched, ${result.failedCount} failed`);
+      console.log(
+        `🤖 Enrichment stage completed: ${result.enrichedCount} enriched, ${result.failedCount} failed`,
+      );
 
       return result;
     } catch (error) {
@@ -312,16 +385,33 @@ export class MultiStageSearchOrchestrator {
     const { collectionResult, filteringResult, enrichmentResult } = result;
 
     console.log("📊 Final Search Statistics:");
-    console.log(`   📥 Collected: ${collectionResult?.totalCollected || 0} jobs`);
-    console.log(`   🔍 Filtered: ${filteringResult?.filteredCount || 0} passed, ${filteringResult?.skippedCount || 0} skipped`);
-    console.log(`   🤖 Enriched: ${enrichmentResult?.enrichedCount || 0} enriched, ${enrichmentResult?.failedCount || 0} failed`);
+    console.log(
+      `   📥 Collected: ${collectionResult?.totalCollected || 0} jobs`,
+    );
+    console.log(
+      `   🔍 Filtered: ${filteringResult?.filteredCount || 0} passed, ${
+        filteringResult?.skippedCount || 0
+      } skipped`,
+    );
+    console.log(
+      `   🤖 Enriched: ${enrichmentResult?.enrichedCount || 0} enriched, ${
+        enrichmentResult?.failedCount || 0
+      } failed`,
+    );
 
-    if (filteringResult?.reasons && Object.keys(filteringResult.reasons).length > 0) {
+    if (
+      filteringResult?.reasons &&
+      Object.keys(filteringResult.reasons).length > 0
+    ) {
       console.log("   📋 Skip reasons:", filteringResult.reasons);
     }
 
     if (enrichmentResult?.tokensUsed) {
-      console.log(`   💰 Tokens used: ${enrichmentResult.tokensUsed}, Cost: $${enrichmentResult.costUsd.toFixed(4)}`);
+      console.log(
+        `   💰 Tokens used: ${enrichmentResult.tokensUsed}, Cost: $${
+          enrichmentResult.costUsd.toFixed(4)
+        }`,
+      );
     }
   }
 }

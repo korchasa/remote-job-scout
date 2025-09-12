@@ -37,6 +37,28 @@ async function runCommand(
   }
 }
 
+// Helper function to read all data from a readable stream
+async function readAllStream(
+  stream: ReadableStream<Uint8Array>,
+): Promise<string> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return new TextDecoder().decode(
+    new Uint8Array(await new Blob(chunks).arrayBuffer()),
+  );
+}
+
 // Comment scanning functions
 async function scanComments(): Promise<ScanResult[]> {
   const results: ScanResult[] = [];
@@ -214,8 +236,6 @@ const commands = {
             `${Deno.cwd()}/src:/app/src:cached`,
             "-v",
             `${Deno.cwd()}/tests:/app/tests:cached`,
-            "-v",
-            `${Deno.cwd()}/documents:/app/documents:cached`,
             "-e",
             "DENO_ENV=development",
             "-e",
@@ -248,8 +268,7 @@ const commands = {
           "3000",
           "--watch-exclude=node_modules",
           "--watch-exclude=.git",
-          "--watch-exclude=dist",
-          "--watch-exclude=build",
+          "--watch-exclude=documents",
           "src/web/server.ts",
           "src/types/",
           "src/services/",
@@ -290,11 +309,31 @@ const commands = {
         stderr: "piped",
       });
       const compileProcess = compileCmd.spawn();
+
+      // Read all output from both stdout and stderr
+      const [stdout, stderr] = await Promise.all([
+        readAllStream(compileProcess.stdout),
+        readAllStream(compileProcess.stderr),
+      ]);
       const compileStatus = await compileProcess.status;
+
       if (compileStatus.code === 0) {
         console.log("✅ Compiling TypeScript completed successfully");
       } else {
         console.log("❌ Compiling TypeScript failed");
+
+        // Output stderr if there are errors
+        if (stderr) {
+          console.log("\n🔍 TypeScript compilation errors:");
+          console.log(stderr);
+        }
+
+        // Also output stdout if there's any
+        if (stdout && stdout.trim()) {
+          console.log("\n🔍 TypeScript compilation output:");
+          console.log(stdout);
+        }
+
         Deno.exit(1);
       }
     } catch (error) {
@@ -311,11 +350,31 @@ const commands = {
         stderr: "piped",
       });
       const fmtProcess = fmtCmd.spawn();
+
+      // Read all output from both stdout and stderr
+      const [stdout, stderr] = await Promise.all([
+        readAllStream(fmtProcess.stdout),
+        readAllStream(fmtProcess.stderr),
+      ]);
       const fmtStatus = await fmtProcess.status;
+
       if (fmtStatus.code === 0) {
         console.log("✅ Formatting code completed successfully");
       } else {
         console.log("❌ Formatting code failed");
+
+        // Output stderr if there are errors
+        if (stderr) {
+          console.log("\n🔍 Formatting errors:");
+          console.log(stderr);
+        }
+
+        // Also output stdout if there's any
+        if (stdout && stdout.trim()) {
+          console.log("\n🔍 Formatting output:");
+          console.log(stdout);
+        }
+
         Deno.exit(1);
       }
     } catch (error) {
@@ -332,11 +391,31 @@ const commands = {
         stderr: "piped",
       });
       const lintProcess = lintCmd.spawn();
+
+      // Read all output from both stdout and stderr
+      const [stdout, stderr] = await Promise.all([
+        readAllStream(lintProcess.stdout),
+        readAllStream(lintProcess.stderr),
+      ]);
       const lintStatus = await lintProcess.status;
+
       if (lintStatus.code === 0) {
         console.log("✅ Linting code completed successfully");
       } else {
         console.log("❌ Linting code failed");
+
+        // Output stderr if there are errors
+        if (stderr) {
+          console.log("\n🔍 Linting errors:");
+          console.log(stderr);
+        }
+
+        // Also output stdout if there's any
+        if (stdout && stdout.trim()) {
+          console.log("\n🔍 Linting output:");
+          console.log(stdout);
+        }
+
         Deno.exit(1);
       }
     } catch (error) {
@@ -372,18 +451,8 @@ const commands = {
           console.log();
         }
 
-        // Exit with error if there are critical issues
-        const criticalTypes = ["TODO", "FIXME", "BUG", "HACK"];
-        const hasCritical = scanResults.some((r) =>
-          criticalTypes.includes(r.type)
-        );
-
-        if (hasCritical) {
-          console.log("⚠️  Found critical comment issues");
-          Deno.exit(1);
-        } else {
-          console.log("ℹ️  Only informational comment items found");
-        }
+        console.error("⚠️  Found critical comment issues");
+        Deno.exit(1);
       }
     } catch (error) {
       console.log(`❌ Comment scanning failed with error: ${error}`);
@@ -399,11 +468,31 @@ const commands = {
         stderr: "piped",
       });
       const testProcess = testCmd.spawn();
+
+      // Read all output from both stdout and stderr
+      const [stdout, stderr] = await Promise.all([
+        readAllStream(testProcess.stdout),
+        readAllStream(testProcess.stderr),
+      ]);
       const testStatus = await testProcess.status;
+
       if (testStatus.code === 0) {
         console.log("✅ Running tests completed successfully");
       } else {
         console.log("❌ Running tests failed");
+
+        // Output stderr if there are errors
+        if (stderr) {
+          console.log("\n🔍 Test errors:");
+          console.log(stderr);
+        }
+
+        // Also output stdout if there's any
+        if (stdout && stdout.trim()) {
+          console.log("\n🔍 Test output:");
+          console.log(stdout);
+        }
+
         Deno.exit(1);
       }
     } catch (error) {

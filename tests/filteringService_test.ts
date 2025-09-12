@@ -2,11 +2,17 @@
  * Filtering Service Tests
  */
 
-import { assertEquals, assert } from "https://deno.land/std@0.208.0/testing/asserts.ts";
-import { FilteringService, FilteringResult } from "../src/services/filteringService.ts";
-import { Vacancy, SearchRequest } from "../src/types/database.ts";
+import {
+  assert,
+  assertEquals,
+} from "https://deno.land/std@0.208.0/testing/asserts.ts";
+import {
+  FilteringResult,
+  FilteringService,
+} from "../src/services/filteringService.ts";
+import { SearchRequest, Vacancy } from "../src/types/database.ts";
 
-Deno.test("FilteringService - filters vacancies correctly", async () => {
+Deno.test("FilteringService - filters vacancies correctly", () => {
   const filteringService = new FilteringService();
 
   // Create test vacancies
@@ -36,7 +42,8 @@ Deno.test("FilteringService - filters vacancies correctly", async () => {
     {
       id: "3",
       title: "Software Engineer",
-      description: "Remote software engineer position with English fluency required",
+      description:
+        "Remote software engineer position with English fluency required",
       url: "https://example.com/job3",
       published_date: "2024-01-01",
       status: "collected",
@@ -65,24 +72,45 @@ Deno.test("FilteringService - filters vacancies correctly", async () => {
     },
   };
 
-  const result: FilteringResult = await filteringService.filterVacancies(vacancies, settings);
+  const result: FilteringResult = filteringService.filterVacancies(
+    vacancies,
+    settings,
+  );
 
   // Assertions
   assert(result.success, "Filtering should succeed");
   assertEquals(result.totalProcessed, 3, "Should process all vacancies");
-  assertEquals(result.filteredCount, 1, "Should filter out senior and Canadian jobs");
+  assertEquals(
+    result.filteredCount,
+    1,
+    "Should filter out senior and Canadian jobs",
+  );
   assertEquals(result.skippedCount, 2, "Should skip 2 jobs");
 
   // Check that job with "senior" in title was skipped
-  assert(result.reasons.title_blacklisted_words !== undefined, "Should have title blacklist reason");
-  assertEquals(result.reasons.title_blacklisted_words, 1, "Should skip 1 job due to title blacklist");
+  assert(
+    result.reasons.title_blacklisted_words !== undefined,
+    "Should have title blacklist reason",
+  );
+  assertEquals(
+    result.reasons.title_blacklisted_words,
+    1,
+    "Should skip 1 job due to title blacklist",
+  );
 
   // Check that Canadian job was skipped
-  assert(result.reasons.country_filter !== undefined, "Should have country filter reason");
-  assertEquals(result.reasons.country_filter, 1, "Should skip 1 job due to country filter");
+  assert(
+    result.reasons.country_filter !== undefined,
+    "Should have country filter reason",
+  );
+  assertEquals(
+    result.reasons.country_filter,
+    1,
+    "Should skip 1 job due to country filter",
+  );
 });
 
-Deno.test("FilteringService - handles empty vacancies", async () => {
+Deno.test("FilteringService - handles empty vacancies", () => {
   const filteringService = new FilteringService();
   const settings: SearchRequest["settings"] = {
     searchPositions: ["Software Engineer"],
@@ -102,7 +130,7 @@ Deno.test("FilteringService - handles empty vacancies", async () => {
     },
   };
 
-  const result = await filteringService.filterVacancies([], settings);
+  const result = filteringService.filterVacancies([], settings);
 
   assert(result.success, "Should handle empty array");
   assertEquals(result.totalProcessed, 0);
@@ -110,7 +138,7 @@ Deno.test("FilteringService - handles empty vacancies", async () => {
   assertEquals(result.skippedCount, 0);
 });
 
-Deno.test("FilteringService - company blacklist works", async () => {
+Deno.test("FilteringService - company blacklist works", () => {
   const filteringService = new FilteringService();
 
   const vacancy: Vacancy = {
@@ -144,14 +172,21 @@ Deno.test("FilteringService - company blacklist works", async () => {
     },
   };
 
-  const result = await filteringService.filterVacancies([vacancy], settings);
+  const result = filteringService.filterVacancies([vacancy], settings);
 
-  assertEquals(result.filteredCount, 0, "Should filter out blacklisted company");
+  assertEquals(
+    result.filteredCount,
+    0,
+    "Should filter out blacklisted company",
+  );
   assertEquals(result.skippedCount, 1, "Should skip the blacklisted company");
-  assert(result.reasons.company_blacklisted !== undefined, "Should have company blacklist reason");
+  assert(
+    result.reasons.company_blacklisted !== undefined,
+    "Should have company blacklist reason",
+  );
 });
 
-Deno.test("FilteringService - handles malformed vacancy data", async () => {
+Deno.test("FilteringService - handles malformed vacancy data", () => {
   const filteringService = new FilteringService();
 
   const vacancy: Vacancy = {
@@ -185,9 +220,13 @@ Deno.test("FilteringService - handles malformed vacancy data", async () => {
     },
   };
 
-  const result = await filteringService.filterVacancies([vacancy], settings);
+  const result = filteringService.filterVacancies([vacancy], settings);
 
   // Should still work even with malformed data
   assert(result.success, "Should handle malformed JSON gracefully");
-  assertEquals(result.filteredCount, 1, "Should include job when company data is malformed");
+  assertEquals(
+    result.filteredCount,
+    1,
+    "Should include job when company data is malformed",
+  );
 });

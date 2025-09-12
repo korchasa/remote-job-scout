@@ -42,6 +42,19 @@ async function handleRequest(request: Request): Promise<Response> {
     }
   }
 
+  if (url.pathname === "/styles.css") {
+    try {
+      const css = await Deno.readTextFile(
+        join(Deno.cwd(), "src/web/styles.css"),
+      );
+      return new Response(css, {
+        headers: { "Content-Type": "text/css" },
+      });
+    } catch {
+      return new Response("Not found", { status: 404 });
+    }
+  }
+
   // API endpoints
   if (url.pathname === "/api/search" && request.method === "POST") {
     try {
@@ -178,7 +191,9 @@ async function handleRequest(request: Request): Promise<Response> {
   // Multi-stage progress endpoint
   if (url.pathname.startsWith("/api/multi-stage/progress/")) {
     const sessionId = url.pathname.split("/").pop();
-    const progress = collectionController.getMultiStageProgress(sessionId || "");
+    const progress = collectionController.getMultiStageProgress(
+      sessionId || "",
+    );
 
     if (progress) {
       return new Response(
@@ -196,7 +211,10 @@ async function handleRequest(request: Request): Promise<Response> {
   }
 
   // Stop multi-stage search endpoint
-  if (url.pathname.startsWith("/api/multi-stage/stop/") && request.method === "POST") {
+  if (
+    url.pathname.startsWith("/api/multi-stage/stop/") &&
+    request.method === "POST"
+  ) {
     const sessionId = url.pathname.split("/").pop();
     const result = collectionController.stopMultiStageSearch(sessionId || "");
 

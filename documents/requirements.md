@@ -219,18 +219,21 @@ System considers JobSpy library experience and architecture
   integration, progress tracking)
 - ✅ **FR-9 (Dev Application Launch):** Docker dev-containers with auto-restart
 - ✅ **Data Collection Infrastructure:** Scrapers, controllers, services, types
-- ✅ **API Endpoints:** `/api/multi-stage/search`, `/api/multi-stage/progress/{id}`,
-  `/api/multi-stage/stop/{id}`, `/api/search`, `/api/progress/{id}`, `/api/stop/{id}`,
-  `/api/stats/{id}`
+- ✅ **API Endpoints:** `/api/multi-stage/search`,
+  `/api/multi-stage/progress/{id}`, `/api/multi-stage/stop/{id}`, `/api/search`,
+  `/api/progress/{id}`, `/api/stop/{id}`, `/api/stats/{id}`
 - ✅ **Error Handling:** Retry logic, rate limiting, graceful degradation
 - ✅ **Technical Documentation:** SDS, SRS, file structure, whiteboard
 - ✅ **Code Quality:** TypeScript strict, unit tests, linting, formatting
 
 ### Next Implementation Stages
 
-1. **Stage 4:** Preliminary filtering UI integration (FR-4) - connect filtering to web interface
-2. **Stage 5:** LLM enrichment UI integration (FR-5) - connect enrichment to web interface
-3. **Stage 6:** Full job management interface (FR-6) - results display & navigation
+1. **Stage 4:** Preliminary filtering UI integration (FR-4) - connect filtering
+   to web interface
+2. **Stage 5:** LLM enrichment UI integration (FR-5) - connect enrichment to web
+   interface
+3. **Stage 6:** Full job management interface (FR-6) - results display &
+   navigation
 4. **Stage 7:** Performance monitoring (FR-8) - metrics & cost tracking
 5. **Stage 8:** Additional job sources (Glassdoor, Naukri, ZipRecruiter)
 

@@ -3,7 +3,7 @@
  * Обогащает данные вакансий с помощью LLM
  */
 
-import { Vacancy, SearchRequest } from "../types/database.ts";
+import { SearchRequest, Vacancy } from "../types/database.ts";
 
 export interface EnrichmentResult {
   success: boolean;
@@ -89,7 +89,10 @@ export class EnrichmentService {
 
       for (const vacancy of vacancies) {
         try {
-          const enrichmentData = await this.enrichSingleVacancy(vacancy, settings);
+          const enrichmentData = await this.enrichSingleVacancy(
+            vacancy,
+            settings,
+          );
 
           if (enrichmentData) {
             const enrichedVacancy: Vacancy = {
@@ -111,12 +114,14 @@ export class EnrichmentService {
           }
 
           // Небольшая задержка между запросами для соблюдения rate limits
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         } catch (error) {
           console.error(`❌ Failed to enrich vacancy ${vacancy.id}:`, error);
           result.enrichedVacancies.push(vacancy); // Включаем необогащенную вакансию
           result.failedCount++;
-          result.errors.push(`Vacancy ${vacancy.id}: ${(error as Error).message}`);
+          result.errors.push(
+            `Vacancy ${vacancy.id}: ${(error as Error).message}`,
+          );
         }
       }
 
@@ -149,14 +154,19 @@ export class EnrichmentService {
         throw new Error(response.error || "OpenAI API call failed");
       }
 
-      const enrichmentData = this.parseEnrichmentResponse(response.content || "");
+      const enrichmentData = this.parseEnrichmentResponse(
+        response.content || "",
+      );
 
       // Обновляем статистику токенов и стоимости (примерные значения)
       // В реальном приложении нужно парсить реальные данные из ответа API
 
       return enrichmentData;
     } catch (error) {
-      console.error(`❌ OpenAI enrichment failed for vacancy ${vacancy.id}:`, error);
+      console.error(
+        `❌ OpenAI enrichment failed for vacancy ${vacancy.id}:`,
+        error,
+      );
       return null;
     }
   }
@@ -164,9 +174,9 @@ export class EnrichmentService {
   /**
    * Строит промпт для обогащения вакансии
    */
-  private buildEnrichmentPrompt(
+  protected buildEnrichmentPrompt(
     vacancy: Vacancy,
-    settings: SearchRequest["settings"],
+    _settings: SearchRequest["settings"],
   ): string {
     const existingData = this.parseVacancyData(vacancy);
 
@@ -218,7 +228,9 @@ Focus on accuracy and only include information that can be reasonably inferred f
   /**
    * Вызывает OpenAI API
    */
-  private async callOpenAI(prompt: string): Promise<{ success: boolean; content?: string; error?: string }> {
+  protected async callOpenAI(
+    prompt: string,
+  ): Promise<{ success: boolean; content?: string; error?: string }> {
     try {
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: "POST",
@@ -231,7 +243,8 @@ Focus on accuracy and only include information that can be reasonably inferred f
           messages: [
             {
               role: "system",
-              content: "You are a job posting analyzer. Extract structured information from job postings and return valid JSON.",
+              content:
+                "You are a job posting analyzer. Extract structured information from job postings and return valid JSON.",
             },
             {
               role: "user",
@@ -244,7 +257,9 @@ Focus on accuracy and only include information that can be reasonably inferred f
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `OpenAI API error: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
@@ -266,7 +281,10 @@ Focus on accuracy and only include information that can be reasonably inferred f
   private parseEnrichmentResponse(content: string): EnrichmentData | null {
     try {
       // Убираем возможные markdown-обертки
-      const cleanedContent = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const cleanedContent = content.replace(/```json\n?/g, "").replace(
+        /```\n?/g,
+        "",
+      ).trim();
       return JSON.parse(cleanedContent);
     } catch (error) {
       console.error("❌ Failed to parse enrichment response:", error);
@@ -278,7 +296,7 @@ Focus on accuracy and only include information that can be reasonably inferred f
   /**
    * Парсит дополнительные данные вакансии из JSON
    */
-  private parseVacancyData(vacancy: Vacancy): any {
+  protected parseVacancyData(vacancy: Vacancy): Record<string, unknown> {
     try {
       return vacancy.data ? JSON.parse(vacancy.data) : {};
     } catch {

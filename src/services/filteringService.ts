@@ -3,7 +3,7 @@
  * Выполняет предварительную фильтрацию вакансий по настройкам пользователя
  */
 
-import { Vacancy, SearchRequest } from "../types/database.ts";
+import { SearchRequest, Vacancy } from "../types/database.ts";
 
 export interface FilteringResult {
   success: boolean;
@@ -20,10 +20,10 @@ export class FilteringService {
   /**
    * Выполняет фильтрацию вакансий по настройкам пользователя
    */
-  async filterVacancies(
+  filterVacancies(
     vacancies: Vacancy[],
     settings: SearchRequest["settings"],
-  ): Promise<FilteringResult> {
+  ): FilteringResult {
     const result: FilteringResult = {
       success: true,
       filteredVacancies: [],
@@ -88,17 +88,29 @@ export class FilteringService {
     settings: SearchRequest["settings"],
   ): { include: boolean; reason?: string } {
     // 1. Проверка черного списка компаний
-    if (this.isCompanyBlacklisted(vacancy, settings.filters.blacklistedCompanies)) {
+    if (
+      this.isCompanyBlacklisted(vacancy, settings.filters.blacklistedCompanies)
+    ) {
       return { include: false, reason: "company_blacklisted" };
     }
 
     // 2. Проверка черного списка слов в названии
-    if (this.containsBlacklistedWords(vacancy.title, settings.filters.blacklistedWordsTitle)) {
+    if (
+      this.containsBlacklistedWords(
+        vacancy.title,
+        settings.filters.blacklistedWordsTitle,
+      )
+    ) {
       return { include: false, reason: "title_blacklisted_words" };
     }
 
     // 3. Проверка черного списка слов в описании
-    if (this.containsBlacklistedWords(vacancy.description, settings.filters.blacklistedWordsDescription)) {
+    if (
+      this.containsBlacklistedWords(
+        vacancy.description,
+        settings.filters.blacklistedWordsDescription,
+      )
+    ) {
       return { include: false, reason: "description_blacklisted_words" };
     }
 
@@ -108,7 +120,9 @@ export class FilteringService {
     }
 
     // 5. Проверка требований к языкам
-    if (!this.matchesLanguageRequirements(vacancy, settings.filters.languages)) {
+    if (
+      !this.matchesLanguageRequirements(vacancy, settings.filters.languages)
+    ) {
       return { include: false, reason: "language_requirements" };
     }
 
@@ -127,9 +141,11 @@ export class FilteringService {
     }
 
     const vacancyData = this.parseVacancyData(vacancy);
-    const companyName = vacancyData.company?.toLowerCase() || "";
+    const companyName = typeof vacancyData.company === "string"
+      ? vacancyData.company.toLowerCase()
+      : "";
 
-    return blacklistedCompanies.some(blacklisted =>
+    return blacklistedCompanies.some((blacklisted) =>
       companyName.includes(blacklisted.toLowerCase())
     );
   }
@@ -137,13 +153,16 @@ export class FilteringService {
   /**
    * Проверяет наличие запрещенных слов в тексте
    */
-  private containsBlacklistedWords(text: string, blacklistedWords: string[]): boolean {
+  private containsBlacklistedWords(
+    text: string,
+    blacklistedWords: string[],
+  ): boolean {
     if (!blacklistedWords || blacklistedWords.length === 0) {
       return false;
     }
 
     const lowerText = text.toLowerCase();
-    return blacklistedWords.some(word =>
+    return blacklistedWords.some((word) =>
       lowerText.includes(word.toLowerCase())
     );
   }
@@ -164,11 +183,15 @@ export class FilteringService {
     for (const filter of countryFilters) {
       const filterCountry = filter.name.toLowerCase();
 
-      if (filter.type === "blacklist" && vacancyCountry.includes(filterCountry)) {
+      if (
+        filter.type === "blacklist" && vacancyCountry.includes(filterCountry)
+      ) {
         return false;
       }
 
-      if (filter.type === "whitelist" && !vacancyCountry.includes(filterCountry)) {
+      if (
+        filter.type === "whitelist" && !vacancyCountry.includes(filterCountry)
+      ) {
         return false;
       }
     }
@@ -189,14 +212,15 @@ export class FilteringService {
 
     // Для простоты - если есть требования к языкам, проверяем наличие английского
     // В будущем можно реализовать более сложную логику анализа описания вакансии
-    const hasEnglishRequirement = languageRequirements.some(req =>
+    const hasEnglishRequirement = languageRequirements.some((req) =>
       req.language.toLowerCase() === "english"
     );
 
     if (hasEnglishRequirement) {
       const text = (vacancy.title + " " + vacancy.description).toLowerCase();
       // Простая проверка на наличие указаний на английский язык
-      return text.includes("english") || text.includes("fluent") || text.includes("proficient");
+      return text.includes("english") || text.includes("fluent") ||
+        text.includes("proficient");
     }
 
     return true;
@@ -205,7 +229,7 @@ export class FilteringService {
   /**
    * Парсит дополнительные данные вакансии из JSON
    */
-  private parseVacancyData(vacancy: Vacancy): any {
+  private parseVacancyData(vacancy: Vacancy): Record<string, unknown> {
     try {
       return vacancy.data ? JSON.parse(vacancy.data) : {};
     } catch {
