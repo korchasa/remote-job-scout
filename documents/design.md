@@ -67,10 +67,12 @@
 ### 3.3 Data Collection Module (Stage 1) ✅ IMPLEMENTED
 
 - **Purpose:** Collect jobs from selected sources using advanced APIs.
-- **Interfaces:** Job site APIs, GraphQL endpoints, OpenAI WebSearch API, Playwright MCP.
+- **Interfaces:** Job site APIs, GraphQL endpoints, OpenAI WebSearch API,
+  Playwright MCP.
 - **Dependencies:** Source settings, external APIs, YAML utilities.
 - **Reference:** Architecture based on JobSpy - modular structure with separate
-  scrapers per source, GraphQL API integration, proxy support, concurrent processing.
+  scrapers per source, GraphQL API integration, proxy support, concurrent
+  processing.
 - **Implementation:**
   - `BaseScraper` abstract class with retry logic & rate limiting
   - `IndeedScraper` with GraphQL API integration (JobSpy-compatible)
@@ -216,10 +218,12 @@
 - **Testing:** Deno test framework with comprehensive unit tests
 - **Build:** Deno native build system
 - **Containerization:** Docker with live reload and auto-restart
-- **Scraping:** GraphQL API integration, regex-based HTML parsing, API integration
+- **Scraping:** GraphQL API integration, regex-based HTML parsing, API
+  integration
 - **External APIs:** OpenAI WebSearch, Indeed GraphQL API, job site scraping
 - **Data Processing:** YAML serialization utilities, flow-style array formatting
-- **Error Handling:** Retry logic, exponential backoff, rate limiting, GraphQL error handling
+- **Error Handling:** Retry logic, exponential backoff, rate limiting, GraphQL
+  error handling
 
 ### Architectural Decisions
 

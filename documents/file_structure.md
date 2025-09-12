@@ -158,7 +158,8 @@ remote-job-scout/
   ✅
 - `scrapers_test.ts` - Job scraper implementations unit tests ✅
 - `settings_test.ts` - Settings service unit tests ✅
-- `integration_scrapers_test.ts` - Real API integration tests for Indeed GraphQL ✅
+- `integration_scrapers_test.ts` - Real API integration tests for Indeed GraphQL
+  ✅
 
 ## Architectural Principles
 
@@ -200,13 +201,15 @@ remote-job-scout/
 - **Tailwind CSS v4 + Flowbite** - Modern utility-first CSS framework with
   professional UI components
 - **Playwright MCP** - Browser automation for advanced scraping (planned)
-- **YAML** - Data serialization with flow-style array formatting for compact output
+- **YAML** - Data serialization with flow-style array formatting for compact
+  output
 
 ### Current Implementation Status
 
 - ✅ **Multi-Stage Search Process** - Complete orchestrator with progress
   tracking
-- ✅ **Job Collection** - Indeed (GraphQL API), LinkedIn, OpenAI WebSearch scrapers
+- ✅ **Job Collection** - Indeed (GraphQL API), LinkedIn, OpenAI WebSearch
+  scrapers
 - ✅ **Job Filtering** - Settings-based filtering with blacklists and whitelists
 - ✅ **LLM Enrichment** - OpenAI integration for job data enhancement
 - ✅ **Web Interface** - Real-time progress visualization with stage details

@@ -211,6 +211,29 @@ export function getCountryDomain(country: Country): [string, string] {
   return [mapping[0], mapping[1].toUpperCase()];
 }
 
+// Helper function to convert string to Country enum - JobSpy compatible
+export function countryFromString(country_str: string): Country {
+  country_str = country_str.trim().toLowerCase();
+  for (const [key, value] of Object.entries(Country)) {
+    if (typeof value === "string") {
+      const country_names = value.split(",").map((name) =>
+        name.trim().toLowerCase()
+      );
+      if (country_names.includes(country_str)) {
+        return Country[key as keyof typeof Country];
+      }
+    }
+  }
+  const valid_countries = Object.values(Country)
+    .filter((country) => typeof country === "string")
+    .map((country) => (country as string).split(",")[0]);
+  throw new Error(
+    `Invalid country string: '${country_str}'. Valid countries are: ${
+      valid_countries.join(", ")
+    }`,
+  );
+}
+
 // Legacy types for backward compatibility
 export interface LegacyJobPost {
   id?: string;

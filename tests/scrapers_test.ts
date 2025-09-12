@@ -4,16 +4,53 @@
 
 import {
   assert,
+  assertEquals,
   assertExists,
 } from "https://deno.land/std@0.208.0/testing/asserts.ts";
 import {
   Country,
+  countryFromString,
   DescriptionFormat,
   JobType,
   ScraperInput,
   Site,
 } from "../src/types/scrapers.ts";
 import { IndeedScraper } from "../src/services/scrapers/indeed.ts";
+
+// Test Country enum conversion from string
+Deno.test("countryFromString() - converts country name to Country enum", () => {
+  // Test USA variations
+  assertEquals(countryFromString("USA"), Country.USA);
+  assertEquals(countryFromString("usa"), Country.USA);
+  assertEquals(countryFromString("United States"), Country.USA);
+  assertEquals(countryFromString("united states"), Country.USA);
+
+  // Test UK variations
+  assertEquals(countryFromString("UK"), Country.UK);
+  assertEquals(countryFromString("uk"), Country.UK);
+  assertEquals(countryFromString("United Kingdom"), Country.UK);
+  assertEquals(countryFromString("united kingdom"), Country.UK);
+
+  // Test Canada
+  assertEquals(countryFromString("Canada"), Country.CANADA);
+  assertEquals(countryFromString("canada"), Country.CANADA);
+
+  // Test Germany
+  assertEquals(countryFromString("Germany"), Country.GERMANY);
+  assertEquals(countryFromString("germany"), Country.GERMANY);
+
+  // Test invalid country
+  try {
+    countryFromString("InvalidCountry");
+    assert(false, "Should throw error for invalid country");
+  } catch (error) {
+    assert(error instanceof Error, "Should throw Error for invalid country");
+    assert(
+      error.message.includes("Invalid country"),
+      "Error message should mention invalid country",
+    );
+  }
+});
 
 // Test Indeed scraper with JobSpy compatible interface
 Deno.test("IndeedScraper - GraphQL API integration", async () => {

@@ -5,6 +5,8 @@
 
 import { SearchRequest, Vacancy } from "../types/database.ts";
 import {
+  Country,
+  countryFromString,
   JobPost,
   JobResponse,
   Scraper,
@@ -87,9 +89,11 @@ export class JobCollectionService {
     this.activeSessions.set(session_id, progress);
 
     try {
-      console.log(`🔍 Starting job collection for session ${session_id}`);
-      console.log(`📋 Positions: ${settings.searchPositions.join(", ")}`);
-      console.log(`🌐 Sources: ${settings.sources.jobSites.join(", ")}`);
+      console.log(`🔍 Starting job collection for session:`, {
+        session: session_id,
+        positions: settings.searchPositions,
+        sources: settings.sources.jobSites,
+      });
 
       // Определяем источники для обработки
       const sourcesToProcess = this.getSourcesToProcess(settings);
@@ -247,6 +251,23 @@ export class JobCollectionService {
 
     // Обрабатываем каждую позицию
     for (const position of settings.searchPositions) {
+      let country: Country | undefined;
+      try {
+        if (
+          settings.filters?.countries &&
+          Array.isArray(settings.filters.countries) &&
+          settings.filters.countries.length > 0
+        ) {
+          country = countryFromString(settings.filters.countries[0].name);
+        }
+      } catch (error) {
+        console.warn(
+          `⚠️ Failed to parse country "${settings.filters.countries[0].name}":`,
+          error,
+        );
+        // Continue without country filter
+      }
+
       const input: ScraperInput = {
         site_type: [Site.INDEED], // Пока только Indeed
         search_term: position,
@@ -255,6 +276,7 @@ export class JobCollectionService {
             settings.filters.countries.length > 0)
           ? settings.filters.countries[0].name
           : undefined,
+        country: country,
         is_remote: true, // Фокусируемся на remote вакансиях
         results_wanted: 25, // Ограничиваем для тестирования
       };

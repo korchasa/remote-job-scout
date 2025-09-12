@@ -270,20 +270,78 @@ export class IndeedScraper extends Scraper {
     super(Site.INDEED, proxies, ca_cert, user_agent);
   }
 
+  override async checkAvailability(): Promise<boolean> {
+    console.log("🔍 Checking Indeed API availability", {
+      apiUrl: this.api_url,
+      headers: API_HEADERS,
+      timestamp: new Date().toISOString(),
+    });
+
+    try {
+      // Проверяем доступность API с простым запросом
+      const testPayload = {
+        query: "{ jobSearch { pageInfo { nextCursor } } }",
+      };
+      const response = await fetch(this.api_url, {
+        method: "POST",
+        headers: API_HEADERS,
+        body: JSON.stringify(testPayload),
+      });
+
+      const isAvailable = response.status === 200 || response.status === 400; // 400 тоже означает, что API работает, просто запрос некорректный
+
+      console.log("📊 Indeed availability check result:", {
+        apiUrl: this.api_url,
+        responseStatus: response.status,
+        responseStatusText: response.statusText,
+        isAvailable,
+        timestamp: new Date().toISOString(),
+      });
+
+      return isAvailable;
+    } catch (error) {
+      console.error("❌ Indeed availability check failed:", {
+        error: error,
+        errorMessage: (error as Error).message,
+        apiUrl: this.api_url,
+        timestamp: new Date().toISOString(),
+      });
+      return false;
+    }
+  }
+
   async scrape(scraper_input: ScraperInput): Promise<JobResponse> {
     this.scraper_input = scraper_input;
+
+    console.log("🚀 Starting Indeed scrape", {
+      scraperInput: scraper_input,
+      timestamp: new Date().toISOString(),
+    });
 
     // Get domain and country code
     const [domain, countryCode] = this.scraper_input.country
       ? getCountryDomain(this.scraper_input.country)
-      : ["www", "us"];
+      : ["www", "US"];
     this.api_country_code = countryCode;
     this.base_url = `https://${domain}.indeed.com`;
+
+    console.log("🌍 Indeed domain configuration:", {
+      domain,
+      countryCode,
+      baseUrl: this.base_url,
+      apiCountryCode: this.api_country_code,
+    });
 
     this.headers = { ...API_HEADERS };
     if (this.api_country_code) {
       this.headers["indeed-co"] = this.api_country_code;
     }
+
+    console.log("🔧 Indeed headers configured:", {
+      headersCount: Object.keys(this.headers).length,
+      hasApiKey: !!this.headers["indeed-api-key"],
+      countryCode: this.api_country_code,
+    });
 
     const job_list: JobPost[] = [];
     let page = 1;
@@ -350,6 +408,23 @@ export class IndeedScraper extends Scraper {
 
     const payload = { query };
 
+    // Логируем параметры запроса к Indeed API
+    console.log("🌐 Indeed API Request:", {
+      url: this.api_url,
+      method: "POST",
+      headers: this.headers || API_HEADERS,
+      payload: payload,
+      scraper_input: {
+        search_term: this.scraper_input?.search_term,
+        location: this.scraper_input?.location,
+        results_wanted: this.scraper_input?.results_wanted,
+        offset: this.scraper_input?.offset,
+        is_remote: this.scraper_input?.is_remote,
+        country: this.scraper_input?.country,
+      },
+      cursor: cursor,
+    });
+
     try {
       const response = await fetch(this.api_url, {
         method: "POST",
@@ -357,13 +432,22 @@ export class IndeedScraper extends Scraper {
         body: JSON.stringify(payload),
       });
 
+      // Логируем ответ от Indeed API
+      console.log("📥 Indeed API Response:", {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        ok: response.ok,
+      });
+
       if (!response.ok) {
         console.log(
-          `responded with status code: ${response.status} (submit GitHub issue if this appears to be a bug)`,
+          `❌ Indeed API error with status code: ${response.status} (submit GitHub issue if this appears to be a bug)`,
         );
         // Consume response body to prevent memory leaks
         try {
-          await response.text();
+          const errorText = await response.text();
+          console.log("❌ Indeed API error response body:", errorText);
         } catch {
           // Ignore errors when consuming response body
         }
@@ -371,6 +455,16 @@ export class IndeedScraper extends Scraper {
       }
 
       const data: GraphQLJobSearchResponse = await response.json();
+
+      // Логируем успешный ответ с данными
+      console.log("✅ Indeed API successful response:", {
+        hasData: !!data.data,
+        hasJobSearch: !!data.data?.jobSearch,
+        resultsCount: data.data?.jobSearch?.results?.length || 0,
+        hasErrors: !!data.errors,
+        errors: data.errors,
+        nextCursor: data.data?.jobSearch?.pageInfo?.nextCursor,
+      });
 
       if (!data.data?.jobSearch?.results) {
         return jobs;
