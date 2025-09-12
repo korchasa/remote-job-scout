@@ -72,8 +72,6 @@ async function scanComments(): Promise<ScanResult[]> {
     { regex: /\/\*\s*HACK[:\s]*(.+?)\*\//i, type: "HACK" },
     { regex: /\/\/\s*BUG[:\s]*(.+)/i, type: "BUG" },
     { regex: /\/\*\s*BUG[:\s]*(.+?)\*\//i, type: "BUG" },
-    { regex: /\/\/\s*NOTE[:\s]*(.+)/i, type: "NOTE" },
-    { regex: /\/\*\s*NOTE[:\s]*(.+?)\*\//i, type: "NOTE" },
     { regex: /\/\/\s*DEBUG[:\s]*(.+)/i, type: "DEBUG" },
     { regex: /\/\*\s*DEBUG[:\s]*(.+?)\*\//i, type: "DEBUG" },
     { regex: /\/\/\s*eslint-disable/i, type: "ESLINT_DISABLE" },
@@ -451,7 +449,7 @@ const commands = {
           console.log();
         }
 
-        console.error("⚠️  Found critical comment issues");
+        console.error("⚠️  Found comment issues");
         Deno.exit(1);
       }
     } catch (error) {

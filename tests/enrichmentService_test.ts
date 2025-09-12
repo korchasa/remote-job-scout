@@ -14,10 +14,32 @@ import { SearchRequest, Vacancy } from "../src/types/database.ts";
 
 // Test class to access protected methods
 class TestEnrichmentService extends EnrichmentService {
-  public testCallOpenAI(
+  private mockCallOpenAI?: (
+    prompt: string,
+  ) => Promise<{ success: boolean; content?: string; error?: string }>;
+
+  // Override the callOpenAI method to allow mocking
+  protected override callOpenAI(
     prompt: string,
   ): Promise<{ success: boolean; content?: string; error?: string }> {
-    return this.callOpenAI(prompt);
+    if (this.mockCallOpenAI) {
+      return this.mockCallOpenAI(prompt);
+    }
+    return super.callOpenAI(prompt);
+  }
+
+  // Method to set mock for callOpenAI
+  public setMockCallOpenAI(
+    mockFn: (
+      prompt: string,
+    ) => Promise<{ success: boolean; content?: string; error?: string }>,
+  ): void {
+    this.mockCallOpenAI = mockFn;
+  }
+
+  // Method to clear mock
+  public clearMockCallOpenAI(): void {
+    this.mockCallOpenAI = undefined;
   }
 
   public testParseVacancyData(vacancy: Vacancy): Record<string, unknown> {
@@ -124,20 +146,20 @@ Deno.test("EnrichmentService - processes vacancies without enrichment", async ()
   };
 
   // Mock the OpenAI call to simulate failure
-  const originalCallOpenAI = enrichmentService.testCallOpenAI;
-  enrichmentService.testCallOpenAI = () =>
+  enrichmentService.setMockCallOpenAI(() =>
     Promise.resolve({
       success: false,
       error: "Mock API failure",
-    });
+    })
+  );
 
   const result: EnrichmentResult = await enrichmentService.enrichVacancies(
     vacancies,
     settings,
   );
 
-  // Restore original method
-  enrichmentService.testCallOpenAI = originalCallOpenAI;
+  // Clear mock
+  enrichmentService.clearMockCallOpenAI();
 
   // The service should still succeed overall, but record the failure
   assert(result.success, "Should succeed even with API failures");
