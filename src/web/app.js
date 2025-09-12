@@ -64,26 +64,54 @@ function saveSettings(settings) {
 // Render settings UI
 function renderSettings(settings) {
   // Fill in the form fields
-  document.getElementById("search-positions").value = settings.searchPositions
-    .join(", ");
-  document.getElementById("blacklist-companies").value = settings.filters
-    .blacklistedCompanies.join(", ");
-  document.getElementById("blacklist-words-title").value = settings.filters
-    .blacklistedWordsTitle.join(", ");
+  const searchPositionsElement = document.getElementById("search-positions");
+  if (searchPositionsElement) {
+    searchPositionsElement.value = settings.searchPositions.join(", ");
+  }
+
+  const blacklistCompaniesElement = document.getElementById(
+    "blacklist-companies",
+  );
+  if (blacklistCompaniesElement) {
+    blacklistCompaniesElement.value = settings.filters.blacklistedCompanies
+      .join(", ");
+  }
+
+  const blacklistWordsTitleElement = document.getElementById(
+    "blacklist-words-title",
+  );
+  if (blacklistWordsTitleElement) {
+    blacklistWordsTitleElement.value = settings.filters.blacklistedWordsTitle
+      .join(", ");
+  }
 
   // Update checkboxes
-  document.getElementById("source-linkedin").checked = settings.sources.jobSites
-    .includes("linkedin");
-  document.getElementById("source-indeed").checked = settings.sources.jobSites
-    .includes("indeed");
-  document.getElementById("source-glassdoor").checked = settings.sources
-    .jobSites.includes("glassdoor");
+  const linkedinCheckbox = document.getElementById("source-linkedin");
+  if (linkedinCheckbox) {
+    linkedinCheckbox.checked = settings.sources.jobSites.includes("linkedin");
+  }
+
+  const indeedCheckbox = document.getElementById("source-indeed");
+  if (indeedCheckbox) {
+    indeedCheckbox.checked = settings.sources.jobSites.includes("indeed");
+  }
+
+  const glassdoorCheckbox = document.getElementById("source-glassdoor");
+  if (glassdoorCheckbox) {
+    glassdoorCheckbox.checked = settings.sources.jobSites.includes("glassdoor");
+  }
 
   // OpenAI settings
-  document.getElementById("openai-api-key").value =
-    settings.sources.openaiWebSearch?.apiKey || "";
-  document.getElementById("global-search").checked =
-    settings.sources.openaiWebSearch?.globalSearch || false;
+  const openaiKeyElement = document.getElementById("openai-api-key");
+  if (openaiKeyElement) {
+    openaiKeyElement.value = settings.sources.openaiWebSearch?.apiKey || "";
+  }
+
+  const globalSearchElement = document.getElementById("global-search");
+  if (globalSearchElement) {
+    globalSearchElement.checked =
+      settings.sources.openaiWebSearch?.globalSearch || false;
+  }
 
   // Render dynamic filters
   renderCountryFilters(settings.filters.countries);
@@ -96,6 +124,11 @@ function renderSettings(settings) {
 // Render country filters
 function renderCountryFilters(countries) {
   const container = document.getElementById("country-filters");
+
+  if (!container) {
+    console.warn("Country filters container not found");
+    return;
+  }
 
   if (!countries || countries.length === 0) {
     container.innerHTML =
@@ -139,6 +172,11 @@ function renderCountryFilters(countries) {
 // Render language requirements
 function renderLanguageRequirements(languages) {
   const container = document.getElementById("language-filters");
+
+  if (!container) {
+    console.warn("Language filters container not found");
+    return;
+  }
 
   if (!languages || languages.length === 0) {
     container.innerHTML =
@@ -506,37 +544,59 @@ function updateSettingsFromUI() {
     s.trim()
   ).filter((s) => s);
 
-  const wordsDescText =
-    document.getElementById("blacklist-words-description").value;
-  settings.filters.blacklistedWordsDescription = wordsDescText.split(",").map((
-    s,
-  ) => s.trim()).filter((s) => s);
+  // Note: blacklist-words-description field was removed in the new UI
+  // Keep existing values or set to empty array
+  const wordsDescElement = document.getElementById(
+    "blacklist-words-description",
+  );
+  if (wordsDescElement) {
+    const wordsDescText = wordsDescElement.value;
+    settings.filters.blacklistedWordsDescription = wordsDescText.split(",").map(
+      (
+        s,
+      ) => s.trim(),
+    ).filter((s) => s);
+  } else {
+    // Keep existing values if element doesn't exist
+    settings.filters.blacklistedWordsDescription =
+      settings.filters.blacklistedWordsDescription || [];
+  }
 
   // Country filters
   const countryItems = document.querySelectorAll(
     "#country-filters .dynamic-item",
   );
-  settings.filters.countries = Array.from(countryItems).map((item, index) => {
-    const nameInput = item.querySelector(`[data-country-index="${index}"]`);
-    const typeSelect = item.querySelector(`[data-country-type="${index}"]`);
-    return {
-      name: nameInput ? nameInput.value.trim() : "",
-      type: typeSelect ? typeSelect.value : "blacklist",
-    };
-  }).filter((country) => country.name);
+  if (countryItems.length > 0) {
+    settings.filters.countries = Array.from(countryItems).map((item, index) => {
+      const nameInput = item.querySelector(`[data-country-index="${index}"]`);
+      const typeSelect = item.querySelector(`[data-country-type="${index}"]`);
+      return {
+        name: nameInput ? nameInput.value.trim() : "",
+        type: typeSelect ? typeSelect.value : "blacklist",
+      };
+    }).filter((country) => country.name);
+  } else {
+    // Keep existing country filters if no dynamic items
+    settings.filters.countries = settings.filters.countries || [];
+  }
 
   // Language requirements
   const langItems = document.querySelectorAll(
-    "#language-requirements .dynamic-item",
+    "#language-filters .dynamic-item",
   );
-  settings.filters.languages = Array.from(langItems).map((item, index) => {
-    const langInput = item.querySelector(`[data-lang-index="${index}"]`);
-    const levelSelect = item.querySelector(`[data-lang-level="${index}"]`);
-    return {
-      language: langInput ? langInput.value.trim() : "",
-      level: levelSelect ? levelSelect.value : "Intermediate",
-    };
-  }).filter((lang) => lang.language);
+  if (langItems.length > 0) {
+    settings.filters.languages = Array.from(langItems).map((item, index) => {
+      const langInput = item.querySelector(`[data-lang-index="${index}"]`);
+      const levelSelect = item.querySelector(`[data-lang-level="${index}"]`);
+      return {
+        language: langInput ? langInput.value.trim() : "",
+        level: levelSelect ? levelSelect.value : "Intermediate",
+      };
+    }).filter((lang) => lang.language);
+  } else {
+    // Keep existing language requirements if no dynamic items
+    settings.filters.languages = settings.filters.languages || [];
+  }
 
   // Work time filter
   const workStart = document.getElementById("work-start");
@@ -552,18 +612,23 @@ function updateSettingsFromUI() {
       timezone: workTimezone.value,
     };
   } else {
-    settings.filters.workTime = undefined;
+    // Keep existing work time settings if elements don't exist
+    settings.filters.workTime = settings.filters.workTime || undefined;
   }
 
   // Sources
   settings.sources.jobSites = [];
-  if (document.getElementById("source-linkedin").checked) {
+  const linkedinCheckbox = document.getElementById("source-linkedin");
+  const indeedCheckbox = document.getElementById("source-indeed");
+  const glassdoorCheckbox = document.getElementById("source-glassdoor");
+
+  if (linkedinCheckbox && linkedinCheckbox.checked) {
     settings.sources.jobSites.push("linkedin");
   }
-  if (document.getElementById("source-indeed").checked) {
+  if (indeedCheckbox && indeedCheckbox.checked) {
     settings.sources.jobSites.push("indeed");
   }
-  if (document.getElementById("source-glassdoor").checked) {
+  if (glassdoorCheckbox && glassdoorCheckbox.checked) {
     settings.sources.jobSites.push("glassdoor");
   }
 
@@ -572,10 +637,16 @@ function updateSettingsFromUI() {
     settings.sources.openaiWebSearch =
       DEFAULT_USER_SETTINGS.sources.openaiWebSearch;
   }
-  settings.sources.openaiWebSearch.apiKey =
-    document.getElementById("openai-api-key").value;
-  settings.sources.openaiWebSearch.globalSearch =
-    document.getElementById("global-search").checked;
+
+  const openaiKeyElement = document.getElementById("openai-api-key");
+  const globalSearchElement = document.getElementById("global-search");
+
+  if (openaiKeyElement) {
+    settings.sources.openaiWebSearch.apiKey = openaiKeyElement.value;
+  }
+  if (globalSearchElement) {
+    settings.sources.openaiWebSearch.globalSearch = globalSearchElement.checked;
+  }
 
   return settings;
 }
