@@ -47,19 +47,32 @@
   - Error handling and fallback to default settings
   - Unit tests with mock localStorage
 
-### 3.2 Multi-Stage Search Orchestrator
+### 3.2 Multi-Stage Search Orchestrator ✅ PARTIALLY IMPLEMENTED
 
 - **Purpose:** Coordinate collection, filtering, and enrichment stages.
 - **Interfaces:** Internal module APIs, WebSocket for status updates.
 - **Dependencies:** All data processing modules, database.
+- **Implementation:**
+  - `CollectionController` for search initiation & progress tracking
+  - REST API endpoints: `/api/search`, `/api/progress/{id}`, `/api/stop/{id}`,
+    `/api/stats/{id}`
+  - Real-time progress monitoring with error reporting
+  - Asynchronous job processing with session management
 
-### 3.3 Data Collection Module (Stage 1)
+### 3.3 Data Collection Module (Stage 1) ✅ IMPLEMENTED
 
 - **Purpose:** Collect jobs from selected sources.
 - **Interfaces:** Job site APIs, OpenAI WebSearch API, Playwright MCP.
 - **Dependencies:** Source settings, external APIs.
 - **Reference:** Architecture based on JobSpy - modular structure with separate
   scrapers per source, proxy support, concurrent processing.
+- **Implementation:**
+  - `BaseScraper` abstract class with retry logic & rate limiting
+  - `IndeedScraper` & `LinkedInScraper` for job site parsing
+  - `OpenAIWebSearchScraper` for global search via AI
+  - `JobCollectionService` for parallel processing coordination
+  - `CollectionController` for API endpoint management
+  - Comprehensive error handling & graceful degradation
 
 ### 3.4 Preliminary Filtering Module (Stage 2)
 
@@ -103,8 +116,13 @@
   - `vacancies`: Complete job information (id, title, description, url,
     published_date, status, skip_reason, processed_at, created_at, collected_at,
     filtered_at, enriched_at, source, country, data)
-    - `data` field contains all additional information in YAML format
-    - Includes company data, language requirements, and information sources
+    - `data` field contains all additional information in JSON format
+    - Includes company data, location, salary, job type, remote status
+  - `scrapers`: Abstract interface for job source scraping
+    - `BaseScraper` with retry logic & rate limiting
+    - `JobPost` standardized job data format
+    - `ScraperInput` unified search parameters
+    - `ScraperResponse` consistent result structure
 - **ER Diagram:** Simplified relational model for search results and metrics
   storage.
 - **Settings Storage:** ✅ IMPLEMENTED
@@ -123,6 +141,12 @@
   - LLM prompts for extracting structured data
   - Filtering algorithm with priorities (blacklists → user filters → automatic
     rules)
+  - Job scraping algorithms:
+    - Exponential backoff retry: `delay = base_delay * 2^(attempt - 1)`
+    - Rate limiting: Configurable delays between requests
+    - HTML parsing: Regex-based extraction with error handling
+    - Source prioritization: Indeed (primary) → LinkedIn (secondary) → OpenAI
+      (fallback)
 - **Business Rules:**
   - Blacklist filtering has highest priority
   - LLM enrichment applied only to filtered jobs
@@ -170,14 +194,17 @@
 ### Implemented Technologies ✅
 
 - **Runtime:** Deno 1.28+ with TypeScript support
-- **Web Framework:** Native Deno HTTP server
+- **Web Framework:** Native Deno HTTP server with REST API
 - **Frontend:** Vanilla JavaScript + HTML5 + CSS3
 - **CSS Framework:** Chota CSS for responsive design
-- **Typing:** TypeScript with strict mode
-- **Storage:** localStorage for client settings
-- **Testing:** Deno test framework with mock localStorage
+- **Typing:** TypeScript with strict mode & advanced types
+- **Storage:** localStorage for client settings, in-memory sessions
+- **Testing:** Deno test framework with comprehensive unit tests
 - **Build:** Deno native build system
 - **Containerization:** Docker with live reload and auto-restart
+- **Scraping:** Regex-based HTML parsing, API integration
+- **External APIs:** OpenAI WebSearch, job site scraping
+- **Error Handling:** Retry logic, exponential backoff, rate limiting
 
 ### Architectural Decisions
 
@@ -188,10 +215,15 @@
 - **Containerization:** Docker-based development with automatic detection and
   fallback
 - **Extensibility:** Modular architecture for easy addition of new features
+- **Scraping Architecture:** Abstract scraper pattern with inheritance
+- **Error Resilience:** Exponential backoff, rate limiting, graceful degradation
+- **Data Flow:** Unified JobPost format across all scrapers
+- **API Design:** RESTful endpoints with session-based job tracking
 
 ## 9. Future Extensions
 
-- Integration with additional job sources (Indeed, Glassdoor, Naukri, etc.)
+- Integration with additional job sources (Glassdoor, Naukri, ZipRecruiter,
+  etc.)
 - Machine learning for personalized search and recommendations
 - Mobile app with native capabilities
 - Integration with calendars and tasks for deadline tracking

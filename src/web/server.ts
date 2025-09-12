@@ -1,5 +1,6 @@
 import { join } from "https://deno.land/std@0.208.0/path/mod.ts";
 import { SearchRequest } from "../types/database.ts";
+import { CollectionController } from "../controllers/collectionController.ts";
 
 // Simple in-memory storage for demo (will be replaced with SQLite)
 interface SessionData {
@@ -9,6 +10,9 @@ interface SessionData {
   progress: number;
 }
 const sessions = new Map<string, SessionData>();
+
+// Collection controller
+const collectionController = new CollectionController();
 
 async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -49,34 +53,21 @@ async function handleRequest(request: Request): Promise<Response> {
         sources: searchRequest.settings.sources.jobSites,
       });
 
-      // Store session
+      // Используем новый collection controller
+      const response = await collectionController.startCollection(
+        searchRequest,
+      );
+
+      // Store session for backward compatibility
       sessions.set(searchRequest.session_id, {
-        status: "started",
+        status: response.success ? "collecting" : "failed",
         settings: searchRequest.settings,
         startedAt: new Date().toISOString(),
         progress: 0,
       });
 
-      // Simulate starting search process
-      setTimeout(() => {
-        console.log(`✅ Search session ${searchRequest.session_id} completed`);
-        const currentSession = sessions.get(searchRequest.session_id);
-        if (currentSession) {
-          sessions.set(searchRequest.session_id, {
-            ...currentSession,
-            status: "completed",
-            progress: 100,
-          });
-        }
-      }, 5000);
-
       return new Response(
-        JSON.stringify({
-          success: true,
-          session_id: searchRequest.session_id,
-          message: "Search started successfully",
-          total_found: 0,
-        }),
+        JSON.stringify(response),
         {
           headers: { "Content-Type": "application/json" },
         },
@@ -98,18 +89,54 @@ async function handleRequest(request: Request): Promise<Response> {
 
   if (url.pathname.startsWith("/api/progress/")) {
     const sessionId = url.pathname.split("/").pop();
-    const session = sessions.get(sessionId || "");
+    const progress = collectionController.getCollectionProgress(
+      sessionId || "",
+    );
 
-    if (session) {
-      return new Response(JSON.stringify(session), {
-        headers: { "Content-Type": "application/json" },
-      });
+    if (progress) {
+      return new Response(
+        JSON.stringify({
+          session_id: sessionId,
+          status: progress.isComplete ? "completed" : "collecting",
+          progress: Math.round(
+            (progress.sourcesCompleted / progress.totalSources) * 100,
+          ),
+          current_source: progress.currentSource,
+          jobs_collected: progress.jobsCollected,
+          sources_completed: progress.sourcesCompleted,
+          total_sources: progress.totalSources,
+          errors: progress.errors,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     } else {
       return new Response(JSON.stringify({ error: "Session not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
     }
+  }
+
+  // Stop collection endpoint
+  if (url.pathname.startsWith("/api/stop/") && request.method === "POST") {
+    const sessionId = url.pathname.split("/").pop();
+    const result = collectionController.stopCollection(sessionId || "");
+
+    return new Response(JSON.stringify(result), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Collection stats endpoint
+  if (url.pathname.startsWith("/api/stats/")) {
+    const sessionId = url.pathname.split("/").pop();
+    const stats = collectionController.getCollectionStats(sessionId || "");
+
+    return new Response(JSON.stringify(stats), {
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   return new Response("Not found", { status: 404 });

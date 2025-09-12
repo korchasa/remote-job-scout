@@ -1,10 +1,10 @@
 export interface Vacancy {
-  id: number;
+  id: string;
   title: string;
   description: string;
   url: string;
   published_date?: string;
-  company_id?: number;
+  company_id?: string;
   status: VacancyStatus;
   skip_reason?: string;
   processed_at?: string;
@@ -14,6 +14,7 @@ export interface Vacancy {
   enriched_at?: string;
   source: string;
   country?: string;
+  data?: string; // Additional information in YAML format
 }
 
 export type VacancyStatus =
@@ -24,7 +25,7 @@ export type VacancyStatus =
   | "completed"; // Завершен
 
 export interface Company {
-  id: number;
+  id: string;
   name: string;
   category?: string;
   main_product?: string;
@@ -37,8 +38,8 @@ export interface Company {
 }
 
 export interface LanguageRequirement {
-  id: number;
-  vacancy_id: number;
+  id: string;
+  vacancy_id: string;
   language: string;
   level: string;
   quote?: string;
@@ -46,8 +47,8 @@ export interface LanguageRequirement {
 }
 
 export interface Source {
-  id: number;
-  company_id?: number;
+  id: string;
+  company_id?: string;
   url: string;
   title: string;
   content_type: string;
@@ -55,18 +56,18 @@ export interface Source {
 }
 
 export interface Log {
-  id: number;
+  id: string;
   level: LogLevel;
   message: string;
   context?: string;
-  vacancy_id?: number;
+  vacancy_id?: string;
   created_at: string;
 }
 
 export type LogLevel = "info" | "warning" | "error" | "debug";
 
 export interface PerformanceMetric {
-  id: number;
+  id: string;
   session_id: string;
   total_vacancies: number;
   processed_vacancies: number;
@@ -104,6 +105,7 @@ export interface SearchRequest {
         apiKey: string;
         searchSites: string[];
         globalSearch: boolean;
+        maxResults?: number;
       };
     };
     llm: {

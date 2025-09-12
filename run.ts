@@ -242,6 +242,8 @@ const commands = {
           "--allow-net",
           "--allow-read",
           "--allow-write",
+          "--host",
+          "localhost",
           "--port",
           "3000",
           "--watch-exclude=node_modules",
