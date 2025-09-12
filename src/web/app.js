@@ -31,10 +31,17 @@ const DEFAULT_USER_SETTINGS = {
 const settingsContainer = document.getElementById("settings-container");
 const startSearchButton = document.getElementById("start-search");
 const progressSection = document.querySelector(".progress-section");
-const _progressBar = document.getElementById("progress-bar");
+const overallProgressBar = document.getElementById("overall-progress-bar");
+const overallProgressText = document.getElementById("overall-progress-text");
+const currentStageElement = document.getElementById("current-stage");
 const progressInfo = document.getElementById("progress-info");
+const stopSearchButton = document.getElementById("stop-search");
 const resultsSection = document.querySelector(".results-section");
 const _resultsContainer = document.getElementById("results-container");
+
+// Multi-stage search state
+let currentSessionId = null;
+let progressUpdateInterval = null;
 
 // Load settings from localStorage or use defaults
 function loadSettings() {
@@ -306,37 +313,190 @@ function updateSettingsFromUI() {
 }
 
 // Start search process
+// Start search function
 async function startSearch() {
   const settings = updateSettingsFromUI();
   saveSettings(settings);
 
-  console.log("🚀 Starting search with settings:", settings);
+  console.log("🚀 Starting multi-stage search with settings:", settings);
 
-  // Show progress
+  // Reset UI
+  resetProgressUI();
   progressSection.style.display = "block";
   resultsSection.style.display = "none";
 
+  // Generate session ID
+  currentSessionId = Date.now().toString();
+
   try {
-    const response = await fetch("/api/search", {
+    const response = await fetch("/api/multi-stage/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         settings,
-        session_id: Date.now().toString(),
+        session_id: currentSessionId,
       }),
     });
 
     if (response.ok) {
       const result = await response.json();
-      console.log("✅ Search started:", result);
-      progressInfo.textContent =
-        `Search started! Session: ${result.session_id}`;
+      console.log("✅ Multi-stage search started:", result);
+
+      // Start progress monitoring
+      startProgressMonitoring();
+      progressInfo.textContent = `Multi-stage search started! Session: ${result.session_id}`;
+      stopSearchButton.style.display = "inline-block";
     } else {
       throw new Error("Search failed");
     }
   } catch (error) {
     console.error("❌ Search error:", error);
     progressInfo.textContent = "Search failed. Please try again.";
+  }
+}
+
+// Stop search function
+async function stopSearch() {
+  if (!currentSessionId) return;
+
+  try {
+    const response = await fetch(`/api/multi-stage/stop/${currentSessionId}`, {
+      method: "POST",
+    });
+
+    const result = await response.json();
+    console.log("🛑 Stop result:", result);
+
+    if (result.success) {
+      progressInfo.textContent = "Search stopped by user.";
+      stopProgressMonitoring();
+      stopSearchButton.style.display = "none";
+    }
+  } catch (error) {
+    console.error("❌ Stop error:", error);
+  }
+}
+
+// Reset progress UI
+function resetProgressUI() {
+  overallProgressBar.value = 0;
+  overallProgressText.textContent = "0%";
+  currentStageElement.textContent = "Preparing...";
+
+  // Reset all stage items
+  document.querySelectorAll(".stage-item").forEach(item => {
+    const statusElement = item.querySelector(".stage-status");
+    const progressFill = item.querySelector(".stage-progress-fill");
+    const detailsElement = item.querySelector(".stage-details");
+
+    statusElement.textContent = "Pending";
+    statusElement.className = "stage-status";
+    progressFill.style.width = "0%";
+
+    const stage = item.dataset.stage;
+    if (stage === "collecting") {
+      detailsElement.textContent = "Preparing to collect jobs...";
+    } else if (stage === "filtering") {
+      detailsElement.textContent = "Waiting for collection to complete...";
+    } else if (stage === "enriching") {
+      detailsElement.textContent = "Waiting for filtering to complete...";
+    }
+  });
+
+  stopSearchButton.style.display = "none";
+}
+
+// Start progress monitoring
+function startProgressMonitoring() {
+  if (progressUpdateInterval) {
+    clearInterval(progressUpdateInterval);
+  }
+
+  progressUpdateInterval = setInterval(async () => {
+    if (!currentSessionId) return;
+
+    try {
+      const response = await fetch(`/api/multi-stage/progress/${currentSessionId}`);
+      if (response.ok) {
+        const progress = await response.json();
+        updateProgressUI(progress);
+      }
+    } catch (error) {
+      console.error("❌ Progress update error:", error);
+    }
+  }, 2000); // Update every 2 seconds
+}
+
+// Stop progress monitoring
+function stopProgressMonitoring() {
+  if (progressUpdateInterval) {
+    clearInterval(progressUpdateInterval);
+    progressUpdateInterval = null;
+  }
+}
+
+// Update progress UI
+function updateProgressUI(progress) {
+  // Update overall progress
+  overallProgressBar.value = progress.overallProgress;
+  overallProgressText.textContent = `${progress.overallProgress}%`;
+
+  // Update current stage
+  const stageNames = {
+    collecting: "📥 Collection",
+    filtering: "🔍 Filtering",
+    enriching: "🤖 Enrichment",
+    completed: "✅ Completed"
+  };
+  currentStageElement.textContent = stageNames[progress.currentStage] || progress.currentStage;
+
+  // Update stage details
+  Object.entries(progress.stages).forEach(([stageName, stageProgress]) => {
+    const stageElement = document.querySelector(`[data-stage="${stageName}"]`);
+    if (!stageElement) return;
+
+    const statusElement = stageElement.querySelector(".stage-status");
+    const progressFill = stageElement.querySelector(".stage-progress-fill");
+    const detailsElement = stageElement.querySelector(".stage-details");
+
+    // Update status
+    statusElement.textContent = stageProgress.status.charAt(0).toUpperCase() + stageProgress.status.slice(1);
+    statusElement.className = `stage-status ${stageProgress.status}`;
+
+    // Update progress bar
+    progressFill.style.width = `${stageProgress.progress}%`;
+
+    // Update details
+    let detailsText = "";
+    if (stageProgress.status === "running") {
+      if (stageProgress.itemsProcessed && stageProgress.itemsTotal) {
+        detailsText = `Processing ${stageProgress.itemsProcessed}/${stageProgress.itemsTotal} items...`;
+      } else {
+        detailsText = "Running...";
+      }
+    } else if (stageProgress.status === "completed") {
+      detailsText = `Completed: ${stageProgress.itemsProcessed || 0} items processed`;
+    } else if (stageProgress.status === "failed") {
+      detailsText = `Failed: ${stageProgress.errors?.join(", ") || "Unknown error"}`;
+    } else if (stageProgress.status === "stopped") {
+      detailsText = "Stopped by user";
+    }
+
+    if (detailsText) {
+      detailsElement.textContent = detailsText;
+    }
+  });
+
+  // Handle completion
+  if (progress.isComplete) {
+    stopProgressMonitoring();
+    stopSearchButton.style.display = "none";
+
+    if (progress.currentStage === "completed") {
+      progressInfo.textContent = `✅ Search completed! Overall progress: ${progress.overallProgress}%`;
+    } else {
+      progressInfo.textContent = `🛑 Search ${progress.currentStage}. Overall progress: ${progress.overallProgress}%`;
+    }
   }
 }
 
@@ -493,6 +653,7 @@ function init() {
 
   // Bind events
   startSearchButton.addEventListener("click", startSearch);
+  stopSearchButton.addEventListener("click", stopSearch);
 
   // Auto-save settings on change
   document.addEventListener("change", () => {

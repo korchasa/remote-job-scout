@@ -139,6 +139,72 @@ async function handleRequest(request: Request): Promise<Response> {
     });
   }
 
+  // Multi-stage search endpoint
+  if (url.pathname === "/api/multi-stage/search" && request.method === "POST") {
+    try {
+      const searchRequest: SearchRequest = await request.json();
+
+      console.log("🚀 New multi-stage search request:", {
+        sessionId: searchRequest.session_id,
+        positions: searchRequest.settings.searchPositions,
+        sources: searchRequest.settings.sources.jobSites,
+      });
+
+      const response = await collectionController.startMultiStageSearch(
+        searchRequest,
+      );
+
+      return new Response(
+        JSON.stringify(response),
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    } catch (error) {
+      console.error("❌ Multi-stage search API error:", error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Invalid request",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+  }
+
+  // Multi-stage progress endpoint
+  if (url.pathname.startsWith("/api/multi-stage/progress/")) {
+    const sessionId = url.pathname.split("/").pop();
+    const progress = collectionController.getMultiStageProgress(sessionId || "");
+
+    if (progress) {
+      return new Response(
+        JSON.stringify(progress),
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    } else {
+      return new Response(JSON.stringify({ error: "Session not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // Stop multi-stage search endpoint
+  if (url.pathname.startsWith("/api/multi-stage/stop/") && request.method === "POST") {
+    const sessionId = url.pathname.split("/").pop();
+    const result = collectionController.stopMultiStageSearch(sessionId || "");
+
+    return new Response(JSON.stringify(result), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   return new Response("Not found", { status: 404 });
 }
 

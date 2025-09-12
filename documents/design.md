@@ -47,17 +47,21 @@
   - Error handling and fallback to default settings
   - Unit tests with mock localStorage
 
-### 3.2 Multi-Stage Search Orchestrator ✅ PARTIALLY IMPLEMENTED
+### 3.2 Multi-Stage Search Orchestrator ✅ FULLY IMPLEMENTED
 
 - **Purpose:** Coordinate collection, filtering, and enrichment stages.
 - **Interfaces:** Internal module APIs, WebSocket for status updates.
 - **Dependencies:** All data processing modules, database.
 - **Implementation:**
+  - `MultiStageSearchOrchestrator` for coordinating all search stages
   - `CollectionController` for search initiation & progress tracking
-  - REST API endpoints: `/api/search`, `/api/progress/{id}`, `/api/stop/{id}`,
-    `/api/stats/{id}`
+  - `FilteringService` for preliminary job filtering
+  - `EnrichmentService` for LLM data enrichment
+  - REST API endpoints: `/api/multi-stage/search`, `/api/multi-stage/progress/{id}`,
+    `/api/multi-stage/stop/{id}`, `/api/search`, `/api/progress/{id}`, `/api/stop/{id}`
   - Real-time progress monitoring with error reporting
   - Asynchronous job processing with session management
+  - Support for stopping process at any stage
 
 ### 3.3 Data Collection Module (Stage 1) ✅ IMPLEMENTED
 

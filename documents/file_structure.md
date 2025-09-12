@@ -22,6 +22,7 @@ remote-job-scout/
 ├── Dockerfile                  # Docker container configuration
 ├── run                         # Executable file for launching
 ├── run.ts                      # TypeScript CLI implementation
+├── tmp/                        # Temporary files and experimental scripts
 ├── documents/                  # Project documentation
 │   ├── design.md              # Software design specification
 │   ├── file_structure.md      # File structure (this file)
@@ -50,20 +51,36 @@ remote-job-scout/
 │   ├── my-spy.py            # Custom scraping implementation
 │   └── processing-prompt.md  # LLM processing prompts
 ├── src/                       # Application source code
-│   ├── controllers/          # Request handlers (planned)
+│   ├── controllers/          # Request handlers
+│   │   └── collectionController.ts # Job collection API controller ✅
 │   ├── database/             # Database operations (planned)
 │   ├── services/             # Application services
-│   │   └── settingsService.ts # Settings management service ✅
+│   │   ├── jobCollectionService.ts # Multi-source job collection ✅
+│   │   ├── multiStageSearchOrchestrator.ts # Multi-stage search coordinator ✅
+│   │   ├── filteringService.ts # Job filtering service ✅
+│   │   ├── enrichmentService.ts # LLM enrichment service ✅
+│   │   ├── settingsService.ts # Settings management service ✅
+│   │   └── scrapers/         # Job scraping implementations
+│   │       ├── indeed.ts    # Indeed scraper ✅
+│   │       ├── linkedin.ts  # LinkedIn scraper ✅
+│   │       └── openai-web-search.ts # OpenAI WebSearch scraper ✅
 │   ├── types/                # TypeScript type definitions
-│   │   ├── database.ts       # Database operation types
+│   │   ├── database.ts       # Database operation types ✅
+│   │   ├── scrapers.ts       # Scraper type definitions ✅
 │   │   └── settings.ts       # Settings type definitions ✅
 │   ├── utils/                # Utilities (planned)
 │   └── web/                  # Web interface components
-│       ├── app.js           # Client application logic ✅
-│       ├── index.html       # Main HTML interface ✅
-│       └── server.ts        # Web server with deno serve ✅
+│       ├── app.js           # Client application logic with multi-stage UI ✅
+│       ├── index.html       # Main HTML interface with progress visualization ✅
+│       └── server.ts        # Web server with multi-stage API endpoints ✅
 └── tests/                     # Test suite
-    └── settings_test.ts      # Settings service unit tests ✅
+    ├── collectionController_test.ts # Collection controller tests ✅
+    ├── enrichmentService_test.ts # Enrichment service tests ✅
+    ├── filteringService_test.ts # Filtering service tests ✅
+    ├── jobCollectionService_test.ts # Job collection service tests ✅
+    ├── multiStageSearchOrchestrator_test.ts # Orchestrator tests ✅
+    ├── scrapers_test.ts      # Scraper tests ✅
+    ├── settings_test.ts      # Settings service unit tests ✅
 ```
 
 ## Description of Main Components
@@ -76,23 +93,33 @@ remote-job-scout/
 - `deno.lock` - Fixed dependency versions
 - `build.ts` - Project build script
 - `run` and `run.ts` - CLI entry point with Docker-aware development commands
+- `tmp/` - Temporary directory for experimental scripts and temporary files
 - `.cursor/` - IDE-specific configuration for development environment
 
 ### Source Code (src/)
 
-- **controllers/** - Request handlers and controller logic (planned for future
-  stages)
+- **controllers/** - Request handlers and controller logic
+  - `collectionController.ts` - Multi-stage search API controller with progress tracking ✅
 - **database/** - Database operations and models (planned for Stage 2)
 - **services/** - Application business services
+  - `jobCollectionService.ts` - Multi-source job collection with parallel processing ✅
+  - `multiStageSearchOrchestrator.ts` - Coordinates collection, filtering, and enrichment stages ✅
+  - `filteringService.ts` - Preliminary job filtering by user settings ✅
+  - `enrichmentService.ts` - LLM data enrichment with OpenAI integration ✅
   - `settingsService.ts` - Complete settings management with validation ✅
+  - **scrapers/** - Job scraping implementations
+    - `indeed.ts` - Indeed job scraper with retry logic ✅
+    - `linkedin.ts` - LinkedIn job scraper with retry logic ✅
+    - `openai-web-search.ts` - OpenAI WebSearch integration for global search ✅
 - **types/** - TypeScript type definitions
-  - `database.ts` - Database operation types (prepared for future use)
+  - `database.ts` - Database operation types with multi-stage progress support ✅
+  - `scrapers.ts` - Scraper interface definitions and job post types ✅
   - `settings.ts` - Comprehensive settings type definitions ✅
 - **utils/** - Helper functions and utilities (planned for future stages)
 - **web/** - Web interface components
-  - `app.js` - Client application with dynamic UI and auto-save ✅
-  - `index.html` - Responsive HTML interface with Chota CSS ✅
-  - `server.ts` - Deno serve-compatible web server ✅
+  - `app.js` - Client application with multi-stage progress UI and real-time updates ✅
+  - `index.html` - Responsive HTML interface with stage visualization ✅
+  - `server.ts` - Deno serve-compatible web server with multi-stage API endpoints ✅
 
 ### Documentation (documents/)
 
@@ -114,7 +141,13 @@ remote-job-scout/
 
 ### Tests (tests/)
 
-- `settings_test.ts` - Comprehensive unit tests for settings service ✅
+- `collectionController_test.ts` - Collection controller unit tests ✅
+- `enrichmentService_test.ts` - LLM enrichment service unit tests ✅
+- `filteringService_test.ts` - Job filtering service unit tests ✅
+- `jobCollectionService_test.ts` - Job collection service unit tests ✅
+- `multiStageSearchOrchestrator_test.ts` - Multi-stage orchestrator unit tests ✅
+- `scrapers_test.ts` - Job scraper implementations unit tests ✅
+- `settings_test.ts` - Settings service unit tests ✅
 
 ## Architectural Principles
 
@@ -122,23 +155,45 @@ remote-job-scout/
 
 - **CLI/Commands**: Command-line interface and option parsing
 - **Services**: Business logic and application services
-- **Controllers**: Request handling and coordination (planned)
+  - Orchestrator: Multi-stage process coordination
+  - Scrapers: Job data collection from various sources
+  - Filtering: Job filtering by user criteria
+  - Enrichment: LLM data enrichment
+  - Settings: User configuration management
+- **Controllers**: Request handling and coordination
 - **Database**: Data operations (planned)
-- **Web**: Web interface and API
+- **Web**: Web interface and API with real-time progress
 - **Utils**: Helper functions (planned)
+- **Types**: TypeScript type definitions for all components
 
 ### Code Organization
 
 - TypeScript strict mode for type safety
 - Modular architecture with clear service separation
+- Multi-stage search orchestrator for process coordination
+- Abstract scraper pattern with inheritance
 - Client-side settings storage for privacy
-- REST API between browser and server
-- Unit testing with mock infrastructure
+- REST API between browser and server with real-time progress
+- Comprehensive unit testing with mock infrastructure
+- Error handling with retry logic and graceful degradation
 
 ### External Dependencies
 
 - **Docker** - Containerization with live reload and auto-restart
-- JobSpy library for job scraping reference
-- Deno runtime with modern `serve` command
-- TypeScript for development and type safety
-- Chota CSS for responsive UI components
+- **JobSpy** - Python library for job scraping reference and architecture inspiration
+- **OpenAI API** - LLM integration for job data enrichment
+- **Deno runtime** - Modern JavaScript/TypeScript runtime with built-in web server
+- **TypeScript** - Development with strict type checking and advanced types
+- **Chota CSS** - Lightweight responsive CSS framework
+- **Playwright MCP** - Browser automation for advanced scraping (planned)
+
+### Current Implementation Status
+
+- ✅ **Multi-Stage Search Process** - Complete orchestrator with progress tracking
+- ✅ **Job Collection** - Indeed, LinkedIn, OpenAI WebSearch scrapers
+- ✅ **Job Filtering** - Settings-based filtering with blacklists and whitelists
+- ✅ **LLM Enrichment** - OpenAI integration for job data enhancement
+- ✅ **Web Interface** - Real-time progress visualization with stage details
+- ✅ **API Endpoints** - RESTful API with multi-stage progress tracking
+- ✅ **Unit Tests** - 42 comprehensive tests covering all components
+- ✅ **Documentation** - Complete SRS, SDS, and architectural documentation

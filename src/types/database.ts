@@ -88,6 +88,34 @@ export type ProcessingStage =
   | "enriching" // LLM обогащение
   | "completed"; // Завершено
 
+export interface MultiStageProgress {
+  sessionId: string;
+  currentStage: ProcessingStage;
+  overallProgress: number; // 0-100%
+  stageProgress: number; // 0-100% для текущей стадии
+  stages: {
+    collecting: StageProgress;
+    filtering: StageProgress;
+    enriching: StageProgress;
+  };
+  startTime: string;
+  estimatedCompletionTime?: string;
+  isComplete: boolean;
+  canStop: boolean;
+  errors: string[];
+}
+
+export interface StageProgress {
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'stopped';
+  progress: number; // 0-100%
+  itemsProcessed: number;
+  itemsTotal: number;
+  startTime?: string;
+  endTime?: string;
+  errors: string[];
+  details?: string;
+}
+
 export interface SearchRequest {
   settings: {
     searchPositions: string[];
