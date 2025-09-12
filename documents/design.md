@@ -2,23 +2,29 @@
 
 ## 1. Introduction
 
-- **Document Purpose:** Define architectural design of remote job search and enrichment system.
-- **Scope:** Architectural description of web application for LLM-powered job search.
+- **Document Purpose:** Define architectural design of remote job search and
+  enrichment system.
+- **Scope:** Architectural description of web application for LLM-powered job
+  search.
 - **Target Audience:** Developers, architects, technical project leaders.
 
 ## 2. System Architecture
 
-- **Overall Diagram:** Web application with client-server architecture, integrated with external APIs.
-- **Reference Implementation:** Architecture based on JobSpy library principles for efficient job scraping.
+- **Overall Diagram:** Web application with client-server architecture,
+  integrated with external APIs.
+- **Reference Implementation:** Architecture based on JobSpy library principles
+  for efficient job scraping.
 - **Current Status:** ✅ Basic infrastructure and settings module implemented
   - Deno web server with REST API endpoints
   - Client application with modular architecture
   - Complete TypeScript type system
   - Unit testing with mock infrastructure
 - **Core Subsystems and Roles:**
-  - **Settings Management Module:** User settings and filters management (localStorage)
+  - **Settings Management Module:** User settings and filters management
+    (localStorage)
   - **Search Orchestrator:** Multi-stage search process coordination
-  - **Data Collection Module:** Job parsing from external sources (similar to JobSpy scrapers)
+  - **Data Collection Module:** Job parsing from external sources (similar to
+    JobSpy scrapers)
   - **Preliminary Filtering Module:** Fast filtering by user criteria
   - **LLM Processing Module:** Data enrichment with artificial intelligence
   - **Results Management Module:** Found jobs management
@@ -30,11 +36,13 @@
 ### 3.1 Settings Management Module ✅ IMPLEMENTED
 
 - **Purpose:** User search settings and filters management.
-- **Interfaces:** localStorage API for client storage, REST API for server settings transmission.
+- **Interfaces:** localStorage API for client storage, REST API for server
+  settings transmission.
 - **Dependencies:** Web browser with localStorage support, TypeScript types.
 - **Implementation:**
   - `SettingsService` class with load/save/validate methods
-  - Complete typing for all settings (UserSettings, CountryFilter, LanguageRequirement, etc.)
+  - Complete typing for all settings (UserSettings, CountryFilter,
+    LanguageRequirement, etc.)
   - Data validation and normalization on save
   - Error handling and fallback to default settings
   - Unit tests with mock localStorage
@@ -50,7 +58,8 @@
 - **Purpose:** Collect jobs from selected sources.
 - **Interfaces:** Job site APIs, OpenAI WebSearch API, Playwright MCP.
 - **Dependencies:** Source settings, external APIs.
-- **Reference:** Architecture based on JobSpy - modular structure with separate scrapers per source, proxy support, concurrent processing.
+- **Reference:** Architecture based on JobSpy - modular structure with separate
+  scrapers per source, proxy support, concurrent processing.
 
 ### 3.4 Preliminary Filtering Module (Stage 2)
 
@@ -91,10 +100,13 @@
 ## 4. Data and Storage
 
 - **Entities and Attributes:**
-  - `vacancies`: Complete job information (id, title, description, url, published_date, status, skip_reason, processed_at, created_at, collected_at, filtered_at, enriched_at, source, country, data)
+  - `vacancies`: Complete job information (id, title, description, url,
+    published_date, status, skip_reason, processed_at, created_at, collected_at,
+    filtered_at, enriched_at, source, country, data)
     - `data` field contains all additional information in YAML format
     - Includes company data, language requirements, and information sources
-- **ER Diagram:** Simplified relational model for search results and metrics storage.
+- **ER Diagram:** Simplified relational model for search results and metrics
+  storage.
 - **Settings Storage:** ✅ IMPLEMENTED
   - All user settings stored in client-side localStorage
   - Transmitted to backend in single request on search start
@@ -106,9 +118,11 @@
 
 - **Key Algorithms:**
   - Multi-stage search process with parallel processing
-  - ETA calculation algorithm: `eta_seconds = (total_vacancies - processed_vacancies) / processing_speed_per_minute * 60`
+  - ETA calculation algorithm:
+    `eta_seconds = (total_vacancies - processed_vacancies) / processing_speed_per_minute * 60`
   - LLM prompts for extracting structured data
-  - Filtering algorithm with priorities (blacklists → user filters → automatic rules)
+  - Filtering algorithm with priorities (blacklists → user filters → automatic
+    rules)
 - **Business Rules:**
   - Blacklist filtering has highest priority
   - LLM enrichment applied only to filtered jobs
@@ -140,11 +154,14 @@
 
 ## 7. Constraints and Trade-offs
 
-- **Simplified:** All user settings stored in client localStorage, transmitted in single request to backend
-- **Simplified:** Complex relational model removed - all job information stored in single table as YAML
+- **Simplified:** All user settings stored in client localStorage, transmitted
+  in single request to backend
+- **Simplified:** Complex relational model removed - all job information stored
+  in single table as YAML
 - **Simplified:** Settings not saved on server - ensures privacy and simplicity
 - **Deferred:** Multi-language interface support (first version English only)
-- **Simplified:** Synchronous processing instead of distributed for architecture simplicity
+- **Simplified:** Synchronous processing instead of distributed for architecture
+  simplicity
 - **Limited:** Support for main job sites only in first version
 - **Simplified:** Text logs instead of structured logging
 
@@ -160,6 +177,7 @@
 - **Storage:** localStorage for client settings
 - **Testing:** Deno test framework with mock localStorage
 - **Build:** Deno native build system
+- **Containerization:** Docker with live reload and auto-restart
 
 ### Architectural Decisions
 
@@ -167,6 +185,8 @@
 - **Modularity:** Separation into services, controllers, types, utilities
 - **Privacy:** All settings stored locally in browser
 - **Reliability:** Graceful error handling and validation
+- **Containerization:** Docker-based development with automatic detection and
+  fallback
 - **Extensibility:** Modular architecture for easy addition of new features
 
 ## 9. Future Extensions

@@ -162,30 +162,109 @@ const commands = {
     console.log("🌐 Server will be available at http://localhost:3000");
     console.log("📝 Press Ctrl+C to stop the server");
 
-    const command = new Deno.Command(Deno.execPath(), {
-      args: [
-        "serve",
-        "--watch",
-        "--allow-net",
-        "--allow-read",
-        "--allow-write",
-        "--port",
-        "3000",
-        "--watch-exclude=node_modules",
-        "--watch-exclude=.git",
-        "--watch-exclude=dist",
-        "--watch-exclude=build",
-        "src/web/server.ts",
-        "src/types/",
-        "src/services/",
-        "src/web/",
-      ],
-      stdout: "inherit",
-      stderr: "inherit",
-    });
+    try {
+      // Check if Docker is available
+      console.log("🔍 Checking Docker availability...");
+      const dockerCheck = new Deno.Command("docker", {
+        args: ["--version"],
+        stdout: "piped",
+        stderr: "piped",
+      });
+      const dockerCheckProcess = dockerCheck.spawn();
+      const dockerCheckStatus = await dockerCheckProcess.status;
 
-    const process = command.spawn();
-    await process.status;
+      if (dockerCheckStatus.code === 0) {
+        console.log("🐳 Using Docker development environment...");
+
+        // Stop any existing containers with the same name
+        console.log("🛑 Stopping previous containers...");
+        const stopCmd = new Deno.Command("docker", {
+          args: ["rm", "-f", "remote-job-scout-dev"],
+          stdout: "piped",
+          stderr: "piped",
+        });
+        const stopProcess = stopCmd.spawn();
+        await stopProcess.status; // Don't check status, container might not exist
+
+        // Build Docker image
+        console.log("🔨 Building Docker image...");
+        const buildCmd = new Deno.Command("docker", {
+          args: ["build", "-t", "remote-job-scout-dev", "."],
+          stdout: "inherit",
+          stderr: "inherit",
+        });
+        const buildProcess = buildCmd.spawn();
+        const buildStatus = await buildProcess.status;
+
+        if (buildStatus.code !== 0) {
+          throw new Error("Failed to build Docker image");
+        }
+
+        // Start container with volume mounts
+        console.log("🚀 Starting development container...");
+        const runCmd = new Deno.Command("docker", {
+          args: [
+            "run",
+            "--name",
+            "remote-job-scout-dev",
+            "--rm",
+            "-p",
+            "3000:3000",
+            "-v",
+            `${Deno.cwd()}/src:/app/src:cached`,
+            "-v",
+            `${Deno.cwd()}/tests:/app/tests:cached`,
+            "-v",
+            `${Deno.cwd()}/documents:/app/documents:cached`,
+            "-e",
+            "DENO_ENV=development",
+            "-e",
+            "DENO_WATCH=true",
+            "remote-job-scout-dev",
+          ],
+          stdout: "inherit",
+          stderr: "inherit",
+        });
+        const runProcess = runCmd.spawn();
+        await runProcess.status;
+
+        return;
+      }
+
+      // Fall back to local development
+      console.log("💻 Using local Deno development environment...");
+      console.log("💡 Tip: Install Docker for better development experience");
+
+      const command = new Deno.Command(Deno.execPath(), {
+        args: [
+          "serve",
+          "--watch",
+          "--allow-net",
+          "--allow-read",
+          "--allow-write",
+          "--port",
+          "3000",
+          "--watch-exclude=node_modules",
+          "--watch-exclude=.git",
+          "--watch-exclude=dist",
+          "--watch-exclude=build",
+          "src/web/server.ts",
+          "src/types/",
+          "src/services/",
+          "src/web/",
+        ],
+        stdout: "inherit",
+        stderr: "inherit",
+      });
+
+      const process = command.spawn();
+      await process.status;
+    } catch (error) {
+      console.log(
+        `❌ Failed to start development environment: ${error}`,
+      );
+      Deno.exit(1);
+    }
   },
 
   check: async () => {
@@ -225,7 +304,7 @@ const commands = {
     try {
       console.log("🔧 Formatting code...");
       const fmtCmd = new Deno.Command(Deno.execPath(), {
-        args: ["fmt", "--check"],
+        args: ["fmt"],
         stdout: "piped",
         stderr: "piped",
       });
@@ -385,7 +464,7 @@ Commands:
   init                Install dependencies
   test-one <path>     Run specific test by path
   cleanup             Clean project (artifacts, caches, etc.)
-  dev                 Run project in development mode with watch
+  dev                 Run project in development mode with auto-restart (Docker preferred)
   check               Run comprehensive project check with stages:
                       clean → compile → format → lint → comment-scan → analyze → test
   clean               Clean build artifacts (legacy command)

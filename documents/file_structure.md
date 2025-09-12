@@ -9,14 +9,17 @@ remote-job-scout/
 │   ├── debug-by-playwright.mdc # Debug configuration
 │   ├── docs-rds-sds-schema.mdc # Documentation schema
 │   ├── gods.mdc                # Project principles
+│   ├── how-to-update-docs.mdc  # Documentation update guidelines
 │   ├── main.mdc                # Main configuration
 │   ├── role-fullstack.mdc      # Role definitions
 │   ├── run-commands.mdc        # Available commands
 │   ├── tdd-rules.mdc           # TDD guidelines
 │   └── zen.mdc                 # Zen philosophy
+├── .dockerignore               # Docker build context exclusions
 ├── build.ts                    # Project build script
 ├── deno.json                   # Deno configuration with serve command
 ├── deno.lock                   # Deno dependencies lock file
+├── Dockerfile                  # Docker container configuration
 ├── run                         # Executable file for launching
 ├── run.ts                      # TypeScript CLI implementation
 ├── documents/                  # Project documentation
@@ -67,15 +70,18 @@ remote-job-scout/
 
 ### Configuration Files
 
+- `Dockerfile` - Docker container configuration with Deno runtime
+- `.dockerignore` - Docker build context exclusions for optimization
 - `deno.json` - Deno configuration with `serve --watch` command and watch paths
 - `deno.lock` - Fixed dependency versions
 - `build.ts` - Project build script
-- `run` and `run.ts` - CLI entry point with development commands
+- `run` and `run.ts` - CLI entry point with Docker-aware development commands
 - `.cursor/` - IDE-specific configuration for development environment
 
 ### Source Code (src/)
 
-- **controllers/** - Request handlers and controller logic (planned for future stages)
+- **controllers/** - Request handlers and controller logic (planned for future
+  stages)
 - **database/** - Database operations and models (planned for Stage 2)
 - **services/** - Application business services
   - `settingsService.ts` - Complete settings management with validation ✅
@@ -91,7 +97,8 @@ remote-job-scout/
 ### Documentation (documents/)
 
 - `design.md` - Software design specification with current architecture
-- `requirements.md` - Software requirements specification with implementation status
+- `requirements.md` - Software requirements specification with implementation
+  status
 - `whiteboard.md` - Current project status and development roadmap
 - `file_structure.md` - This file structure documentation
 
@@ -99,7 +106,8 @@ remote-job-scout/
 
 - **JobSpy/** - Reference implementation for job scraping
   - Complete JobSpy library with multi-platform support
-  - Integrations: Glassdoor, Indeed, LinkedIn, Google, Naukri, Bayt, BDJobs, ZipRecruiter
+  - Integrations: Glassdoor, Indeed, LinkedIn, Google, Naukri, Bayt, BDJobs,
+    ZipRecruiter
 - `JobSpy-review.md` - JobSpy library analysis and integration assessment
 - `my-spy.py` - Custom scraping implementation reference
 - `processing-prompt.md` - LLM processing prompts for job analysis
@@ -129,6 +137,7 @@ remote-job-scout/
 
 ### External Dependencies
 
+- **Docker** - Containerization with live reload and auto-restart
 - JobSpy library for job scraping reference
 - Deno runtime with modern `serve` command
 - TypeScript for development and type safety

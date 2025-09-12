@@ -1,0 +1,47 @@
+# Node.js dependencies (if any)
+node_modules/
+npm-debug.log*
+
+# Build artifacts
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation (will be mounted as volume)
+# documents/
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Logs
+*.log
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+
+# References (not needed in container)
+references/
+
+documents/
+references/
+tests/
