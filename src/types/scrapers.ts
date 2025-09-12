@@ -1,9 +1,218 @@
 /**
  * Типы и интерфейсы для системы скрапперов вакансий
- * Основаны на анализе JobSpy архитектуры
+ * Полностью основаны на JobSpy архитектуре
  */
 
+// Enums
+export enum JobType {
+  FULL_TIME = "fulltime",
+  PART_TIME = "parttime",
+  CONTRACT = "contract",
+  TEMPORARY = "temporary",
+  INTERNSHIP = "internship",
+  PER_DIEM = "perdiem",
+  NIGHTS = "nights",
+  OTHER = "other",
+  SUMMER = "summer",
+  VOLUNTEER = "volunteer",
+}
+
+export enum Country {
+  USA = "usa,us,united states",
+  CANADA = "canada",
+  UK = "uk,united kingdom",
+  GERMANY = "germany",
+  FRANCE = "france",
+  AUSTRALIA = "australia",
+  INDIA = "india",
+  BRAZIL = "brazil",
+  SPAIN = "spain",
+  ITALY = "italy",
+  NETHERLANDS = "netherlands",
+  SWEDEN = "sweden",
+  NORWAY = "norway",
+  DENMARK = "denmark",
+  FINLAND = "finland",
+  POLAND = "poland",
+  BELGIUM = "belgium",
+  AUSTRIA = "austria",
+  SWITZERLAND = "switzerland",
+  PORTUGAL = "portugal",
+  IRELAND = "ireland",
+  NEWZEALAND = "new zealand",
+  SINGAPORE = "singapore",
+  JAPAN = "japan",
+  SOUTHKOREA = "south korea",
+  CHINA = "china",
+  MEXICO = "mexico",
+  ARGENTINA = "argentina",
+  CHILE = "chile",
+  COLOMBIA = "colombia",
+  PERU = "peru",
+}
+
+export enum Site {
+  LINKEDIN = "linkedin",
+  INDEED = "indeed",
+  ZIP_RECRUITER = "zip_recruiter",
+  GLASSDOOR = "glassdoor",
+  GOOGLE = "google",
+  BAYT = "bayt",
+  NAUKRI = "naukri",
+  BDJOBS = "bdjobs",
+}
+
+export enum DescriptionFormat {
+  MARKDOWN = "markdown",
+  HTML = "html",
+  PLAIN = "plain",
+}
+
+export enum CompensationInterval {
+  YEARLY = "yearly",
+  MONTHLY = "monthly",
+  WEEKLY = "weekly",
+  DAILY = "daily",
+  HOURLY = "hourly",
+}
+
+// Interfaces and Types
+export interface Location {
+  country?: Country | string | null;
+  city?: string | null;
+  state?: string | null;
+}
+
+export interface Compensation {
+  interval?: CompensationInterval | null;
+  min_amount?: number | null;
+  max_amount?: number | null;
+  currency?: string;
+}
+
 export interface JobPost {
+  id?: string;
+  title: string;
+  company_name?: string | null;
+  job_url: string;
+  job_url_direct?: string | null;
+  location?: Location | null;
+  description?: string | null;
+  company_url?: string | null;
+  company_url_direct?: string | null;
+  job_type?: JobType[] | null;
+  compensation?: Compensation | null;
+  date_posted?: Date | null;
+  emails?: string[] | null;
+  is_remote?: boolean | null;
+  listing_type?: string | null;
+  company_industry?: string | null;
+  company_addresses?: string | null;
+  company_num_employees?: string | null;
+  company_revenue?: string | null;
+  company_description?: string | null;
+  company_logo?: string | null;
+  banner_photo_url?: string | null;
+}
+
+export interface ScraperInput {
+  site_type: Site[];
+  search_term?: string | null;
+  google_search_term?: string | null;
+  location?: string | null;
+  country?: Country | null;
+  distance?: number | null;
+  is_remote?: boolean;
+  job_type?: JobType | null;
+  easy_apply?: boolean | null;
+  offset?: number;
+  linkedin_fetch_description?: boolean;
+  linkedin_company_ids?: number[] | null;
+  description_format?: DescriptionFormat | null;
+  request_timeout?: number;
+  results_wanted?: number;
+  hours_old?: number | null;
+}
+
+export interface JobResponse {
+  jobs: JobPost[];
+}
+
+// Scraper base class
+export abstract class Scraper {
+  site: Site;
+  proxies?: string[] | string;
+  ca_cert?: string;
+  user_agent?: string;
+
+  constructor(
+    site: Site,
+    proxies?: string[] | string,
+    ca_cert?: string,
+    user_agent?: string,
+  ) {
+    this.site = site;
+    this.proxies = proxies;
+    this.ca_cert = ca_cert;
+    this.user_agent = user_agent;
+  }
+
+  abstract scrape(
+    scraper_input: ScraperInput,
+  ): JobResponse | Promise<JobResponse>;
+
+  /**
+   * Проверить доступность источника
+   */
+  checkAvailability(): Promise<boolean> {
+    return Promise.resolve(true);
+  }
+}
+
+// Domain mapping for countries - exactly like JobSpy
+const COUNTRY_DOMAIN_MAPPING: Record<Country, [string, string]> = {
+  [Country.USA]: ["www", "us"],
+  [Country.CANADA]: ["ca", "ca"],
+  [Country.UK]: ["uk", "gb"],
+  [Country.GERMANY]: ["de", "de"],
+  [Country.FRANCE]: ["fr", "fr"],
+  [Country.AUSTRALIA]: ["au", "au"],
+  [Country.INDIA]: ["in", "in"],
+  [Country.BRAZIL]: ["br", "br"],
+  [Country.SPAIN]: ["es", "es"],
+  [Country.ITALY]: ["it", "it"],
+  [Country.NETHERLANDS]: ["nl", "nl"],
+  [Country.SWEDEN]: ["se", "se"],
+  [Country.NORWAY]: ["no", "no"],
+  [Country.DENMARK]: ["dk", "dk"],
+  [Country.FINLAND]: ["fi", "fi"],
+  [Country.POLAND]: ["pl", "pl"],
+  [Country.BELGIUM]: ["be", "be"],
+  [Country.AUSTRIA]: ["at", "at"],
+  [Country.SWITZERLAND]: ["ch", "ch"],
+  [Country.PORTUGAL]: ["pt", "pt"],
+  [Country.IRELAND]: ["ie", "ie"],
+  [Country.NEWZEALAND]: ["nz", "nz"],
+  [Country.SINGAPORE]: ["sg", "sg"],
+  [Country.JAPAN]: ["jp", "jp"],
+  [Country.SOUTHKOREA]: ["kr", "kr"],
+  [Country.CHINA]: ["cn", "cn"],
+  [Country.MEXICO]: ["mx", "mx"],
+  [Country.ARGENTINA]: ["ar", "ar"],
+  [Country.CHILE]: ["cl", "cl"],
+  [Country.COLOMBIA]: ["co", "co"],
+  [Country.PERU]: ["pe", "pe"],
+};
+
+// Helper function to get domain mapping - JobSpy compatible
+export function getCountryDomain(country: Country): [string, string] {
+  const mapping = COUNTRY_DOMAIN_MAPPING[country] || ["www", "us"];
+  // Return country code in uppercase to match JobSpy indeed_domain_value
+  return [mapping[0], mapping[1].toUpperCase()];
+}
+
+// Legacy types for backward compatibility
+export interface LegacyJobPost {
   id?: string;
   title: string;
   company: string;
@@ -18,149 +227,10 @@ export interface JobPost {
   country?: string;
 }
 
-export interface ScraperInput {
-  search_term: string;
-  location?: string;
-  country?: string;
-  distance?: number;
-  job_type?: string;
-  is_remote?: boolean;
-  hours_old?: number;
-  results_wanted?: number;
-}
-
-export interface ScraperResponse {
+export interface LegacyScraperResponse {
   success: boolean;
-  jobs: JobPost[];
+  jobs: LegacyJobPost[];
   total_found: number;
   errors: string[];
   source: string;
-}
-
-export interface ScraperConfig {
-  max_retries: number;
-  retry_delay_ms: number;
-  timeout_ms: number;
-  max_results_per_request: number;
-  rate_limit_delay_ms: number;
-}
-
-/**
- * Абстрактный базовый класс для всех скрапперов
- * Реализует общую логику retry, rate limiting и обработки ошибок
- */
-export abstract class BaseScraper {
-  protected config: ScraperConfig;
-
-  constructor(config: Partial<ScraperConfig> = {}) {
-    this.config = {
-      max_retries: 3,
-      retry_delay_ms: 1000,
-      timeout_ms: 30000,
-      max_results_per_request: 50,
-      rate_limit_delay_ms: 2000,
-      ...config,
-    };
-  }
-
-  /**
-   * Основной метод для скраппинга вакансий
-   */
-  abstract scrape(input: ScraperInput): Promise<ScraperResponse>;
-
-  /**
-   * Получить название источника
-   */
-  abstract getSourceName(): string;
-
-  /**
-   * Проверить доступность источника
-   */
-  abstract checkAvailability(): Promise<boolean>;
-
-  /**
-   * Реализация retry логики с exponential backoff
-   */
-  protected async withRetry<T>(
-    operation: () => Promise<T>,
-    context: string,
-  ): Promise<T> {
-    let lastError: Error;
-
-    for (let attempt = 1; attempt <= this.config.max_retries; attempt++) {
-      try {
-        return await operation();
-      } catch (error) {
-        lastError = error as Error;
-        console.warn(
-          `⚠️ ${this.getSourceName()} ${context} failed (attempt ${attempt}/${this.config.max_retries}):`,
-          lastError.message,
-        );
-
-        if (attempt < this.config.max_retries) {
-          const delay = this.config.retry_delay_ms * Math.pow(2, attempt - 1);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-
-    throw lastError!;
-  }
-
-  /**
-   * Задержка для соблюдения rate limits
-   */
-  protected async rateLimitDelay(): Promise<void> {
-    await new Promise((resolve) =>
-      setTimeout(resolve, this.config.rate_limit_delay_ms)
-    );
-  }
-}
-
-/**
- * Фабрика для создания скрапперов
- */
-export interface ScraperFactory {
-  createScraper(source: string, config?: Partial<ScraperConfig>): BaseScraper;
-  getSupportedSources(): string[];
-}
-
-/**
- * Конфигурация для OpenAI WebSearch API
- */
-export interface OpenAIWebSearchConfig {
-  apiKey: string;
-  model?: string;
-  searchSites?: string[];
-  globalSearch?: boolean;
-  maxResults?: number;
-}
-
-/**
- * Конфигурация для источников в SearchRequest
- */
-export interface OpenAISearchSource {
-  apiKey: string;
-  searchSites: string[];
-  globalSearch: boolean;
-  maxResults?: number;
-}
-
-/**
- * Результаты поиска через OpenAI WebSearch
- */
-export interface OpenAISearchResult {
-  title: string;
-  url: string;
-  snippet: string;
-  published_date?: string;
-}
-
-/**
- * Ответ от OpenAI WebSearch API
- */
-export interface OpenAIWebSearchResponse {
-  results: OpenAISearchResult[];
-  total_found: number;
-  search_query: string;
 }

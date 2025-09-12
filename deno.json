@@ -7,7 +7,8 @@
     "react": "https://esm.sh/react@18.2.0",
     "react-dom": "https://esm.sh/react-dom@18.2.0",
     "chota": "https://esm.sh/chota@0.9.2",
-    "tailwindcss": "npm:tailwindcss@^4.1.13"
+    "tailwindcss": "npm:tailwindcss@^4.1.13",
+    "yaml": "https://esm.sh/yaml@2.4.5"
   },
   "tasks": {
     "dev": "deno serve --watch --allow-net --allow-read --allow-write --port 3000 --watch-exclude=node_modules --watch-exclude=.git --watch-exclude=dist --watch-exclude=build src/web/server.ts src/types/ src/services/ src/web/",

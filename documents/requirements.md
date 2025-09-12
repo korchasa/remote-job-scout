@@ -59,9 +59,9 @@
 
 ### 3.3 FR-3: Job Data Collection (Stage 1) ✅ FULLY IMPLEMENTED
 
-- **Description:** System collects jobs from selected sources.
-- **Use Case:** System gathers new jobs by user positions.
-- **Implementation Status:** All acceptance criteria fully implemented
+- **Description:** System collects jobs from selected sources using advanced APIs.
+- **Use Case:** System gathers new jobs by user positions with modern scraping methods.
+- **Implementation Status:** All acceptance criteria fully implemented with GraphQL integration
 - **Acceptance Criteria:**
   1. ✅ Use only selected sources (Indeed, LinkedIn, OpenAI WebSearch)
   2. ✅ Apply user positions for search (parallel processing)
@@ -70,6 +70,9 @@
   5. ✅ Display progress by sources (real-time API endpoints)
   6. ✅ Save basic job information (Vacancy entity with JSON data)
   7. ✅ Log errors (comprehensive error handling & retry logic)
+  8. ✅ Implement GraphQL API integration for Indeed (JobSpy-based architecture)
+  9. ✅ Add YAML processing utilities for data serialization
+  10. ✅ Create integration tests for real API validation
 
 ### 3.4 FR-4: Preliminary Filtering (Stage 2)
 
@@ -216,8 +219,8 @@ System considers JobSpy library experience and architecture
   filters)
 - ✅ **FR-2 (Multi-Stage Search Process):** Fully implemented (orchestrator,
   progress tracking, stop functionality)
-- ✅ **FR-3 (Job Data Collection):** Fully implemented (scrapers, API
-  integration, progress tracking)
+- ✅ **FR-3 (Job Data Collection):** Fully implemented (GraphQL scrapers, API
+  integration, progress tracking, YAML utilities, integration tests)
 - ✅ **FR-6 (Job Management):** Fully implemented (modern job cards, modals,
   navigation, company details)
 - ✅ **FR-9 (Dev Application Launch):** Docker dev-containers with auto-restart
@@ -247,11 +250,13 @@ System considers JobSpy library experience and architecture
 
 - ✅ **Unit Tests:** Comprehensive coverage for scrapers, services, controllers,
   orchestrator, filtering, enrichment (42 tests total)
-- ✅ **Integration Tests:** API endpoints testing with mock responses
-- ✅ **Error Handling Tests:** Retry logic, rate limiting, failure scenarios
+- ✅ **Integration Tests:** Real API testing with Indeed GraphQL endpoints,
+  comprehensive scraper validation, mock responses for API endpoints
+- ✅ **Error Handling Tests:** Retry logic, rate limiting, failure scenarios,
+  GraphQL API error handling
 - ✅ **Code Quality:** Passes all checks (lint, fmt, compile)
-- ✅ **Type Safety:** Full TypeScript strict mode compliance
-- ✅ **Documentation:** Architecture and requirements fully documented
+- ✅ **Type Safety:** Full TypeScript strict mode compliance, JobSpy-based types
+- ✅ **Documentation:** Architecture, requirements, and API integration documented
 
 ## 7. Acceptance Criteria
 

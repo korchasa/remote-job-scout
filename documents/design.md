@@ -66,18 +66,21 @@
 
 ### 3.3 Data Collection Module (Stage 1) ✅ IMPLEMENTED
 
-- **Purpose:** Collect jobs from selected sources.
-- **Interfaces:** Job site APIs, OpenAI WebSearch API, Playwright MCP.
-- **Dependencies:** Source settings, external APIs.
+- **Purpose:** Collect jobs from selected sources using advanced APIs.
+- **Interfaces:** Job site APIs, GraphQL endpoints, OpenAI WebSearch API, Playwright MCP.
+- **Dependencies:** Source settings, external APIs, YAML utilities.
 - **Reference:** Architecture based on JobSpy - modular structure with separate
-  scrapers per source, proxy support, concurrent processing.
+  scrapers per source, GraphQL API integration, proxy support, concurrent processing.
 - **Implementation:**
   - `BaseScraper` abstract class with retry logic & rate limiting
-  - `IndeedScraper` & `LinkedInScraper` for job site parsing
+  - `IndeedScraper` with GraphQL API integration (JobSpy-compatible)
+  - `LinkedInScraper` with advanced browser automation
   - `OpenAIWebSearchScraper` for global search via AI
   - `JobCollectionService` for parallel processing coordination
   - `CollectionController` for API endpoint management
+  - `yamlDump` utility for data serialization
   - Comprehensive error handling & graceful degradation
+  - Integration tests for real API validation
 
 ### 3.4 Preliminary Filtering Module (Stage 2)
 
@@ -213,9 +216,10 @@
 - **Testing:** Deno test framework with comprehensive unit tests
 - **Build:** Deno native build system
 - **Containerization:** Docker with live reload and auto-restart
-- **Scraping:** Regex-based HTML parsing, API integration
-- **External APIs:** OpenAI WebSearch, job site scraping
-- **Error Handling:** Retry logic, exponential backoff, rate limiting
+- **Scraping:** GraphQL API integration, regex-based HTML parsing, API integration
+- **External APIs:** OpenAI WebSearch, Indeed GraphQL API, job site scraping
+- **Data Processing:** YAML serialization utilities, flow-style array formatting
+- **Error Handling:** Retry logic, exponential backoff, rate limiting, GraphQL error handling
 
 ### Architectural Decisions
 

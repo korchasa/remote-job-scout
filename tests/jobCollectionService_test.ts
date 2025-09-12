@@ -39,38 +39,54 @@ Deno.test("JobCollectionService - stop collection", () => {
 });
 
 Deno.test("JobCollectionService - mock collection request", async () => {
-  const service = new JobCollectionService();
+  // Mock fetch to avoid real API calls
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = () =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          data: {
+            jobSearch: {
+              pageInfo: { nextCursor: null },
+              results: [],
+            },
+          },
+        }),
+        { status: 200 },
+      ),
+    );
 
-  const mockRequest: SearchRequest = {
-    session_id: "test-session",
-    settings: {
-      searchPositions: ["Software Developer"],
-      filters: {
-        blacklistedCompanies: [],
-        blacklistedWordsTitle: [],
-        blacklistedWordsDescription: [],
-        countries: [],
-        languages: [],
-      },
-      sources: {
-        jobSites: ["indeed"], // Only test with Indeed for simplicity
-      },
-      llm: {
-        enrichmentInstructions: [],
-        processingRules: [],
-      },
-    },
-  };
-
-  // Note: This test would require mocking the scrapers
-  // In a real scenario, we'd use dependency injection to mock scrapers
   try {
+    const service = new JobCollectionService();
+
+    const mockRequest: SearchRequest = {
+      session_id: "test-session",
+      settings: {
+        searchPositions: ["Software Developer"],
+        filters: {
+          blacklistedCompanies: [],
+          blacklistedWordsTitle: [],
+          blacklistedWordsDescription: [],
+          countries: [],
+          languages: [],
+        },
+        sources: {
+          jobSites: ["indeed"], // Only test with Indeed for simplicity
+        },
+        llm: {
+          enrichmentInstructions: [],
+          processingRules: [],
+        },
+      },
+    };
+
     const result = await service.collectJobs(mockRequest);
     assertExists(result);
     assertEquals(result.sessionId, "test-session");
-  } catch (error) {
-    // Expected to fail without proper mocking
-    assertExists(error);
+    assertEquals(result.totalCollected, 0); // No jobs in mock response
+  } finally {
+    // Restore original fetch
+    globalThis.fetch = originalFetch;
   }
 });
 

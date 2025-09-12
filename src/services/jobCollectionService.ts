@@ -5,10 +5,11 @@
 
 import { SearchRequest, Vacancy } from "../types/database.ts";
 import {
-  BaseScraper,
   JobPost,
+  JobResponse,
+  Scraper,
   ScraperInput,
-  ScraperResponse,
+  Site,
 } from "../types/scrapers.ts";
 import { IndeedScraper } from "./scrapers/indeed.ts";
 import { LinkedInScraper } from "./scrapers/linkedin.ts";
@@ -34,7 +35,7 @@ export interface CollectionProgress {
 }
 
 export class JobCollectionService {
-  private scrapers: Map<string, BaseScraper> = new Map();
+  private scrapers: Map<string, Scraper> = new Map();
   private openaiScraper?: OpenAIWebSearchScraper;
   private activeSessions: Map<string, CollectionProgress> = new Map();
 
@@ -247,27 +248,45 @@ export class JobCollectionService {
     // Обрабатываем каждую позицию
     for (const position of settings.searchPositions) {
       const input: ScraperInput = {
+        site_type: [Site.INDEED], // Пока только Indeed
         search_term: position,
-        location: settings.filters.countries.length > 0
+        location: (settings.filters?.countries &&
+            Array.isArray(settings.filters.countries) &&
+            settings.filters.countries.length > 0)
           ? settings.filters.countries[0].name
           : undefined,
         is_remote: true, // Фокусируемся на remote вакансиях
         results_wanted: 25, // Ограничиваем для тестирования
       };
 
-      const response: ScraperResponse = await scraper.scrape(input);
+      const response: JobResponse = await scraper.scrape(input);
 
-      if (!response.success) {
+      if (response.jobs.length === 0) {
         console.warn(
-          `⚠️ ${source} partial failure for ${position}:`,
-          response.errors,
+          `⚠️ ${source} no jobs found for ${position}`,
         );
+      }
+
+      // Проверяем, что response.jobs является массивом
+      if (!response.jobs || !Array.isArray(response.jobs)) {
+        console.error(
+          `❌ ${source} returned invalid jobs data for ${position}:`,
+          response.jobs,
+        );
+        continue;
       }
 
       // Конвертируем JobPost в Vacancy
       for (const job of response.jobs) {
-        const vacancy = this.convertJobToVacancy(job, sessionId);
-        vacancies.push(vacancy);
+        if (job && typeof job === "object") {
+          const vacancy = this.convertJobToVacancy(job, sessionId);
+          vacancies.push(vacancy);
+        } else {
+          console.warn(
+            `⚠️ ${source} returned invalid job object for ${position}:`,
+            job,
+          );
+        }
       }
 
       // Небольшая задержка между запросами
@@ -292,6 +311,7 @@ export class JobCollectionService {
     const combinedQuery = settings.searchPositions.join(" OR ");
 
     const input: ScraperInput = {
+      site_type: [Site.GOOGLE], // OpenAI web search
       search_term: combinedQuery,
       is_remote: true,
       results_wanted: settings.sources.openaiWebSearch.maxResults || 50,
@@ -299,8 +319,8 @@ export class JobCollectionService {
 
     const response = await this.openaiScraper.scrape(input);
 
-    if (!response.success) {
-      throw new Error(`OpenAI WebSearch failed: ${response.errors.join(", ")}`);
+    if (!response.jobs || response.jobs.length === 0) {
+      throw new Error(`OpenAI WebSearch returned no jobs`);
     }
 
     return response.jobs.map((job) => this.convertJobToVacancy(job, sessionId));
@@ -313,21 +333,24 @@ export class JobCollectionService {
     return {
       id: crypto.randomUUID(),
       title: job.title,
-      description: job.description,
-      url: job.url,
-      published_date: job.date_posted,
+      description: job.description || "",
+      url: job.job_url,
+      published_date: job.date_posted
+        ? job.date_posted.toISOString()
+        : undefined,
       status: "collected",
       created_at: new Date().toISOString(),
       collected_at: new Date().toISOString(),
-      source: job.source,
-      country: job.country,
-      // data будет содержать дополнительную информацию в YAML формате
+      source: "indeed", // Default source
+      country: job.location?.country || undefined,
+      // data будет содержать дополнительную информацию в JSON формате
       data: JSON.stringify({
-        company: job.company,
+        company: job.company_name,
         location: job.location,
         is_remote: job.is_remote,
         job_type: job.job_type,
-        salary: job.salary,
+        compensation: job.compensation,
+        emails: job.emails,
       }),
     };
   }

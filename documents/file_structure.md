@@ -118,7 +118,9 @@ remote-job-scout/
     ✅
   - `scrapers.ts` - Scraper interface definitions and job post types ✅
   - `settings.ts` - Comprehensive settings type definitions ✅
-- **utils/** - Helper functions and utilities (planned for future stages)
+- **utils/** - Helper functions and utilities ✅
+  - `index.ts` - Utilities export
+  - `utils.ts` - YAML processing utilities with flow-style formatting ✅
 - **web/** - Modern web interface components
   - `app.js` - Client application with modern UI, theme switching, and real-time
     updates ✅
@@ -156,6 +158,7 @@ remote-job-scout/
   ✅
 - `scrapers_test.ts` - Job scraper implementations unit tests ✅
 - `settings_test.ts` - Settings service unit tests ✅
+- `integration_scrapers_test.ts` - Real API integration tests for Indeed GraphQL ✅
 
 ## Architectural Principles
 
@@ -171,7 +174,7 @@ remote-job-scout/
 - **Controllers**: Request handling and coordination
 - **Database**: Data operations (planned)
 - **Web**: Web interface and API with real-time progress
-- **Utils**: Helper functions (planned)
+- **Utils**: YAML processing utilities with flow-style formatting
 - **Types**: TypeScript type definitions for all components
 
 ### Code Organization
@@ -197,12 +200,13 @@ remote-job-scout/
 - **Tailwind CSS v4 + Flowbite** - Modern utility-first CSS framework with
   professional UI components
 - **Playwright MCP** - Browser automation for advanced scraping (planned)
+- **YAML** - Data serialization with flow-style array formatting for compact output
 
 ### Current Implementation Status
 
 - ✅ **Multi-Stage Search Process** - Complete orchestrator with progress
   tracking
-- ✅ **Job Collection** - Indeed, LinkedIn, OpenAI WebSearch scrapers
+- ✅ **Job Collection** - Indeed (GraphQL API), LinkedIn, OpenAI WebSearch scrapers
 - ✅ **Job Filtering** - Settings-based filtering with blacklists and whitelists
 - ✅ **LLM Enrichment** - OpenAI integration for job data enhancement
 - ✅ **Web Interface** - Real-time progress visualization with stage details

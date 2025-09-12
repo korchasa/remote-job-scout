@@ -5,32 +5,29 @@
  */
 
 import {
-  BaseScraper,
   JobPost,
+  JobResponse,
+  Scraper,
   ScraperInput,
-  ScraperResponse,
+  Site,
 } from "../../types/scrapers.ts";
 
-export class LinkedInScraper extends BaseScraper {
+export class LinkedInScraper extends Scraper {
   private readonly baseUrl = "https://www.linkedin.com";
 
   constructor(
-    config: Partial<import("../../types/scrapers.ts").ScraperConfig> = {},
+    proxies?: string[] | string,
+    ca_cert?: string,
+    user_agent?: string,
   ) {
-    super({
-      max_retries: 5, // LinkedIn требует больше попыток
-      retry_delay_ms: 3000, // Длиннее задержки
-      timeout_ms: 45000, // Длиннее таймаут
-      rate_limit_delay_ms: 5000, // Строгие rate limits
-      ...config,
-    });
+    super(Site.LINKEDIN, proxies, ca_cert, user_agent);
   }
 
   getSourceName(): string {
     return "LinkedIn";
   }
 
-  async checkAvailability(): Promise<boolean> {
+  override async checkAvailability(): Promise<boolean> {
     try {
       const response = await fetch(`${this.baseUrl}/`, {
         method: "HEAD",
@@ -46,7 +43,7 @@ export class LinkedInScraper extends BaseScraper {
     }
   }
 
-  async scrape(input: ScraperInput): Promise<ScraperResponse> {
+  async scrape(input: ScraperInput): Promise<JobResponse> {
     const errors: string[] = [];
     const jobs: JobPost[] = [];
 
@@ -56,7 +53,7 @@ export class LinkedInScraper extends BaseScraper {
       );
 
       const searchParams = new URLSearchParams({
-        keywords: input.search_term,
+        keywords: input.search_term || "",
         location: input.location || "",
       });
 
@@ -80,11 +77,7 @@ export class LinkedInScraper extends BaseScraper {
       const searchUrl =
         `${this.baseUrl}/jobs/search/?${searchParams.toString()}`;
 
-      const response = await this.withRetry(
-        () => this.fetchJobs(searchUrl, input),
-        "job search",
-      );
-
+      const response = await this.fetchJobs(searchUrl, input);
       jobs.push(...response.jobs);
     } catch (error) {
       errors.push(`LinkedIn scraping failed: ${(error as Error).message}`);
@@ -92,11 +85,7 @@ export class LinkedInScraper extends BaseScraper {
     }
 
     return {
-      success: errors.length === 0,
       jobs,
-      total_found: jobs.length,
-      errors,
-      source: this.getSourceName(),
     };
   }
 
@@ -125,7 +114,7 @@ export class LinkedInScraper extends BaseScraper {
 
     const response = await fetch(url, {
       headers,
-      signal: AbortSignal.timeout(this.config.timeout_ms),
+      signal: AbortSignal.timeout(30000), // 30 second timeout
     });
 
     if (!response.ok) {
@@ -164,7 +153,7 @@ export class LinkedInScraper extends BaseScraper {
 
     return jobs.slice(
       0,
-      input.results_wanted || this.config.max_results_per_request,
+      input.results_wanted || 50,
     );
   }
 
@@ -213,12 +202,14 @@ export class LinkedInScraper extends BaseScraper {
     return {
       id: jobId,
       title,
-      company,
-      location,
+      company_name: company,
+      job_url: url,
+      location: {
+        city: location.split(",")[0]?.trim(),
+        state: location.split(",")[1]?.trim(),
+      },
       description,
-      url,
-      date_posted,
-      source: this.getSourceName(),
+      date_posted: date_posted ? new Date(date_posted) : null,
       is_remote: location.toLowerCase().includes("remote") ||
         description.toLowerCase().includes("remote"),
     };

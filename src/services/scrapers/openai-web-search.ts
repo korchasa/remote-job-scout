@@ -3,14 +3,29 @@
  * Используется для глобального поиска вакансий через AI
  */
 
-import {
-  JobPost,
-  OpenAISearchResult,
-  OpenAIWebSearchConfig,
-  OpenAIWebSearchResponse,
-  ScraperInput,
-  ScraperResponse,
-} from "../../types/scrapers.ts";
+import { JobPost, JobResponse, ScraperInput } from "../../types/scrapers.ts";
+
+// Legacy types for OpenAI integration
+interface OpenAISearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+  published_date?: string;
+}
+
+interface OpenAIWebSearchConfig {
+  apiKey: string;
+  model?: string;
+  searchSites?: string[];
+  globalSearch?: boolean;
+  maxResults?: number;
+}
+
+interface OpenAIWebSearchResponse {
+  results: OpenAISearchResult[];
+  total_found: number;
+  search_query: string;
+}
 
 export class OpenAIWebSearchScraper {
   private config: OpenAIWebSearchConfig;
@@ -45,7 +60,7 @@ export class OpenAIWebSearchScraper {
     }
   }
 
-  async scrape(input: ScraperInput): Promise<ScraperResponse> {
+  async scrape(input: ScraperInput): Promise<JobResponse> {
     const errors: string[] = [];
     const jobs: JobPost[] = [];
 
@@ -68,11 +83,7 @@ export class OpenAIWebSearchScraper {
     }
 
     return {
-      success: errors.length === 0,
       jobs,
-      total_found: jobs.length,
-      errors,
-      source: this.getSourceName(),
     };
   }
 
@@ -167,7 +178,7 @@ export class OpenAIWebSearchScraper {
   }
 
   private buildSearchQuery(input: ScraperInput): string {
-    let query = input.search_term;
+    let query = input.search_term || "";
 
     if (input.location) {
       query += ` ${input.location}`;
@@ -236,12 +247,17 @@ export class OpenAIWebSearchScraper {
 
       return Promise.resolve({
         title,
-        company,
-        location,
+        company_name: company,
+        job_url: result.url,
+        location: {
+          city: location.includes(",")
+            ? location.split(",")[0]?.trim()
+            : location,
+        },
         description,
-        url: result.url,
-        date_posted: result.published_date,
-        source: this.getSourceName(),
+        date_posted: result.published_date
+          ? new Date(result.published_date)
+          : null,
         is_remote: result.snippet.toLowerCase().includes("remote") ||
           result.title.toLowerCase().includes("remote"),
       });

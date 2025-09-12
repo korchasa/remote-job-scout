@@ -15,15 +15,15 @@ const args = parse(Deno.args);
 const command = args._[0] as string;
 
 // Helper function to run command and check status
-async function runCommand(
+async function runDenoCommand(
   cmd: string[],
   description: string,
 ): Promise<boolean> {
   console.log(`🔧 ${description}...`);
   const command = new Deno.Command(Deno.execPath(), {
     args: cmd,
-    stdout: "piped",
-    stderr: "piped",
+    stdout: "inherit",
+    stderr: "inherit",
   });
   const process = command.spawn();
   const status = await process.status;
@@ -35,28 +35,6 @@ async function runCommand(
     console.log(`❌ ${description} failed`);
     return false;
   }
-}
-
-// Helper function to read all data from a readable stream
-async function readAllStream(
-  stream: ReadableStream<Uint8Array>,
-): Promise<string> {
-  const reader = stream.getReader();
-  const chunks: Uint8Array[] = [];
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  return new TextDecoder().decode(
-    new Uint8Array(await new Blob(chunks).arrayBuffer()),
-  );
 }
 
 // Comment scanning functions
@@ -119,8 +97,8 @@ async function scanComments(): Promise<ScanResult[]> {
 const commands = {
   init: async () => {
     console.log("📦 Installing dependencies...");
-    const success = await runCommand(
-      ["deno", "install"],
+    const success = await runDenoCommand(
+      ["install"],
       "Dependencies installation",
     );
     if (success) {
@@ -140,9 +118,8 @@ const commands = {
     }
 
     console.log(`🧪 Running specific test: ${testPath}`);
-    const success = await runCommand(
+    const success = await runDenoCommand(
       [
-        "deno",
         "test",
         "--allow-read",
         "--allow-net",
@@ -303,35 +280,16 @@ const commands = {
       console.log("🔧 Compiling TypeScript...");
       const compileCmd = new Deno.Command(Deno.execPath(), {
         args: ["check"],
-        stdout: "piped",
-        stderr: "piped",
+        stdout: "inherit",
+        stderr: "inherit",
       });
       const compileProcess = compileCmd.spawn();
-
-      // Read all output from both stdout and stderr
-      const [stdout, stderr] = await Promise.all([
-        readAllStream(compileProcess.stdout),
-        readAllStream(compileProcess.stderr),
-      ]);
       const compileStatus = await compileProcess.status;
 
       if (compileStatus.code === 0) {
         console.log("✅ Compiling TypeScript completed successfully");
       } else {
         console.log("❌ Compiling TypeScript failed");
-
-        // Output stderr if there are errors
-        if (stderr) {
-          console.log("\n🔍 TypeScript compilation errors:");
-          console.log(stderr);
-        }
-
-        // Also output stdout if there's any
-        if (stdout && stdout.trim()) {
-          console.log("\n🔍 TypeScript compilation output:");
-          console.log(stdout);
-        }
-
         Deno.exit(1);
       }
     } catch (error) {
@@ -344,35 +302,16 @@ const commands = {
       console.log("🔧 Formatting code...");
       const fmtCmd = new Deno.Command(Deno.execPath(), {
         args: ["fmt"],
-        stdout: "piped",
-        stderr: "piped",
+        stdout: "inherit",
+        stderr: "inherit",
       });
       const fmtProcess = fmtCmd.spawn();
-
-      // Read all output from both stdout and stderr
-      const [stdout, stderr] = await Promise.all([
-        readAllStream(fmtProcess.stdout),
-        readAllStream(fmtProcess.stderr),
-      ]);
       const fmtStatus = await fmtProcess.status;
 
       if (fmtStatus.code === 0) {
         console.log("✅ Formatting code completed successfully");
       } else {
         console.log("❌ Formatting code failed");
-
-        // Output stderr if there are errors
-        if (stderr) {
-          console.log("\n🔍 Formatting errors:");
-          console.log(stderr);
-        }
-
-        // Also output stdout if there's any
-        if (stdout && stdout.trim()) {
-          console.log("\n🔍 Formatting output:");
-          console.log(stdout);
-        }
-
         Deno.exit(1);
       }
     } catch (error) {
@@ -385,35 +324,16 @@ const commands = {
       console.log("🔧 Linting code...");
       const lintCmd = new Deno.Command(Deno.execPath(), {
         args: ["lint"],
-        stdout: "piped",
-        stderr: "piped",
+        stdout: "inherit",
+        stderr: "inherit",
       });
       const lintProcess = lintCmd.spawn();
-
-      // Read all output from both stdout and stderr
-      const [stdout, stderr] = await Promise.all([
-        readAllStream(lintProcess.stdout),
-        readAllStream(lintProcess.stderr),
-      ]);
       const lintStatus = await lintProcess.status;
 
       if (lintStatus.code === 0) {
         console.log("✅ Linting code completed successfully");
       } else {
         console.log("❌ Linting code failed");
-
-        // Output stderr if there are errors
-        if (stderr) {
-          console.log("\n🔍 Linting errors:");
-          console.log(stderr);
-        }
-
-        // Also output stdout if there's any
-        if (stdout && stdout.trim()) {
-          console.log("\n🔍 Linting output:");
-          console.log(stdout);
-        }
-
         Deno.exit(1);
       }
     } catch (error) {
@@ -461,36 +381,24 @@ const commands = {
     try {
       console.log("🔧 Running tests...");
       const testCmd = new Deno.Command(Deno.execPath(), {
-        args: ["test", "--allow-read", "--allow-net", "--allow-write"],
-        stdout: "piped",
-        stderr: "piped",
+        args: [
+          "test",
+          "--allow-read",
+          "--allow-net",
+          "--allow-write",
+          "--quiet",
+          "--parallel",
+        ],
+        stdout: "inherit",
+        stderr: "inherit",
       });
       const testProcess = testCmd.spawn();
-
-      // Read all output from both stdout and stderr
-      const [stdout, stderr] = await Promise.all([
-        readAllStream(testProcess.stdout),
-        readAllStream(testProcess.stderr),
-      ]);
       const testStatus = await testProcess.status;
 
       if (testStatus.code === 0) {
         console.log("✅ Running tests completed successfully");
       } else {
         console.log("❌ Running tests failed");
-
-        // Output stderr if there are errors
-        if (stderr) {
-          console.log("\n🔍 Test errors:");
-          console.log(stderr);
-        }
-
-        // Also output stdout if there's any
-        if (stdout && stdout.trim()) {
-          console.log("\n🔍 Test output:");
-          console.log(stdout);
-        }
-
         Deno.exit(1);
       }
     } catch (error) {
@@ -517,9 +425,8 @@ const commands = {
     const testId = args._[1] as string;
     if (testId) {
       console.log(`🧪 Running test: ${testId}`);
-      const success = await runCommand(
+      const success = await runDenoCommand(
         [
-          "deno",
           "test",
           "--allow-read",
           "--allow-net",
@@ -533,8 +440,8 @@ const commands = {
       }
     } else {
       console.log("🧪 Running all tests...");
-      const success = await runCommand(
-        ["deno", "test", "--allow-read", "--allow-net", "--allow-write"],
+      const success = await runDenoCommand(
+        ["test", "--allow-read", "--allow-net", "--allow-write"],
         "All tests",
       );
       if (!success) {
