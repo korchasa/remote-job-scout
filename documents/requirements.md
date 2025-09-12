@@ -1,245 +1,230 @@
-# Спецификация программного обеспечения (SRS)
+# Software Requirements Specification (SRS)
 
-## 1. Введение
+## 1. Introduction
 
-- **Назначение документа:** Определение требований к системе поиска и обогащения
-  удаленных вакансий с использованием LLM для анализа и фильтрации.
-- **Область применения:** Веб-приложение для поиска и анализа удаленных вакансий
-  для разработчиков.
-- **Целевая аудитория:** Разработчики, ищущие удаленную работу, менеджеры
-  проектов, технические директора.
-- **Определения и сокращения:**
-  - LLM: Large Language Model (Большая языковая модель)
+- **Document Purpose:** Define requirements for remote job search and enrichment system using LLM for analysis and filtering.
+- **Scope:** Web application for searching and analyzing remote developer jobs.
+- **Target Audience:** Developers seeking remote work, project managers, technical directors.
+- **Definitions and Abbreviations:**
+  - LLM: Large Language Model
   - API: Application Programming Interface
-  - SQLite: Легковесная реляционная база данных
-  - localStorage: Локальное хранилище браузера
+  - SQLite: Lightweight relational database
+  - localStorage: Browser local storage
 
-## 2. Общее описание
+## 2. Overall Description
 
-- **Контекст системы:** Веб-приложение, предоставляющее персонализированный
-  поиск удаленных вакансий с использованием искусственного интеллекта для
-  анализа и обогащения данных. Система интегрируется с внешними API и работает
-  автономно в браузере пользователя.
-- **Предположения и ограничения:**
-  - Доступ к интернету для поиска вакансий
-  - Доступ к OpenAI API для обогащения данных
-  - Современный веб-браузер с поддержкой localStorage
-  - Ограничения на использование внешних API
-- **Предположения:**
-  - Пользователь имеет базовые навыки работы с веб-интерфейсами
-  - Все источники вакансий доступны и стабильны
+- **System Context:** Web application providing personalized remote job search with AI for data analysis and enrichment. Integrates with external APIs, runs autonomously in user browser.
+- **Assumptions and Constraints:**
+  - Internet access for job searching
+  - OpenAI API access for data enrichment
+  - Modern web browser with localStorage support
+  - External API usage limitations
+- **Assumptions:**
+  - User has basic web interface skills
+  - All job sources are accessible and stable
 
-## 3. Функциональные требования
+## 3. Functional Requirements
 
-### 3.1 Требование FR-1: Настройки поиска ✅ ЧАСТИЧНО РЕАЛИЗОВАНО
+### 3.1 FR-1: Search Settings ✅ FULLY IMPLEMENTED
 
-- **Описание:** Система должна предоставлять настройки поиска вакансий, хранимые
-  локально.
-- **Сценарий использования:** Пользователь хочет настроить поиск по конкретным
-  критериям.
-- **Статус реализации:** Реализованы пункты 1-6 и 8 из критериев приемки
-- **Критерии приемки:**
-  1. ✅ Загрузка настроек из localStorage при запуске
-  2. ✅ Сохранение изменений настроек в localStorage
-  3. ✅ Использование настроек по умолчанию при первом запуске
-  4. ✅ Настройка списка позиций для поиска
-  5. ✅ Управление черными списками слов и компаний
-  6. ✅ Выбор источников поиска (LinkedIn, Indeed, Glassdoor)
-  7. ❌ Настройка фильтров (языки, время работы, страны) - не реализовано
-  8. ✅ Передача всех настроек одним запросом при запуске поиска
+- **Description:** System provides local-stored job search settings.
+- **Use Case:** User configures search by specific criteria.
+- **Implementation Status:** All acceptance criteria fully implemented
+- **Acceptance Criteria:**
+  1. ✅ Load settings from localStorage on startup
+  2. ✅ Save setting changes to localStorage
+  3. ✅ Use default settings on first launch
+  4. ✅ Configure job position list
+  5. ✅ Manage blacklists for words and companies
+  6. ✅ Select search sources (LinkedIn, Indeed, Glassdoor)
+  7. ✅ Configure filters (languages, work time, countries) - implemented
+  8. ✅ Transmit all settings in single request on search start
 
-### 3.2 Требование FR-2: Многоэтапный процесс поиска
+### 3.2 FR-2: Multi-Stage Search Process
 
-- **Описание:** Система должна выполнять поиск вакансий в несколько этапов с
-  визуализацией прогресса.
-- **Сценарий использования:** Пользователь запускает поиск и наблюдает за его
-  выполнением.
-- **Критерии приемки:**
-  1. Запуск многоэтапного процесса поиска
-  2. Отображение текущего этапа и прогресса в реальном времени
-  3. Возможность остановки поиска на любом этапе
-  4. Сохранение результатов при остановке
-  5. Отображение итоговой статистики по завершении
+- **Description:** System executes job search in multiple stages with progress visualization.
+- **Use Case:** User starts search and monitors execution.
+- **Acceptance Criteria:**
+  1. Launch multi-stage search process
+  2. Display current stage and real-time progress
+  3. Allow search stop at any stage
+  4. Save results on stop
+  5. Display final statistics upon completion
 
-### 3.3 Требование FR-3: Сбор данных вакансий (Этап 1)
+### 3.3 FR-3: Job Data Collection (Stage 1)
 
-- **Описание:** Система должна собирать вакансии с выбранных источников.
-- **Сценарий использования:** Система собирает новые вакансии по
-  пользовательским позициям.
-- **Критерии приемки:**
-  1. Использование только выбранных источников
-  2. Применение пользовательских позиций для поиска
-  3. Интеграция с OpenAI WebSearch API
-  4. Поддержка глобального поиска
-  5. Отображение прогресса по источникам
-  6. Сохранение базовой информации вакансий
-  7. Логирование ошибок
+- **Description:** System collects jobs from selected sources.
+- **Use Case:** System gathers new jobs by user positions.
+- **Acceptance Criteria:**
+  1. Use only selected sources
+  2. Apply user positions for search
+  3. Integrate with OpenAI WebSearch API
+  4. Support global search
+  5. Display progress by sources
+  6. Save basic job information
+  7. Log errors
 
-### 3.4 Требование FR-4: Предварительная фильтрация (Этап 2)
+### 3.4 FR-4: Preliminary Filtering (Stage 2)
 
-- **Описание:** Система должна фильтровать вакансии по пользовательским
-  настройкам.
-- **Сценарий использования:** Быстрая фильтрация вакансий перед LLM-обогащением.
-- **Критерии приемки:**
-  1. Автоматический переход к фильтрации после сбора
-  2. Проверка по всем пользовательским настройкам
-  3. Обновление статусов вакансий
-  4. Отображение статистики фильтрации
+- **Description:** System filters jobs by user settings.
+- **Use Case:** Fast job filtering before LLM enrichment.
+- **Acceptance Criteria:**
+  1. Automatic transition to filtering after collection
+  2. Check against all user settings
+  3. Update job statuses
+  4. Display filtering statistics
 
-### 3.5 Требование FR-5: LLM-обогащение данных (Этап 3)
+### 3.5 FR-5: LLM Data Enrichment (Stage 3)
 
-- **Описание:** Система должна обогащать данные вакансий с помощью LLM.
-- **Сценарий использования:** Обогащение оставшихся вакансий дополнительной
-  информацией.
-- **Критерии приемки:**
-  1. Автоматический переход к обогащению после фильтрации
-  2. Извлечение стандартной и дополнительной информации
-  3. Исследование компаний через веб-поиск
-  4. Сохранение источников информации
-  5. Обработка отсутствующих данных
+- **Description:** System enriches job data using LLM.
+- **Use Case:** Enrich remaining jobs with additional information.
+- **Acceptance Criteria:**
+  1. Automatic transition to enrichment after filtering
+  2. Extract standard and additional information
+  3. Research companies via web search
+  4. Save information sources
+  5. Handle missing data
 
-### 3.6 Требование FR-6: Управление вакансиями ✅ ЧАСТИЧНО РЕАЛИЗОВАНО
+### 3.6 FR-6: Job Management ✅ PARTIALLY IMPLEMENTED
 
-- **Описание:** Система должна предоставлять инструменты управления найденными
-  вакансиями.
-- **Сценарий использования:** Пользователь просматривает и управляет
-  результатами поиска.
-- **Статус реализации:** Реализован базовый HTML интерфейс для результатов
-  поиска
-- **Критерии приемки:**
-  1. ❌ Просмотр полной информации о вакансиях - не реализовано
-  2. ❌ Переход по ссылкам на оригинальные вакансии - не реализовано
-  3. ❌ Перемещение вакансий в skip - не реализовано
-  4. ❌ Добавление компаний в черный список - не реализовано
-  5. ✅ Базовый интерфейс для отображения результатов - реализовано
+- **Description:** System provides tools for managing found jobs.
+- **Use Case:** User views and manages search results.
+- **Implementation Status:** Basic HTML interface for search results implemented
+- **Acceptance Criteria:**
+  1. ❌ View full job information - not implemented
+  2. ❌ Navigate to original job links - not implemented
+  3. ❌ Move jobs to skip - not implemented
+  4. ❌ Add companies to blacklist - not implemented
+  5. ✅ Basic results display interface - implemented
 
-### 3.7 Требование FR-7: Система черного списка ✅ ЧАСТИЧНО РЕАЛИЗОВАНО
+### 3.7 FR-7: Blacklist System ✅ PARTIALLY IMPLEMENTED
 
-- **Описание:** Система должна поддерживать черный список компаний.
-- **Сценарий использования:** Пользователь хочет исключить определенные компании
-  из поиска.
-- **Статус реализации:** Реализовано управление через интерфейс настроек,
-  фильтрация не реализована
-- **Критерии приемки:**
-  1. ✅ Сохранение компаний в черном списке - реализовано в настройках
-  2. ❌ Автоматическая фильтрация по черному списку - не реализовано
-  3. ✅ Управление черным списком через интерфейс - реализовано
+- **Description:** System supports company blacklists.
+- **Use Case:** User excludes specific companies from search.
+- **Implementation Status:** Settings interface management implemented, filtering not implemented
+- **Acceptance Criteria:**
+  1. ✅ Save companies to blacklist - implemented in settings
+  2. ❌ Automatic blacklist filtering - not implemented
+  3. ✅ Blacklist management via interface - implemented
 
-### 3.8 Требование FR-8: Мониторинг производительности
+### 3.8 FR-8: Performance Monitoring
 
-- **Описание:** Система должна отслеживать прогресс и затраты на LLM.
-- **Сценарий использования:** Пользователь контролирует процесс поиска и бюджет.
-- **Критерии приемки:**
-  1. Отображение общего прогресса
-  2. Расчет и отображение ETA
-  3. Отслеживание затрат в реальном времени
-  4. Прогнозирование полных затрат
-  5. Сохранение метрик производительности
+- **Description:** System tracks progress and LLM costs.
+- **Use Case:** User monitors search process and budget.
+- **Acceptance Criteria:**
+  1. Display overall progress
+  2. Calculate and display ETA
+  3. Track costs in real-time
+  4. Forecast total costs
+  5. Save performance metrics
 
-## 4. Нефункциональные требования
+### 3.9 FR-9: Dev Application Launch
 
-- **Производительность:**
-  - Время отклика интерфейса < 1 секунды
-  - Обработка 100 вакансий < 10 минут
-  - Параллельная обработка запросов
-- **Надежность:**
-  - Graceful degradation при недоступности API
-  - Восстановление после сбоев
-  - Логирование всех операций
-- **Безопасность:**
-  - Валидация входных данных
-  - Защита от SQL-инъекций
-  - Безопасное хранение API ключей
-- **Масштабируемость:**
-  - Поддержка большого количества вакансий
-  - Оптимизация запросов к базе данных
-  - Асинхронная обработка
-- **Удобство использования:**
-  - Интуитивный веб-интерфейс
-  - Отзывчивый дизайн
-  - Поддержка темной темы
+- **Description:** Dev server launches via dev-containers (Docker).
+- **Use Case:** User launches application for development.
+- **Acceptance Criteria:**
+  1. Application launches via dev-containers (Docker).
+  2. Application auto-restarts on code changes.
+  3. Previous application instances stopped on relaunch.
 
-## 5. Интерфейсы
+## 4. Non-Functional Requirements
 
-- **API и интеграции:**
-  - OpenAI API для LLM-обработки
-  - OpenAI WebSearch API для поиска вакансий
-  - Job-сайты (LinkedIn, Indeed, Glassdoor, etc.)
-  - Playwright MCP для автоматизации браузера
-  - **JobSpy** как референсная имплементация для скрапинга вакансий (Python
-    библиотека)
-- **Протоколы и форматы данных:**
-  - REST API для веб-интерфейса
-  - JSON для обмена данными
-  - WebSocket для обновления статуса
-- **Ограничения UI/UX:**
-  - Современный веб-интерфейс
-  - Адаптивный дизайн
-  - Поддержка клавиатурной навигации
+- **Performance:**
+  - Interface response time < 1 second
+  - Process 100 jobs < 10 minutes
+  - Parallel request processing
+- **Reliability:**
+  - Graceful degradation on API unavailability
+  - Recovery after failures
+  - Log all operations
+- **Security:**
+  - Input data validation
+  - SQL injection protection
+  - Secure API key storage
+- **Scalability:**
+  - Support large job volumes
+  - Database query optimization
+  - Asynchronous processing
+- **Usability:**
+  - Intuitive web interface
+  - Responsive design
+  - Dark theme support
 
-### 5.1 Референсная имплементация JobSpy
+## 5. Interfaces
 
-Система должна учитывать опыт и архитектуру библиотеки **JobSpy**
-(https://github.com/cullenwatson/JobSpy) как референсной имплементации для
-скрапинга вакансий:
+- **APIs and Integrations:**
+  - OpenAI API for LLM processing
+  - OpenAI WebSearch API for job searching
+  - Job sites (LinkedIn, Indeed, Glassdoor, etc.)
+  - Playwright MCP for browser automation
+  - **JobSpy** as reference implementation for job scraping (Python library)
+- **Protocols and Data Formats:**
+  - REST API for web interface
+  - JSON for data exchange
+  - WebSocket for status updates
+- **UI/UX Constraints:**
+  - Modern web interface
+  - Responsive design
+  - Keyboard navigation support
 
-**Поддерживаемые источники:**
+### 5.1 JobSpy Reference Implementation
 
+System considers JobSpy library experience and architecture (https://github.com/cullenwatson/JobSpy) as reference for job scraping:
+
+**Supported Sources:**
 - LinkedIn, Indeed, Glassdoor, Google, ZipRecruiter, Bayt, Naukri, BDJobs
 
-**Ключевые возможности для интеграции:**
+**Key Integration Features:**
+- Concurrent scraping from multiple sources
+- Proxy support for bypassing blocks
+- Flexible filtering by parameters (location, job type, salary, publication date)
+- Support for different job description formats
+- Rate limiting and block handling
 
-- Конкурентный скрапинг с нескольких источников
-- Поддержка прокси для обхода блокировок
-- Гибкая фильтрация по параметрам (локация, тип работы, зарплата, дата
-  публикации)
-- Поддержка разных форматов описаний вакансий
-- Rate limiting и обработка блокировок
+**Architectural Solutions:**
+- Modular structure with separate scrapers per source
+- Single entry point for multi-source search
+- Error handling and retry mechanisms
+- Standardized job data format
 
-**Архитектурные решения:**
+## 6. Project Implementation Status
 
-- Модульная структура с отдельными скрейперами для каждого источника
-- Единая точка входа для запуска поиска по нескольким источникам
-- Обработка ошибок и повторные попытки
-- Стандартизированный формат данных вакансий
+### Overall Progress
 
-## 6. Статус реализации проекта
+- **Current Stage:** Stage 1 (Basic infrastructure and settings) - ✅ COMPLETED
+- **Next Stage:** Stage 2 (Job data collection)
+- **Functional Requirements Coverage:** ~35% implemented
 
-### Общий прогресс
+### Implemented Components
 
-- **Текущая стадия:** Этап 1 (Базовая инфраструктура и настройки) - ✅ ЗАВЕРШЕН
-- **Следующая стадия:** Этап 2 (Сбор данных вакансий)
-- **Покрытие функциональных требований:** ~25% реализовано
+- ✅ **FR-1 (Search Settings):** Fully implemented (settings, storage, UI, filters)
+- ✅ **Basic Infrastructure:** Web server, API, type system, testing
+- ✅ **Technical Documentation:** SDS, SRS, file structure, whiteboard
+- ✅ **Code Quality:** TypeScript strict, unit tests, linting, formatting
 
-### Реализованные компоненты
+### Next Implementation Stages
 
-- ✅ **FR-1 (Настройки поиска):** Частично реализовано (настройки, хранение, UI)
-- ✅ **Базовая инфраструктура:** Веб-сервер, API, система типов, тестирование
-- ✅ **Техническая документация:** SDS, SRS, file structure, whiteboard
-- ✅ **Качество кода:** TypeScript strict, unit tests, linting, formatting
+1. **Stage 2:** Job data collection (FR-3) - JobSpy integration
+2. **Stage 3:** Preliminary filtering (FR-4) - filtering logic
+3. **Stage 4:** LLM enrichment (FR-5) - OpenAI integration
+4. **Stage 5:** Full job management interface (FR-6)
+5. **Stage 6:** Performance monitoring (FR-8)
 
-### Следующие этапы реализации
+### Testing and Quality
 
-1. **Этап 2:** Сбор данных вакансий (FR-3) - интеграция с JobSpy
-2. **Этап 3:** Предварительная фильтрация (FR-4) - логика фильтрации
-3. **Этап 4:** LLM обогащение (FR-5) - интеграция с OpenAI
-4. **Этап 5:** Полноценный интерфейс управления вакансиями (FR-6)
-5. **Этап 6:** Мониторинг производительности (FR-8)
+- ✅ **Unit Tests:** Written for settings service
+- ✅ **Integration Tests:** Basic API endpoint testing
+- ✅ **Code Quality:** Passes all checks (lint, fmt, compile)
+- ✅ **Documentation:** Architecture and requirements fully documented
 
-### Тестирование и качество
+## 7. Acceptance Criteria
 
-- ✅ **Unit тесты:** Написаны для сервиса настроек
-- ✅ **Интеграционные тесты:** Базовое тестирование API endpoints
-- ✅ **Code quality:** Проходит все проверки (lint, fmt, compile)
-- ✅ **Документация:** Полностью документирована архитектура и требования
+System is accepted when following conditions are met:
 
-## 7. Критерии приемки
+1. All functional requirements implemented and tested
+2. Non-functional requirements meet specified parameters
+3. Web interface works in all modern browsers
+4. System passes load testing
+5. Documentation meets requirements
+6. Code passes all quality checks
 
-Система считается принятой, если выполнены следующие условия:
-
-1. Все функциональные требования реализованы и протестированы
-2. Нефункциональные требования соответствуют заданным параметрам
-3. Веб-интерфейс работает во всех современных браузерах
-4. Система проходит нагрузочное тестирование
-5. Документация соответствует требованиям
-6. Код проходит все проверки качества

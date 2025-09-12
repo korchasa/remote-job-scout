@@ -163,7 +163,23 @@ const commands = {
     console.log("📝 Press Ctrl+C to stop the server");
 
     const command = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-net", "--allow-read", "src/web/server.ts"],
+      args: [
+        "serve",
+        "--watch",
+        "--allow-net",
+        "--allow-read",
+        "--allow-write",
+        "--port",
+        "3000",
+        "--watch-exclude=node_modules",
+        "--watch-exclude=.git",
+        "--watch-exclude=dist",
+        "--watch-exclude=build",
+        "src/web/server.ts",
+        "src/types/",
+        "src/services/",
+        "src/web/",
+      ],
       stdout: "inherit",
       stderr: "inherit",
     });
@@ -369,7 +385,7 @@ Commands:
   init                Install dependencies
   test-one <path>     Run specific test by path
   cleanup             Clean project (artifacts, caches, etc.)
-  dev                 Run project in development mode
+  dev                 Run project in development mode with watch
   check               Run comprehensive project check with stages:
                       clean → compile → format → lint → comment-scan → analyze → test
   clean               Clean build artifacts (legacy command)

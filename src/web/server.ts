@@ -1,8 +1,5 @@
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { join } from "https://deno.land/std@0.208.0/path/mod.ts";
 import { SearchRequest } from "../types/database.ts";
-
-const PORT = 3000;
 
 // Simple in-memory storage for demo (will be replaced with SQLite)
 interface SessionData {
@@ -118,6 +115,9 @@ async function handleRequest(request: Request): Promise<Response> {
   return new Response("Not found", { status: 404 });
 }
 
-console.log(`🚀 Remote Job Scout server running on http://localhost:${PORT}`);
-
-await serve(handleRequest, { port: PORT });
+// Export default handler for deno serve
+export default {
+  async fetch(request: Request): Promise<Response> {
+    return await handleRequest(request);
+  },
+} satisfies Deno.ServeDefaultExport;

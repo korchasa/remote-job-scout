@@ -15,17 +15,17 @@ remote-job-scout/
 │   ├── tdd-rules.mdc           # TDD guidelines
 │   └── zen.mdc                 # Zen philosophy
 ├── build.ts                    # Project build script
-├── deno.json                   # Deno configuration
+├── deno.json                   # Deno configuration with serve command
 ├── deno.lock                   # Deno dependencies lock file
 ├── run                         # Executable file for launching
-├── run.ts                      # TypeScript implementation of CLI
+├── run.ts                      # TypeScript CLI implementation
 ├── documents/                  # Project documentation
-│   ├── design.md              # Design documents
+│   ├── design.md              # Software design specification
 │   ├── file_structure.md      # File structure (this file)
-│   ├── requirements.md        # Project requirements
-│   └── whiteboard.md          # Work notes and tasks
+│   ├── requirements.md        # Software requirements specification
+│   └── whiteboard.md          # Current project status and roadmap
 ├── references/                 # References and external resources
-│   ├── JobSpy/                # Link to JobSpy library
+│   ├── JobSpy/                # JobSpy library reference
 │   │   ├── jobspy/           # JobSpy source code
 │   │   │   ├── __init__.py
 │   │   │   ├── bayt/         # Bayt integration
@@ -43,91 +43,93 @@ remote-job-scout/
 │   │   ├── poetry.lock       # Poetry dependencies
 │   │   ├── pyproject.toml    # Poetry configuration
 │   │   └── README.md         # JobSpy documentation
-│   ├── JobSpy-review.md      # JobSpy review
-│   ├── my-spy.py            # Custom spy implementation
-│   └── processing-prompt.md  # Processing prompts
+│   ├── JobSpy-review.md      # JobSpy library analysis
+│   ├── my-spy.py            # Custom scraping implementation
+│   └── processing-prompt.md  # LLM processing prompts
 ├── src/                       # Application source code
-│   ├── controllers/          # Application controllers
-│   ├── database/             # Database operations
+│   ├── controllers/          # Request handlers (planned)
+│   ├── database/             # Database operations (planned)
 │   ├── services/             # Application services
-│   │   └── settingsService.ts # Settings service
-│   ├── types/                # TypeScript types
-│   │   ├── database.ts       # Types for database operations
-│   │   └── settings.ts       # Settings types
-│   ├── utils/                # Utilities
-│   └── web/                  # Web components
-│       ├── app.js           # Main application
-│       ├── index.html       # Main HTML page
-│       └── server.ts        # Web server
-└── tests/                     # Tests
-    └── settings_test.ts      # Settings service tests
+│   │   └── settingsService.ts # Settings management service ✅
+│   ├── types/                # TypeScript type definitions
+│   │   ├── database.ts       # Database operation types
+│   │   └── settings.ts       # Settings type definitions ✅
+│   ├── utils/                # Utilities (planned)
+│   └── web/                  # Web interface components
+│       ├── app.js           # Client application logic ✅
+│       ├── index.html       # Main HTML interface ✅
+│       └── server.ts        # Web server with deno serve ✅
+└── tests/                     # Test suite
+    └── settings_test.ts      # Settings service unit tests ✅
 ```
 
 ## Description of Main Components
 
 ### Configuration Files
 
-- `deno.json` - Deno runtime environment configuration
-- `deno.lock` - Fixed versions of dependencies
+- `deno.json` - Deno configuration with `serve --watch` command and watch paths
+- `deno.lock` - Fixed dependency versions
 - `build.ts` - Project build script
-- `run` and `run.ts` - Entry point for the CLI application
-- `.cursor/` - IDE-specific configuration files for development environment
+- `run` and `run.ts` - CLI entry point with development commands
+- `.cursor/` - IDE-specific configuration for development environment
 
 ### Source Code (src/)
 
-- **controllers/** - Request handlers and controller business logic
-- **database/** - Modules for database operations
+- **controllers/** - Request handlers and controller logic (planned for future stages)
+- **database/** - Database operations and models (planned for Stage 2)
 - **services/** - Application business services
-  - `settingsService.ts` - Application settings management
+  - `settingsService.ts` - Complete settings management with validation ✅
 - **types/** - TypeScript type definitions
-  - `database.ts` - Types for database operations
-  - `settings.ts` - Application settings types
-- **utils/** - Helper functions and utilities
-- **web/** - Web interface
-  - `app.js` - Main client application logic
-  - `index.html` - HTML markup
-  - `server.ts` - Server-side part of the web application
+  - `database.ts` - Database operation types (prepared for future use)
+  - `settings.ts` - Comprehensive settings type definitions ✅
+- **utils/** - Helper functions and utilities (planned for future stages)
+- **web/** - Web interface components
+  - `app.js` - Client application with dynamic UI and auto-save ✅
+  - `index.html` - Responsive HTML interface with Chota CSS ✅
+  - `server.ts` - Deno serve-compatible web server ✅
 
 ### Documentation (documents/)
 
-- `design.md` - Design and architectural decisions
-- `requirements.md` - Project requirements
-- `whiteboard.md` - Work notes and current tasks
+- `design.md` - Software design specification with current architecture
+- `requirements.md` - Software requirements specification with implementation status
+- `whiteboard.md` - Current project status and development roadmap
+- `file_structure.md` - This file structure documentation
 
 ### External References (references/)
 
-- **JobSpy/** - Integration with the job search library
-  - Full copy of JobSpy with support for various job search platforms
-  - Includes integrations with: Glassdoor, Indeed, LinkedIn, Google, Naukri,
-    Bayt, BDJobs, ZipRecruiter
-- `JobSpy-review.md` - Analysis and review of the JobSpy library
-- `my-spy.py` - Custom implementation of search functionality
-- `processing-prompt.md` - Prompts for processing job data
+- **JobSpy/** - Reference implementation for job scraping
+  - Complete JobSpy library with multi-platform support
+  - Integrations: Glassdoor, Indeed, LinkedIn, Google, Naukri, Bayt, BDJobs, ZipRecruiter
+- `JobSpy-review.md` - JobSpy library analysis and integration assessment
+- `my-spy.py` - Custom scraping implementation reference
+- `processing-prompt.md` - LLM processing prompts for job analysis
 
 ### Tests (tests/)
 
-- `settings_test.ts` - Tests for the settings service
+- `settings_test.ts` - Comprehensive unit tests for settings service ✅
 
 ## Architectural Principles
 
 ### Separation of Concerns
 
-- **CLI/Commands**: Command-line interface, option parsing
+- **CLI/Commands**: Command-line interface and option parsing
 - **Services**: Business logic and application services
-- **Controllers**: Request handling and coordination
-- **Database**: Data operations
+- **Controllers**: Request handling and coordination (planned)
+- **Database**: Data operations (planned)
 - **Web**: Web interface and API
-- **Utils**: Helper functions
+- **Utils**: Helper functions (planned)
 
 ### Code Organization
 
-- Using TypeScript for type safety
-- Modular architecture with clear separation into services
-- Centralized settings management
-- Separation of web interface and server-side logic
+- TypeScript strict mode for type safety
+- Modular architecture with clear service separation
+- Client-side settings storage for privacy
+- REST API between browser and server
+- Unit testing with mock infrastructure
 
 ### External Dependencies
 
-- JobSpy for job search across various platforms
-- Deno as the runtime environment
-- TypeScript for development
+- JobSpy library for job scraping reference
+- Deno runtime with modern `serve` command
+- TypeScript for development and type safety
+- Chota CSS for responsive UI components

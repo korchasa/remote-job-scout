@@ -16,7 +16,7 @@ alwaysApply: true
 
 - Application MUST STRICTLY COMPLY with the SRS and SDS.
 - When adding a new requirement or updating existing ones: update SRS -> update SDS -> implementation.
-- Implemented requirements and acceptance criteria should be marked with [x] before the requirement and criterion title. Not implemented ones should be marked with [ ] or omitted.
+- Implemented requirements and acceptance criteria should be marked with ✅ before the requirement and criterion title. Not implemented ones should be marked with ❌ or omitted. In-progress ones should be marked with 🚧. Deferred tasks should be marked with ⏳.
 
 ### Software Requirements Specification (SRS) Format (file @documents/requirements.md)
 

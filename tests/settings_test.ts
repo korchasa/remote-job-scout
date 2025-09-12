@@ -195,6 +195,78 @@ Deno.test("SettingsService - validateSettings should filter invalid data", () =>
   assertEquals(parsed.sources.jobSites, ["linkedin", "indeed"]);
 });
 
+Deno.test("SettingsService - should handle country filters validation", () => {
+  // Clear localStorage
+  localStorage.removeItem("remoteJobScout_settings");
+
+  const settingsWithCountries: UserSettings = {
+    ...DEFAULT_USER_SETTINGS,
+    filters: {
+      ...DEFAULT_USER_SETTINGS.filters,
+      countries: [
+        { name: "United States", type: "whitelist" },
+        { name: "", type: "blacklist" },
+        { name: "Canada", type: "whitelist" },
+      ],
+    },
+  };
+
+  SettingsService.saveSettings(settingsWithCountries);
+  const loaded = SettingsService.loadSettings();
+
+  assertEquals(loaded.filters.countries.length, 2);
+  assertEquals(loaded.filters.countries[0].name, "United States");
+  assertEquals(loaded.filters.countries[1].name, "Canada");
+});
+
+Deno.test("SettingsService - should handle language requirements validation", () => {
+  // Clear localStorage
+  localStorage.removeItem("remoteJobScout_settings");
+
+  const settingsWithLanguages: UserSettings = {
+    ...DEFAULT_USER_SETTINGS,
+    filters: {
+      ...DEFAULT_USER_SETTINGS.filters,
+      languages: [
+        { language: "English", level: "Advanced" },
+        { language: "", level: "Intermediate" },
+        { language: "Spanish", level: "Beginner" },
+      ],
+    },
+  };
+
+  SettingsService.saveSettings(settingsWithLanguages);
+  const loaded = SettingsService.loadSettings();
+
+  assertEquals(loaded.filters.languages.length, 2);
+  assertEquals(loaded.filters.languages[0].language, "English");
+  assertEquals(loaded.filters.languages[1].language, "Spanish");
+});
+
+Deno.test("SettingsService - should handle work time filter", () => {
+  // Clear localStorage
+  localStorage.removeItem("remoteJobScout_settings");
+
+  const settingsWithWorkTime: UserSettings = {
+    ...DEFAULT_USER_SETTINGS,
+    filters: {
+      ...DEFAULT_USER_SETTINGS.filters,
+      workTime: {
+        start: "08:00",
+        end: "17:00",
+        timezone: "America/New_York",
+      },
+    },
+  };
+
+  SettingsService.saveSettings(settingsWithWorkTime);
+  const loaded = SettingsService.loadSettings();
+
+  assertEquals(loaded.filters.workTime?.start, "08:00");
+  assertEquals(loaded.filters.workTime?.end, "17:00");
+  assertEquals(loaded.filters.workTime?.timezone, "America/New_York");
+});
+
 // Восстановить оригинальный localStorage после всех тестов
 Deno.test("cleanup - restore original localStorage", () => {
   Object.defineProperty(globalThis, "localStorage", {

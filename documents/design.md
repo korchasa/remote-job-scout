@@ -1,206 +1,181 @@
-# Спецификация архитектуры программного обеспечения (SDS)
+# Software Design Specification (SDS)
 
-## 1. Введение
+## 1. Introduction
 
-- **Назначение документа:** Определение архитектурного дизайна системы поиска и
-  обогащения удаленных вакансий.
-- **Область применения:** Архитектурное описание веб-приложения для поиска
-  вакансий с использованием LLM.
-- **Целевая аудитория:** Разработчики, архитекторы, технические лидеры проекта.
+- **Document Purpose:** Define architectural design of remote job search and enrichment system.
+- **Scope:** Architectural description of web application for LLM-powered job search.
+- **Target Audience:** Developers, architects, technical project leaders.
 
-## 2. Системная архитектура
+## 2. System Architecture
 
-- **Общая диаграмма:** Веб-приложение с клиент-серверной архитектурой,
-  интегрированное с внешними API.
-- **Референсная имплементация:** Архитектура основана на принципах библиотеки
-  JobSpy для эффективного скрапинга вакансий.
-- **Текущий статус:** ✅ Реализована базовая инфраструктура и модуль настроек
-  - Веб-сервер на Deno с REST API endpoints
-  - Клиентское приложение с модульной архитектурой
-  - Полная система типов TypeScript
-  - Unit-тестирование с mock инфраструктурой
-- **Основные подсистемы и их роли:**
-  - **Модуль управления настройками:** Управление пользовательскими настройками
-    и фильтрами (localStorage)
-  - **Оркестратор поиска:** Координация многоэтапного процесса поиска
-  - **Модуль сбора данных:** Парсинг вакансий с внешних источников (аналогично
-    JobSpy скрейперам)
-  - **Модуль предварительной фильтрации:** Быстрая фильтрация по
-    пользовательским критериям
-  - **Модуль LLM-обработки:** Обогащение данных с помощью искусственного
-    интеллекта
-  - **Модуль управления результатами:** Управление найденными вакансиями
-  - **Веб-интерфейс:** Пользовательский интерфейс для взаимодействия с системой
-  - **База данных:** Хранение результатов поиска и метрик (упрощенная схема)
+- **Overall Diagram:** Web application with client-server architecture, integrated with external APIs.
+- **Reference Implementation:** Architecture based on JobSpy library principles for efficient job scraping.
+- **Current Status:** ✅ Basic infrastructure and settings module implemented
+  - Deno web server with REST API endpoints
+  - Client application with modular architecture
+  - Complete TypeScript type system
+  - Unit testing with mock infrastructure
+- **Core Subsystems and Roles:**
+  - **Settings Management Module:** User settings and filters management (localStorage)
+  - **Search Orchestrator:** Multi-stage search process coordination
+  - **Data Collection Module:** Job parsing from external sources (similar to JobSpy scrapers)
+  - **Preliminary Filtering Module:** Fast filtering by user criteria
+  - **LLM Processing Module:** Data enrichment with artificial intelligence
+  - **Results Management Module:** Found jobs management
+  - **Web Interface:** User interface for system interaction
+  - **Database:** Search results and metrics storage (simplified schema)
 
-## 3. Компоненты
+## 3. Components
 
-### 3.1 Модуль управления настройками ✅ РЕАЛИЗОВАН
+### 3.1 Settings Management Module ✅ IMPLEMENTED
 
-- **Назначение:** Управление пользовательскими настройками поиска и фильтрами.
-- **Интерфейсы:** localStorage API для клиентского хранения, REST API для
-  передачи настроек на сервер.
-- **Зависимости:** Веб-браузер с поддержкой localStorage, TypeScript типы.
-- **Реализация:**
-  - `SettingsService` класс с методами загрузки/сохранения/валидации настроек
-  - Полная типизация всех настроек (UserSettings, CountryFilter,
-    LanguageRequirement, etc.)
-  - Валидация и нормализация данных при сохранении
-  - Обработка ошибок и fallback к настройкам по умолчанию
-  - Unit-тесты с mock localStorage
+- **Purpose:** User search settings and filters management.
+- **Interfaces:** localStorage API for client storage, REST API for server settings transmission.
+- **Dependencies:** Web browser with localStorage support, TypeScript types.
+- **Implementation:**
+  - `SettingsService` class with load/save/validate methods
+  - Complete typing for all settings (UserSettings, CountryFilter, LanguageRequirement, etc.)
+  - Data validation and normalization on save
+  - Error handling and fallback to default settings
+  - Unit tests with mock localStorage
 
-### 3.2 Оркестратор многоэтапного поиска
+### 3.2 Multi-Stage Search Orchestrator
 
-- **Назначение:** Координация этапов сбора, фильтрации и обогащения данных.
-- **Интерфейсы:** Внутренние API модулей, WebSocket для обновления статуса.
-- **Зависимости:** Все модули обработки данных, база данных.
+- **Purpose:** Coordinate collection, filtering, and enrichment stages.
+- **Interfaces:** Internal module APIs, WebSocket for status updates.
+- **Dependencies:** All data processing modules, database.
 
-### 3.3 Модуль сбора данных (Этап 1)
+### 3.3 Data Collection Module (Stage 1)
 
-- **Назначение:** Сбор вакансий с выбранных источников.
-- **Интерфейсы:** API job-сайтов, OpenAI WebSearch API, Playwright MCP.
-- **Зависимости:** Настройки источников, внешние API.
-- **Референс:** Архитектура основана на JobSpy - модульная структура с
-  отдельными скрейперами для каждого источника, поддержка прокси, конкурентная
-  обработка.
+- **Purpose:** Collect jobs from selected sources.
+- **Interfaces:** Job site APIs, OpenAI WebSearch API, Playwright MCP.
+- **Dependencies:** Source settings, external APIs.
+- **Reference:** Architecture based on JobSpy - modular structure with separate scrapers per source, proxy support, concurrent processing.
 
-### 3.4 Модуль предварительной фильтрации (Этап 2)
+### 3.4 Preliminary Filtering Module (Stage 2)
 
-- **Назначение:** Быстрая фильтрация вакансий по пользовательским критериям.
-- **Интерфейсы:** Доступ к базе данных, внутренние фильтры.
-- **Зависимости:** Пользовательские настройки, база данных.
+- **Purpose:** Fast job filtering by user criteria.
+- **Interfaces:** Database access, internal filters.
+- **Dependencies:** User settings, database.
 
-### 3.5 Модуль LLM-обработки (Этап 3)
+### 3.5 LLM Processing Module (Stage 3)
 
-- **Назначение:** Обогащение данных вакансий с помощью искусственного
-  интеллекта.
-- **Интерфейсы:** OpenAI API, внутренние промпты.
-- **Зависимости:** OpenAI API, пользовательские инструкции.
+- **Purpose:** Enrich job data with artificial intelligence.
+- **Interfaces:** OpenAI API, internal prompts.
+- **Dependencies:** OpenAI API, user instructions.
 
-### 3.6 Модуль управления результатами
+### 3.6 Results Management Module
 
-- **Назначение:** Управление найденными вакансиями и их отображение.
-- **Интерфейсы:** REST API, пользовательский интерфейс.
-- **Зависимости:** База данных, веб-интерфейс.
+- **Purpose:** Manage found jobs and their display.
+- **Interfaces:** REST API, user interface.
+- **Dependencies:** Database, web interface.
 
-### 3.7 Веб-интерфейс ✅ ЧАСТИЧНО РЕАЛИЗОВАН
+### 3.7 Web Interface ✅ PARTIALLY IMPLEMENTED
 
-- **Назначение:** Предоставление пользовательского интерфейса для работы с
-  системой.
-- **Интерфейсы:** HTML/CSS/JavaScript, REST API, WebSocket (запланирован).
-- **Зависимости:** Современный веб-браузер, localStorage.
-- **Реализация:**
-  - Адаптивный HTML интерфейс с Chota CSS фреймворком
-  - Форма настроек с валидацией и автосохранением
-  - JavaScript клиент для взаимодействия с API
-  - Поддержка темной темы через CSS переменные
-  - Модульная структура клиентского кода
+- **Purpose:** Provide user interface for system interaction.
+- **Interfaces:** HTML/CSS/JavaScript, REST API, WebSocket (planned).
+- **Dependencies:** Modern web browser, localStorage.
+- **Implementation:**
+  - Responsive HTML interface with Chota CSS framework
+  - Settings form with validation and auto-save
+  - JavaScript client for API interaction
+  - Dark theme support via CSS variables
+  - Modular client code structure
 
-### 3.8 Модуль базы данных
+### 3.8 Database Module
 
-- **Назначение:** Управление хранением и доступом к данным.
-- **Интерфейсы:** SQL запросы, миграции схемы.
-- **Зависимости:** SQLite база данных.
+- **Purpose:** Manage data storage and access.
+- **Interfaces:** SQL queries, schema migrations.
+- **Dependencies:** SQLite database.
 
-## 4. Данные и хранение
+## 4. Data and Storage
 
-- **Сущности и атрибуты:**
-  - `vacancies`: Полная информация о вакансиях (id, title, description, url,
-    published_date, status, skip_reason, processed_at, created_at, collected_at,
-    filtered_at, enriched_at, source, country, data)
-    - Поле `data` содержит всю дополнительную информацию в формате YAML
-    - Включает данные о компании, языковых требованиях и источниках информации
-- **ER-диаграмма:** Упрощенная реляционная модель для хранения результатов
-  поиска и метрик.
-- **Хранение настроек:** ✅ РЕАЛИЗОВАНО
-  - Все пользовательские настройки хранятся в localStorage на клиентской стороне
-  - Передаются на backend одним запросом при запуске поиска
-  - Валидация и нормализация данных при загрузке/сохранении
-  - Fallback к настройкам по умолчанию при поврежденных данных
-  - Типизированные структуры данных с полной поддержкой TypeScript
+- **Entities and Attributes:**
+  - `vacancies`: Complete job information (id, title, description, url, published_date, status, skip_reason, processed_at, created_at, collected_at, filtered_at, enriched_at, source, country, data)
+    - `data` field contains all additional information in YAML format
+    - Includes company data, language requirements, and information sources
+- **ER Diagram:** Simplified relational model for search results and metrics storage.
+- **Settings Storage:** ✅ IMPLEMENTED
+  - All user settings stored in client-side localStorage
+  - Transmitted to backend in single request on search start
+  - Data validation and normalization on load/save
+  - Fallback to default settings on corrupted data
+  - Typed data structures with full TypeScript support
 
-## 5. Алгоритмы и логика
+## 5. Algorithms and Logic
 
-- **Ключевые алгоритмы:**
-  - Многоэтапный процесс поиска с параллельной обработкой
-  - Алгоритм расчета ETA:
-    `eta_seconds = (total_vacancies - processed_vacancies) / processing_speed_per_minute * 60`
-  - LLM-промпты для извлечения структурированных данных
-  - Алгоритм фильтрации с приоритетами (черные списки → пользовательские фильтры
-    → автоматические правила)
-- **Бизнес-правила:**
-  - Фильтрация по черным спискам имеет высший приоритет
-  - LLM-обогащение применяется только к прошедшим фильтрацию вакансиям
-  - Все операции логируются для аудита и отладки
-  - Пользовательские настройки имеют приоритет над автоматическими
+- **Key Algorithms:**
+  - Multi-stage search process with parallel processing
+  - ETA calculation algorithm: `eta_seconds = (total_vacancies - processed_vacancies) / processing_speed_per_minute * 60`
+  - LLM prompts for extracting structured data
+  - Filtering algorithm with priorities (blacklists → user filters → automatic rules)
+- **Business Rules:**
+  - Blacklist filtering has highest priority
+  - LLM enrichment applied only to filtered jobs
+  - All operations logged for audit and debugging
+  - User settings take priority over automatic ones
 
-## 6. Нефункциональные аспекты
+## 6. Non-Functional Aspects
 
-- **Масштабируемость:**
-  - Асинхронная обработка запросов
-  - Оптимизация базы данных индексами
-  - Кэширование часто используемых данных
-  - Поддержка большого количества одновременных пользователей
-- **Отказоустойчивость:**
-  - Graceful degradation при недоступности API
-  - Retry механизмы для внешних запросов
-  - Восстановление после сбоев с сохранением состояния
-  - Резервное копирование базы данных
-- **Безопасность:**
-  - Валидация входных данных на всех уровнях
-  - Защита от SQL-инъекций через параметризованные запросы
-  - Безопасное хранение API ключей (шифрование)
-  - Логирование без чувствительных данных
-- **Мониторинг и логирование:**
-  - Логирование всех операций с уровнями severity
-  - Метрики производительности в реальном времени
-  - Отслеживание затрат на LLM с детализацией
-  - Мониторинг использования внешних API
+- **Scalability:**
+  - Asynchronous request processing
+  - Database optimization with indexes
+  - Caching of frequently used data
+  - Support for large number of concurrent users
+- **Fault Tolerance:**
+  - Graceful degradation on API unavailability
+  - Retry mechanisms for external requests
+  - Recovery after failures with state preservation
+  - Database backup
+- **Security:**
+  - Input validation at all levels
+  - SQL injection protection via parameterized queries
+  - Secure API key storage (encryption)
+  - Logging without sensitive data
+- **Monitoring and Logging:**
+  - Logging all operations with severity levels
+  - Real-time performance metrics
+  - LLM cost tracking with detail
+  - External API usage monitoring
 
-## 7. Ограничения и компромиссы
+## 7. Constraints and Trade-offs
 
-- **Упрощено:** Все пользовательские настройки хранятся в localStorage на
-  клиенте и передаются одним запросом на backend
-- **Упрощено:** Убрана сложная реляционная модель - вся информация о вакансии
-  хранится в единственной таблице в формате YAML
-- **Упрощено:** Настройки не сохраняются на сервере - обеспечивается приватность
-  и простота
-- **Отложено:** Многоязычная поддержка интерфейса (первая версия только на
-  английском)
-- **Упрощено:** Синхронная обработка вместо распределенной для упрощения
-  архитектуры
-- **Ограничено:** Поддержка только основных job-сайтов в первой версии
-- **Упрощено:** Текстовые логи вместо структурированного логирования
+- **Simplified:** All user settings stored in client localStorage, transmitted in single request to backend
+- **Simplified:** Complex relational model removed - all job information stored in single table as YAML
+- **Simplified:** Settings not saved on server - ensures privacy and simplicity
+- **Deferred:** Multi-language interface support (first version English only)
+- **Simplified:** Synchronous processing instead of distributed for architecture simplicity
+- **Limited:** Support for main job sites only in first version
+- **Simplified:** Text logs instead of structured logging
 
-## 8. Технологический стек
+## 8. Technology Stack
 
-### Реализованные технологии ✅
+### Implemented Technologies ✅
 
-- **Runtime:** Deno 1.28+ с поддержкой TypeScript
-- **Веб-фреймворк:** Нативный Deno HTTP сервер
-- **Фронтенд:** Vanilla JavaScript + HTML5 + CSS3
-- **CSS Framework:** Chota CSS для адаптивного дизайна
-- **Типизация:** TypeScript с strict режимом
-- **Хранение:** localStorage для клиентских настроек
-- **Тестирование:** Deno test framework с mock localStorage
-- **Сборка:** Deno native build system
+- **Runtime:** Deno 1.28+ with TypeScript support
+- **Web Framework:** Native Deno HTTP server
+- **Frontend:** Vanilla JavaScript + HTML5 + CSS3
+- **CSS Framework:** Chota CSS for responsive design
+- **Typing:** TypeScript with strict mode
+- **Storage:** localStorage for client settings
+- **Testing:** Deno test framework with mock localStorage
+- **Build:** Deno native build system
 
-### Архитектурные решения
+### Architectural Decisions
 
-- **Клиент-сервер:** REST API между браузером и сервером
-- **Модульность:** Разделение на сервисы, контроллеры, типы, утилиты
-- **Приватность:** Все настройки хранятся локально в браузере
-- **Надежность:** Graceful error handling и validation
-- **Расширяемость:** Модульная архитектура для легкого добавления новых функций
+- **Client-Server:** REST API between browser and server
+- **Modularity:** Separation into services, controllers, types, utilities
+- **Privacy:** All settings stored locally in browser
+- **Reliability:** Graceful error handling and validation
+- **Extensibility:** Modular architecture for easy addition of new features
 
-## 9. Будущие расширения
+## 9. Future Extensions
 
-- Интеграция с дополнительными источниками вакансий (Indeed, Glassdoor, Naukri,
-  etc.)
-- Машинное обучение для персонализации поиска и рекомендаций
-- Мобильное приложение с нативными возможностями
-- Интеграция с календарями и задачами для отслеживания дедлайнов
-- Аналитический дашборд с графиками и трендами
-- Экспорт результатов в различные форматы (PDF, CSV, Excel)
-- API для интеграции с другими системами
-- Поддержка командной работы с общими настройками
+- Integration with additional job sources (Indeed, Glassdoor, Naukri, etc.)
+- Machine learning for personalized search and recommendations
+- Mobile app with native capabilities
+- Integration with calendars and tasks for deadline tracking
+- Analytics dashboard with charts and trends
+- Export results to various formats (PDF, CSV, Excel)
+- API for integration with other systems
+- Team collaboration support with shared settings

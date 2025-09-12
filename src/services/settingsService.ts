@@ -71,6 +71,36 @@ export class SettingsService {
   }
 
   /**
+   * Проверяет валидность массива стран.
+   * @param countries Массив для проверки
+   * @returns true если массив содержит валидные объекты стран
+   */
+  private static isValidCountryArray(countries: unknown): boolean {
+    if (!Array.isArray(countries)) return false;
+    return countries.every((country: unknown) =>
+      country && typeof country === "object" &&
+      typeof (country as Record<string, unknown>).name === "string" &&
+      ["blacklist", "whitelist"].includes(
+        (country as Record<string, unknown>).type as string,
+      )
+    );
+  }
+
+  /**
+   * Проверяет валидность массива языков.
+   * @param languages Массив для проверки
+   * @returns true если массив содержит валидные объекты языков
+   */
+  private static isValidLanguageArray(languages: unknown): boolean {
+    if (!Array.isArray(languages)) return false;
+    return languages.every((lang: unknown) =>
+      lang && typeof lang === "object" &&
+      typeof (lang as Record<string, unknown>).language === "string" &&
+      typeof (lang as Record<string, unknown>).level === "string"
+    );
+  }
+
+  /**
    * Проверяет валидность структуры настроек.
    * @param settings Настройки для проверки
    * @returns true если настройки валидны
@@ -94,6 +124,12 @@ export class SettingsService {
         ) &&
         Array.isArray((obj.filters as Record<string, unknown>).countries) &&
         Array.isArray((obj.filters as Record<string, unknown>).languages) &&
+        this.isValidCountryArray(
+          (obj.filters as Record<string, unknown>).countries,
+        ) &&
+        this.isValidLanguageArray(
+          (obj.filters as Record<string, unknown>).languages,
+        ) &&
         obj.sources &&
         typeof obj.sources === "object" &&
         Array.isArray((obj.sources as Record<string, unknown>).jobSites) &&
@@ -129,13 +165,11 @@ export class SettingsService {
     } else {
       validated.filters = { ...validated.filters };
 
-      // Валидация массивов в filters
+      // Валидация массивов строк в filters
       [
         "blacklistedCompanies",
         "blacklistedWordsTitle",
         "blacklistedWordsDescription",
-        "countries",
-        "languages",
       ].forEach((key) => {
         const filterKey = key as keyof typeof validated.filters;
         const currentValue = validated.filters[filterKey];
@@ -150,6 +184,53 @@ export class SettingsService {
             .map((item: string) => item.trim());
         }
       });
+
+      // Валидация countries
+      if (!Array.isArray(validated.filters.countries)) {
+        validated.filters.countries = [];
+      } else {
+        validated.filters.countries = validated.filters.countries
+          .filter((item: unknown) => {
+            const country = item as Record<string, unknown>;
+            return country &&
+              typeof country === "object" &&
+              typeof country.name === "string" &&
+              country.name.trim().length > 0 &&
+              typeof country.type === "string" &&
+              ["blacklist", "whitelist"].includes(country.type);
+          })
+          .map((item) => {
+            const country = item as {
+              name: string;
+              type: "blacklist" | "whitelist";
+            };
+            return {
+              name: country.name.trim(),
+              type: country.type,
+            };
+          });
+      }
+
+      // Валидация languages
+      if (!Array.isArray(validated.filters.languages)) {
+        validated.filters.languages = [];
+      } else {
+        validated.filters.languages = validated.filters.languages
+          .filter((item: unknown) => {
+            const lang = item as Record<string, unknown>;
+            return lang &&
+              typeof lang === "object" &&
+              typeof lang.language === "string" &&
+              lang.language.trim().length > 0;
+          })
+          .map((item) => {
+            const lang = item as { language: string; level: string };
+            return {
+              language: lang.language.trim(),
+              level: lang.level || "Intermediate",
+            };
+          });
+      }
     }
 
     // Валидация sources
