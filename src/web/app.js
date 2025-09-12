@@ -347,11 +347,45 @@ function _renderJobResults(jobs) {
   if (totalResults) totalResults.textContent = jobs.length.toString();
 }
 
+// Flowbite modal instance
+let jobModalInstance = null;
+
+// Initialize Flowbite components
+function initFlowbiteComponents() {
+  // Wait for Flowbite to be loaded
+  const checkFlowbite = () => {
+    if (typeof Flowbite !== "undefined" && Flowbite.Modal) {
+      try {
+        // Initialize modal
+        const modalElement = document.getElementById("job-modal");
+        if (modalElement) {
+          jobModalInstance = new Flowbite.Modal(modalElement, {
+            closable: true,
+            onHide: () => {
+              console.log("Modal is hidden");
+            },
+            onShow: () => {
+              console.log("Modal is shown");
+            },
+          });
+        }
+      } catch (error) {
+        console.warn("Flowbite modal initialization failed:", error);
+      }
+    } else {
+      // Retry after a short delay
+      setTimeout(checkFlowbite, 100);
+    }
+  };
+
+  checkFlowbite();
+}
+
 // Show job details in modal
 function _showJobDetails(_jobId) {
   // This would typically fetch job details from the server
   // For now, we'll show a placeholder
-  if (jobModal && jobModalContent && jobApplyLink) {
+  if (jobModalContent && jobApplyLink) {
     jobModalContent.innerHTML = `
       <div class="text-center py-8">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
@@ -359,8 +393,17 @@ function _showJobDetails(_jobId) {
       </div>
     `;
 
-    // Show modal (using Flowbite)
-    jobModal.classList.remove("hidden");
+    // Show modal using Flowbite API or fallback
+    if (jobModalInstance) {
+      jobModalInstance.show();
+    } else {
+      // Fallback to manual show
+      const modal = document.getElementById("job-modal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        modal.setAttribute("aria-hidden", "false");
+      }
+    }
 
     // In a real implementation, you would fetch job details here
     setTimeout(() => {
@@ -431,8 +474,15 @@ function _showJobDetails(_jobId) {
 
 // Close job modal
 function closeJobModal() {
-  if (jobModal) {
-    jobModal.classList.add("hidden");
+  if (jobModalInstance) {
+    jobModalInstance.hide();
+  } else {
+    // Fallback
+    const modal = document.getElementById("job-modal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
   }
 }
 
@@ -868,6 +918,9 @@ function init() {
 
   // Initialize theme
   initTheme();
+
+  // Initialize Flowbite components
+  initFlowbiteComponents();
 
   // Bind events
   startSearchButton.addEventListener("click", startSearch);

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Remote Job Scout - Find Your Dream Remote Job</title>
 
-    <!-- Tailwind CSS v4 via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS via CDN (for development - replace with local build for production) -->
+    <script src="https://cdn.tailwindcss.com/3.4.0"></script>
 
     <!-- Flowbite CSS -->
     <link
@@ -26,6 +26,9 @@
 
     <!-- Theme configuration -->
     <script>
+      // Disable Tailwind CDN warning for development
+      window.TAILWIND_FORCE_DISABLED = true;
+
       tailwind.config = {
         darkMode: "class",
         theme: {
@@ -477,6 +480,8 @@
     <!-- Job Details Modal -->
     <div
       id="job-modal"
+      data-modal-target="job-modal"
+      data-modal-toggle="job-modal"
       tabindex="-1"
       aria-hidden="true"
       class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 w-full md:inset-0 h-[calc(100%-1rem)] max-h-full"
