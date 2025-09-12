@@ -1,5 +1,13 @@
 {
   "version": "5",
+  "specifiers": {
+    "npm:tailwindcss@^4.1.13": "4.1.13"
+  },
+  "npm": {
+    "tailwindcss@4.1.13": {
+      "integrity": "sha512-i+zidfmTqtwquj4hMEwdjshYYgMbOrPzb9a0M3ZgNa0JMoZeFC6bxZvO8yr8ozS6ix2SDz0+mvryPeBs2TFE+w=="
+    }
+  },
   "redirects": {
     "https://esm.sh/@types/react-dom@~18.2.25/index.d.ts": "https://esm.sh/@types/react-dom@18.2.25/index.d.ts",
     "https://esm.sh/@types/react@~18.2.79/index.d.ts": "https://esm.sh/@types/react@18.2.79/index.d.ts",
@@ -166,5 +174,10 @@
     "https://esm.sh/react@18.2.0/denonext/react.mjs": "a986c2876dc2f73879f395e677dc34cb751f260e69db16364810655f884df173",
     "https://esm.sh/scheduler@0.23.2/denonext/scheduler.mjs": "8a1a8a363eb417fc8d40f6b15132e8964320782d7169e68fc6ac98b8b8c201eb",
     "https://esm.sh/scheduler@0.23.2?target=denonext": "5f446c6d28a83c4c3905e964a311ac654bf1b1993bb6647ee731a592068d5a1a"
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:tailwindcss@^4.1.13"
+    ]
   }
 }

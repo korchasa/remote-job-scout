@@ -29,14 +29,22 @@ const DEFAULT_USER_SETTINGS = {
 
 // DOM elements
 const startSearchButton = document.getElementById("start-search");
-const progressSection = document.querySelector(".progress-section");
+const progressSection = document.getElementById("progress-section");
 const overallProgressBar = document.getElementById("overall-progress-bar");
 const overallProgressText = document.getElementById("overall-progress-text");
 const currentStageElement = document.getElementById("current-stage");
 const progressInfo = document.getElementById("progress-info");
 const stopSearchButton = document.getElementById("stop-search");
-const resultsSection = document.querySelector(".results-section");
-const _resultsContainer = document.getElementById("results-container");
+const resultsSection = document.getElementById("results-section");
+const resultsContainer = document.getElementById("results-container");
+const totalResults = document.getElementById("total-results");
+const themeToggle = document.getElementById("theme-toggle");
+const settingsSection = document.getElementById("settings-section");
+const toggleSettingsBtn = document.getElementById("toggle-settings");
+const _emptyState = document.getElementById("empty-state");
+const jobModal = document.getElementById("job-modal");
+const jobModalContent = document.getElementById("job-modal-content");
+const jobApplyLink = document.getElementById("job-apply-link");
 
 // Multi-stage search state
 let currentSessionId = null;
@@ -62,8 +70,6 @@ function renderSettings(settings) {
     .blacklistedCompanies.join(", ");
   document.getElementById("blacklist-words-title").value = settings.filters
     .blacklistedWordsTitle.join(", ");
-  document.getElementById("blacklist-words-description").value = settings
-    .filters.blacklistedWordsDescription.join(", ");
 
   // Update checkboxes
   document.getElementById("source-linkedin").checked = settings.sources.jobSites
@@ -82,7 +88,6 @@ function renderSettings(settings) {
   // Render dynamic filters
   renderCountryFilters(settings.filters.countries);
   renderLanguageRequirements(settings.filters.languages);
-  renderWorkTimeFilter(settings.filters.workTime);
 
   // Bind new event handlers
   bindDynamicEvents(settings);
@@ -93,14 +98,24 @@ function renderCountryFilters(countries) {
   const container = document.getElementById("country-filters");
 
   if (!countries || countries.length === 0) {
-    container.innerHTML = '<p class="text-muted">No country filters set</p>';
+    container.innerHTML =
+      '<div class="text-sm text-gray-500 dark:text-gray-400">No country filters set</div>';
     return;
   }
 
   container.innerHTML = countries.map((country, index) => `
-    <div class="dynamic-item">
-      <input type="text" value="${country.name}" placeholder="Country name" data-country-index="${index}">
-      <select data-country-type="${index}">
+    <div class="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+      <input
+        type="text"
+        value="${country.name}"
+        placeholder="Country name"
+        data-country-index="${index}"
+        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
+      <select
+        data-country-type="${index}"
+        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
         <option value="blacklist" ${
     country.type === "blacklist" ? "selected" : ""
   }>Blacklist</option>
@@ -108,25 +123,42 @@ function renderCountryFilters(countries) {
     country.type === "whitelist" ? "selected" : ""
   }>Whitelist</option>
       </select>
-      <button class="button outline small" onclick="removeCountryFilter(${index})">🗑️</button>
+      <button
+        class="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
+        onclick="removeCountryFilter(${index})"
+        title="Remove filter"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+      </button>
     </div>
   `).join("");
 }
 
 // Render language requirements
 function renderLanguageRequirements(languages) {
-  const container = document.getElementById("language-requirements");
+  const container = document.getElementById("language-filters");
 
   if (!languages || languages.length === 0) {
     container.innerHTML =
-      '<p class="text-muted">No language requirements set</p>';
+      '<div class="text-sm text-gray-500 dark:text-gray-400">English (Intermediate) - default</div>';
     return;
   }
 
   container.innerHTML = languages.map((lang, index) => `
-    <div class="dynamic-item">
-      <input type="text" value="${lang.language}" placeholder="Language" data-lang-index="${index}">
-      <select data-lang-level="${index}">
+    <div class="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+      <input
+        type="text"
+        value="${lang.language}"
+        placeholder="Language"
+        data-lang-index="${index}"
+        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
+      <select
+        data-lang-level="${index}"
+        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
         <option value="Beginner" ${
     lang.level === "Beginner" ? "selected" : ""
   }>Beginner</option>
@@ -140,31 +172,268 @@ function renderLanguageRequirements(languages) {
     lang.level === "Native" ? "selected" : ""
   }>Native</option>
       </select>
-      <button class="button outline small" onclick="removeLanguageRequirement(${index})">🗑️</button>
+      <button
+        class="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
+        onclick="removeLanguageRequirement(${index})"
+        title="Remove requirement"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+      </button>
     </div>
   `).join("");
 }
 
-// Render work time filter
-function renderWorkTimeFilter(workTime) {
-  const container = document.getElementById("work-time-filter");
+// Theme management
+function initTheme() {
+  const savedTheme = localStorage.getItem("remoteJobScout_theme") || "light";
+  setTheme(savedTheme);
 
-  if (!workTime) {
-    container.innerHTML = `
-      <p class="text-muted">No work time restrictions</p>
-      <button id="enable-work-time" class="button outline small">Set Work Time Filter</button>
+  if (themeToggle) {
+    themeToggle.addEventListener("click", toggleTheme);
+  }
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.classList.contains("dark")
+    ? "dark"
+    : "light";
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+  setTheme(newTheme);
+  localStorage.setItem("remoteJobScout_theme", newTheme);
+}
+
+function setTheme(theme) {
+  if (theme === "dark") {
+    document.documentElement.classList.add("dark");
+    themeToggle.innerHTML = `
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+      </svg>
     `;
+  } else {
+    document.documentElement.classList.remove("dark");
+    themeToggle.innerHTML = `
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+      </svg>
+    `;
+  }
+}
+
+// Settings toggle
+function toggleSettings() {
+  if (settingsSection.classList.contains("hidden")) {
+    settingsSection.classList.remove("hidden");
+    toggleSettingsBtn.textContent = "Hide Settings";
+  } else {
+    settingsSection.classList.add("hidden");
+    toggleSettingsBtn.textContent = "Show Settings";
+  }
+}
+
+// Show notification
+function showNotification(message, type = "info", duration = 3000) {
+  const notification = document.createElement("div");
+  notification.className =
+    `notification ${type} fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg shadow-lg`;
+  notification.innerHTML = `
+    <div class="flex items-center">
+      <div class="flex-1">${message}</div>
+      <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-current opacity-70 hover:opacity-100">
+        ✕
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, duration);
+}
+
+// Render job results
+function _renderJobResults(jobs) {
+  if (!resultsContainer) return;
+
+  if (!jobs || jobs.length === 0) {
+    resultsContainer.innerHTML = `
+      <div class="text-center py-12">
+        <div class="text-6xl mb-4">📭</div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No jobs found</h3>
+        <p class="text-gray-600 dark:text-gray-400">Try adjusting your search settings and try again.</p>
+      </div>
+    `;
+    if (totalResults) totalResults.textContent = "0";
     return;
   }
 
-  container.innerHTML = `
-    <div style="display: flex; gap: var(--spacing-sm); align-items: center; flex-wrap: wrap;">
-      <label>Start: <input type="time" id="work-start" value="${workTime.start}"></label>
-      <label>End: <input type="time" id="work-end" value="${workTime.end}"></label>
-      <label>Timezone: <input type="text" id="work-timezone" value="${workTime.timezone}" placeholder="UTC+0"></label>
-      <button id="disable-work-time" class="button outline small">Disable</button>
+  resultsContainer.innerHTML = jobs.map((job) => `
+    <div class="job-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-200">
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+            ${job.title || "Untitled Position"}
+          </h3>
+          <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+            ${job.company || "Company not specified"}
+          </div>
+          <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            ${job.location || "Location not specified"}
+          </div>
+        </div>
+        <div class="flex-shrink-0 ml-4">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+            ${job.source || "Unknown"}
+          </span>
+        </div>
+      </div>
+
+      <div class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+        ${job.description || "No description available"}
+      </div>
+
+      <div class="flex items-center justify-between">
+        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          ${
+    job.postedDate
+      ? new Date(job.postedDate).toLocaleDateString()
+      : "Date not available"
+  }
+        </div>
+        <div class="flex space-x-2">
+          <button
+            onclick="_showJobDetails('${job.id}')"
+            class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          >
+            View Details
+          </button>
+          ${
+    job.url
+      ? `
+            <a
+              href="${job.url}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              Apply
+              <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+              </svg>
+            </a>
+          `
+      : ""
+  }
+        </div>
+      </div>
     </div>
-  `;
+  `).join("");
+
+  if (totalResults) totalResults.textContent = jobs.length.toString();
+}
+
+// Show job details in modal
+function _showJobDetails(_jobId) {
+  // This would typically fetch job details from the server
+  // For now, we'll show a placeholder
+  if (jobModal && jobModalContent && jobApplyLink) {
+    jobModalContent.innerHTML = `
+      <div class="text-center py-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+        <p class="text-gray-600 dark:text-gray-400">Loading job details...</p>
+      </div>
+    `;
+
+    // Show modal (using Flowbite)
+    jobModal.classList.remove("hidden");
+
+    // In a real implementation, you would fetch job details here
+    setTimeout(() => {
+      jobModalContent.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Senior Software Engineer</h3>
+            <p class="text-lg text-gray-600 dark:text-gray-400">Tech Company Inc.</p>
+            <div class="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              San Francisco, CA • Remote
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Job Description</h4>
+            <div class="prose prose-custom max-w-none">
+              <p>We are looking for a Senior Software Engineer to join our team. You will be responsible for designing, developing, and maintaining high-quality software solutions.</p>
+              <ul>
+                <li>Design and implement scalable software solutions</li>
+                <li>Collaborate with cross-functional teams</li>
+                <li>Write clean, maintainable code</li>
+                <li>Participate in code reviews and mentoring</li>
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Requirements</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h5 class="font-medium text-gray-900 dark:text-white mb-2">Technical Skills</h5>
+                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                  <li>• React, Node.js, TypeScript</li>
+                  <li>• REST APIs, GraphQL</li>
+                  <li>• AWS, Docker, Kubernetes</li>
+                  <li>• Git, CI/CD pipelines</li>
+                </ul>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h5 class="font-medium text-gray-900 dark:text-white mb-2">Experience</h5>
+                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                  <li>• 5+ years of experience</li>
+                  <li>• Bachelor's degree in CS</li>
+                  <li>• Agile development</li>
+                  <li>• Team leadership</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+            <h4 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">About the Company</h4>
+            <p class="text-blue-800 dark:text-blue-200">
+              Tech Company Inc. is a leading technology company focused on building innovative solutions for the modern workplace. We offer competitive salaries, excellent benefits, and opportunities for professional growth.
+            </p>
+          </div>
+        </div>
+      `;
+
+      jobApplyLink.href = "#"; // Would be the actual job URL
+    }, 1000);
+  }
+}
+
+// Close job modal
+function closeJobModal() {
+  if (jobModal) {
+    jobModal.classList.add("hidden");
+  }
 }
 
 // Update settings from UI
@@ -466,6 +735,11 @@ function updateProgressUI(progress) {
 
 // Dynamic event handlers
 function bindDynamicEvents(_settings) {
+  // Settings toggle
+  if (toggleSettingsBtn) {
+    toggleSettingsBtn.addEventListener("click", toggleSettings);
+  }
+
   // Add country filter
   const addCountryBtn = document.getElementById("add-country");
   if (addCountryBtn) {
@@ -476,34 +750,6 @@ function bindDynamicEvents(_settings) {
   const addLanguageBtn = document.getElementById("add-language");
   if (addLanguageBtn) {
     addLanguageBtn.addEventListener("click", () => addLanguageRequirement());
-  }
-
-  // Enable work time filter
-  const enableWorkTimeBtn = document.getElementById("enable-work-time");
-  if (enableWorkTimeBtn) {
-    enableWorkTimeBtn.addEventListener("click", () => {
-      const settings = loadSettings();
-      if (!settings.filters.workTime) {
-        settings.filters.workTime = {
-          start: "09:00",
-          end: "18:00",
-          timezone: "UTC+0",
-        };
-      }
-      renderSettings(settings);
-      bindDynamicEvents(settings);
-    });
-  }
-
-  // Disable work time filter
-  const disableWorkTimeBtn = document.getElementById("disable-work-time");
-  if (disableWorkTimeBtn) {
-    disableWorkTimeBtn.addEventListener("click", () => {
-      const settings = loadSettings();
-      settings.filters.workTime = undefined;
-      renderSettings(settings);
-      bindDynamicEvents(settings);
-    });
   }
 
   // Reset settings
@@ -555,9 +801,12 @@ function bindDynamicEvents(_settings) {
             saveSettings(importedSettings);
             renderSettings(importedSettings);
             bindDynamicEvents(importedSettings);
-            alert("Settings imported successfully!");
+            showNotification("Settings imported successfully!", "success");
           } catch (_error) {
-            alert("Error importing settings: Invalid JSON file");
+            showNotification(
+              "Error importing settings: Invalid JSON file",
+              "error",
+            );
           }
         };
         reader.readAsText(file);
@@ -587,6 +836,8 @@ globalThis.removeLanguageRequirement = function (index) {
   }
 };
 
+globalThis.closeJobModal = closeJobModal;
+
 function addCountryFilter() {
   const settings = loadSettings();
   if (!settings.filters.countries) {
@@ -615,9 +866,40 @@ function init() {
   renderSettings(settings);
   bindDynamicEvents(settings);
 
+  // Initialize theme
+  initTheme();
+
   // Bind events
   startSearchButton.addEventListener("click", startSearch);
   stopSearchButton.addEventListener("click", stopSearch);
+
+  // Load more results button
+  const loadMoreBtn = document.getElementById("load-more-results");
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener("click", () => {
+      showNotification(
+        "Load more functionality would be implemented here",
+        "info",
+      );
+    });
+  }
+
+  // Modal close handlers
+  if (jobModal) {
+    // Close modal when clicking outside
+    jobModal.addEventListener("click", (e) => {
+      if (e.target === jobModal) {
+        closeJobModal();
+      }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !jobModal.classList.contains("hidden")) {
+        closeJobModal();
+      }
+    });
+  }
 
   // Auto-save settings on change
   document.addEventListener("change", () => {
@@ -631,7 +913,7 @@ function init() {
     saveSettings(updatedSettings);
   });
 
-  console.log("🎯 Remote Job Scout initialized");
+  console.log("🎯 Remote Job Scout initialized with modern UI");
 }
 
 // Start the app

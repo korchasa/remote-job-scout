@@ -119,10 +119,12 @@ remote-job-scout/
   - `scrapers.ts` - Scraper interface definitions and job post types ✅
   - `settings.ts` - Comprehensive settings type definitions ✅
 - **utils/** - Helper functions and utilities (planned for future stages)
-- **web/** - Web interface components
-  - `app.js` - Client application with multi-stage progress UI and real-time
+- **web/** - Modern web interface components
+  - `app.js` - Client application with modern UI, theme switching, and real-time
     updates ✅
-  - `index.html` - Responsive HTML interface with stage visualization ✅
+  - `index.html` - Responsive HTML interface with Tailwind CSS + Flowbite
+    components ✅
+  - `styles.css` - Custom CSS with modern styling and animations ✅
   - `server.ts` - Deno serve-compatible web server with multi-stage API
     endpoints ✅
 
@@ -192,7 +194,8 @@ remote-job-scout/
 - **Deno runtime** - Modern JavaScript/TypeScript runtime with built-in web
   server
 - **TypeScript** - Development with strict type checking and advanced types
-- **Chota CSS** - Lightweight responsive CSS framework
+- **Tailwind CSS v4 + Flowbite** - Modern utility-first CSS framework with
+  professional UI components
 - **Playwright MCP** - Browser automation for advanced scraping (planned)
 
 ### Current Implementation Status

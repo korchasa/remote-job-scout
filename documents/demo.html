@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flowbite CDN Example</title>
+    <!-- Tailwind CSS via CDN -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"
+      rel="stylesheet"
+      integrity="sha512-+QqH5OqQKiEz4ndh5IqXoA6uZK0JkUzj4Nw4y5E5dJix79lBPL/V6kZB2nMThXtU6cOtDsh7u0K/HYvqCfxCkg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <!-- Flowbite CSS -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.6.6/flowbite.min.css"
+      rel="stylesheet"
+      integrity="sha512-p6tgnsOZqrdkAnjYUrNeDxL1uXAfYX9r3Ak3E7v6doZxi1hM4hS0atJr8gU3jDWby5JmZyEm8cQJqUyYmb1R4A=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+  <body class="bg-gray-100 p-10">
+    <div class="max-w-md mx-auto">
+      <!-- Example Flowbite component: Button -->
+      <button
+        data-modal-target="example-modal"
+        data-modal-toggle="example-modal"
+        class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 focus:outline-none"
+        type="button"
+      >
+        Open modal
+      </button>
+
+      <!-- Modal -->
+      <div
+        id="example-modal"
+        tabindex="-1"
+        aria-hidden="true"
+        class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 w-full md:inset-0 h-[calc(100%-1rem)] max-h-full"
+      >
+        <div class="relative p-4 w-full max-w-md max-h-full">
+          <div class="relative bg-white rounded-lg shadow">
+            <button
+              type="button"
+              class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center"
+              data-modal-hide="example-modal"
+            >
+              ✕
+            </button>
+            <div class="p-6 text-center">
+              <h3 class="mb-5 text-lg font-normal text-gray-500">
+                This is a Flowbite modal example
+              </h3>
+              <button
+                data-modal-hide="example-modal"
+                type="button"
+                class="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2"
+              >
+                Ok
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flowbite JS -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.6.6/flowbite.min.js"
+      integrity="sha512-QQAz3rXDEhS8Tvu7fLvvX77pCkVtpyZx6hZwThApXjv9S11QBdgvMEf21AzRGuY16CrNvQG1l1m2zjzORd4kuA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </body>
+</html>
