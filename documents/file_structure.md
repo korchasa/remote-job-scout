@@ -4,6 +4,16 @@
 
 ```
 remote-job-scout/
+├── .cursor/                    # IDE configuration files
+│   ├── code-style-fullstack.mdc # Code style guidelines
+│   ├── debug-by-playwright.mdc # Debug configuration
+│   ├── docs-rds-sds-schema.mdc # Documentation schema
+│   ├── gods.mdc                # Project principles
+│   ├── main.mdc                # Main configuration
+│   ├── role-fullstack.mdc      # Role definitions
+│   ├── run-commands.mdc        # Available commands
+│   ├── tdd-rules.mdc           # TDD guidelines
+│   └── zen.mdc                 # Zen philosophy
 ├── build.ts                    # Project build script
 ├── deno.json                   # Deno configuration
 ├── deno.lock                   # Deno dependencies lock file
@@ -61,6 +71,7 @@ remote-job-scout/
 - `deno.lock` - Fixed versions of dependencies
 - `build.ts` - Project build script
 - `run` and `run.ts` - Entry point for the CLI application
+- `.cursor/` - IDE-specific configuration files for development environment
 
 ### Source Code (src/)
 
