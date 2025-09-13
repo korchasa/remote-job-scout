@@ -1,0 +1,49 @@
+import { Router } from 'express';
+import { CollectionController } from '../../controllers/collectionController.js';
+import { jobs } from '../storage.js';
+import { logPerformance } from '../middleware/logging.js';
+// Create collection controller instance
+const collectionController = new CollectionController(jobs);
+const router = Router();
+// POST /api/multi-stage/search - Start multi-stage search
+router.post('/search', (req, res) => {
+    void (async () => {
+        try {
+            const startTime = performance.now();
+            const searchRequest = req.body;
+            console.log('🚀 New multi-stage search request:', {
+                sessionId: searchRequest.session_id,
+                positions: searchRequest.settings.searchPositions,
+                sources: searchRequest.settings.sources.jobSites,
+            });
+            const response = await collectionController.startMultiStageSearch(searchRequest);
+            res.json(response);
+            logPerformance(req.method, req.path, startTime, 200);
+        }
+        catch (error) {
+            console.error('❌ Multi-stage search API error:', error);
+            res.status(400).json({
+                success: false,
+                message: 'Invalid request',
+            });
+        }
+    })();
+});
+// GET /api/multi-stage/progress/:sessionId - Get multi-stage progress
+router.get('/progress/:sessionId', (req, res) => {
+    const sessionId = req.params.sessionId;
+    const progress = collectionController.getMultiStageProgress(sessionId);
+    if (progress) {
+        res.json(progress);
+    }
+    else {
+        res.status(404).json({ error: 'Session not found' });
+    }
+});
+// POST /api/multi-stage/stop/:sessionId - Stop multi-stage search
+router.post('/stop/:sessionId', (req, res) => {
+    const sessionId = req.params.sessionId;
+    const result = collectionController.stopMultiStageSearch(sessionId);
+    res.json(result);
+});
+export default router;

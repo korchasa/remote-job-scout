@@ -1,61 +1,111 @@
-import { parse } from "https://deno.land/std@0.208.0/flags/mod.ts";
-import { walk } from "https://deno.land/std@0.208.0/fs/walk.ts";
+#!/usr/bin/env node
 
-// Interface for scan results
-interface ScanResult {
-  file: string;
-  line: number;
-  type: string;
-  content: string;
+import { parseArgs } from 'node:util';
+import { execSync, spawn } from 'child_process';
+import { existsSync, rmSync, readdirSync, statSync, readFileSync } from 'fs';
+import { join } from 'path';
+
+// Unified logging functions
+function logInfo(message: string): void {
+  console.log(`ℹ️  ${message}`);
 }
 
-const args = parse(Deno.args);
-const command = args._[0] as string;
+function logSuccess(message: string): void {
+  console.log(`✅ ${message}`);
+}
 
-// Helper function to run command and check status
-async function runDenoCommand(
-  cmd: string[],
-  description: string,
-): Promise<boolean> {
-  console.log(`🔧 ${description}...`);
-  const command = new Deno.Command(Deno.execPath(), {
-    args: cmd,
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-  const process = command.spawn();
-  const status = await process.status;
+function logError(message: string): void {
+  console.log(`❌ ${message}`);
+}
 
-  if (status.code === 0) {
-    console.log(`✅ ${description} completed successfully`);
-    return true;
-  } else {
-    console.log(`❌ ${description} failed`);
-    return false;
+function logProgress(message: string): void {
+  console.log(`🔧 ${message}...`);
+}
+
+// Clean build artifacts function
+function cleanBuildArtifacts(): void {
+  logProgress('Cleaning build artifacts');
+  try {
+    if (existsSync('dist')) {
+      rmSync('dist', { recursive: true, force: true });
+      logSuccess('Clean completed');
+    } else {
+      logInfo('Nothing to clean');
+    }
+  } catch {
+    logInfo('Nothing to clean');
   }
 }
 
-// Comment scanning functions
-async function scanComments(): Promise<ScanResult[]> {
-  const results: ScanResult[] = [];
+// Format code function
+async function formatCode(): Promise<void> {
+  logProgress('Formatting code');
+  await runCommand(['npx', 'prettier', '--write', '.'], 'Code formatting');
+}
 
-  const patterns = [
-    { regex: /\/\/\s*TODO[:\s]*(.+)/i, type: "TODO" },
-    { regex: /\/\*\s*TODO[:\s]*(.+?)\*\//i, type: "TODO" },
-    { regex: /\/\/\s*FIXME[:\s]*(.+)/i, type: "FIXME" },
-    { regex: /\/\*\s*FIXME[:\s]*(.+?)\*\//i, type: "FIXME" },
-    { regex: /\/\/\s*HACK[:\s]*(.+)/i, type: "HACK" },
-    { regex: /\/\*\s*HACK[:\s]*(.+?)\*\//i, type: "HACK" },
-    { regex: /\/\/\s*BUG[:\s]*(.+)/i, type: "BUG" },
-    { regex: /\/\*\s*BUG[:\s]*(.+?)\*\//i, type: "BUG" },
-    { regex: /\/\/\s*DEBUG[:\s]*(.+)/i, type: "DEBUG" },
-    { regex: /\/\*\s*DEBUG[:\s]*(.+?)\*\//i, type: "DEBUG" },
-    { regex: /\/\/\s*eslint-disable/i, type: "ESLINT_DISABLE" },
-    { regex: /\/\/\s*tslint:disable/i, type: "TSLINT_DISABLE" },
-    { regex: /\/\/\s*deno-lint-ignore/i, type: "DENO_LINT_IGNORE" },
-  ];
+// Helper function to run command and check status
+async function runCommand(cmd: string[], description: string, cwd?: string): Promise<void> {
+  logProgress(description);
+  try {
+    execSync(cmd.join(' '), {
+      stdio: 'inherit',
+      cwd: cwd || process.cwd(),
+      env: { ...process.env, FORCE_COLOR: '1' },
+    });
+    logSuccess(`${description} completed successfully`);
+  } catch {
+    process.exit(1);
+  }
+}
 
-  const exclude = [
+// Helper function to run command in background
+async function runCommandBackground(cmd: string[], description: string): Promise<boolean> {
+  logProgress(description);
+  return new Promise((resolve) => {
+    const child = spawn(cmd[0], cmd.slice(1), {
+      stdio: 'inherit',
+      cwd: process.cwd(),
+      env: { ...process.env, FORCE_COLOR: '1' },
+      detached: false,
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        logSuccess(`${description} completed successfully`);
+        resolve(true);
+      } else {
+        logError(`${description} failed`);
+        resolve(false);
+      }
+    });
+
+    child.on('error', (error) => {
+      logError(`${description} failed with error: ${error.message}`);
+      resolve(false);
+    });
+  });
+}
+
+// Build project function
+async function buildProject(): Promise<void> {
+  logProgress('Building Remote Job Scout');
+
+  logProgress('Building client');
+  await runCommand(
+    ['npx', 'vite', 'build', '--config', 'src/client/vite.config.ts'],
+    'Client build',
+  );
+
+  logProgress('Building server');
+  await runCommand(['npx', 'tsc', '--project', 'tsconfig.server.json'], 'Server build');
+
+  logSuccess('Build completed!');
+}
+
+// Comment scanning function
+async function scanComments(): Promise<void> {
+  // Configuration constants
+  const EXCLUDED_PATTERNS = [
     /node_modules/,
     /\.git/,
     /dist/,
@@ -63,452 +113,200 @@ async function scanComments(): Promise<ScanResult[]> {
     /\.DS_Store/,
     /references/,
     /documents/,
-    /tests/,
     /\.vscode/,
     /\.idea/,
     /\.cursor/,
   ];
 
-  for await (
-    const entry of walk(".", {
-      exts: [".ts", ".js", ".tsx", ".jsx", ".md"],
-      skip: exclude,
-    })
-  ) {
-    if (entry.isFile) {
-      try {
-        const content = await Deno.readTextFile(entry.path);
-        const lines = content.split("\n");
+  const COMMENT_PATTERNS = [
+    { regex: /\/\/\s*TODO[:\s]*(.+)/i, type: 'TODO' },
+    { regex: /\/\*\s*TODO[:\s]*(.+?)\*\//i, type: 'TODO' },
+    { regex: /\/\/\s*FIXME[:\s]*(.+)/i, type: 'FIXME' },
+    { regex: /\/\*\s*FIXME[:\s]*(.+?)\*\//i, type: 'FIXME' },
+    { regex: /\/\/\s*HACK[:\s]*(.+)/i, type: 'HACK' },
+    { regex: /\/\*\s*HACK[:\s]*(.+?)\*\//i, type: 'HACK' },
+    { regex: /\/\/\s*BUG[:\s]*(.+)/i, type: 'BUG' },
+    { regex: /\/\*\s*BUG[:\s]*(.+?)\*\//i, type: 'BUG' },
+    { regex: /\/\/\s*DEBUG[:\s]*(.+)/i, type: 'DEBUG' },
+    { regex: /\/\*\s*DEBUG[:\s]*(.+?)\*\//i, type: 'DEBUG' },
+    { regex: /\/\/\s*eslint-disable/i, type: 'ESLINT_DISABLE' },
+    { regex: /\/\/\s*tslint:disable/i, type: 'TSLINT_DISABLE' },
+  ];
 
-        lines.forEach((line, index) => {
-          for (const pattern of patterns) {
-            const match = line.match(pattern.regex);
-            if (match) {
-              results.push({
-                file: entry.path,
-                line: index + 1,
-                type: pattern.type,
-                content: match[1]?.trim() || line.trim(),
-              });
-            }
+  logProgress('Scanning for TODOs, FIXMEs, debug prints and linter suppressions');
+  const results: string[] = [];
+
+  function scanDir(dirPath: string): void {
+    try {
+      const entries = readdirSync(dirPath);
+
+      for (const entry of entries) {
+        const fullPath = join(dirPath, entry);
+        const relativePath = fullPath.replace(process.cwd() + '/', '');
+
+        // Skip excluded paths
+        if (EXCLUDED_PATTERNS.some((pattern) => pattern.test(relativePath))) continue;
+
+        const stat = statSync(fullPath);
+
+        if (stat.isDirectory()) {
+          scanDir(fullPath);
+        } else if (stat.isFile() && /\.(ts|js|tsx|jsx|md)$/.test(entry)) {
+          try {
+            const content = readFileSync(fullPath, 'utf8');
+
+            content.split('\n').forEach((line, index) => {
+              for (const pattern of COMMENT_PATTERNS) {
+                const match = line.match(pattern.regex);
+                if (match) {
+                  results.push(
+                    `${relativePath}:${index + 1} - ${pattern.type} - ${match[1]?.trim() || line.trim()}`,
+                  );
+                }
+              }
+            });
+          } catch (error) {
+            console.warn(
+              `Warning: Could not read file ${relativePath}: ${error instanceof Error ? error.message : String(error)}`,
+            );
           }
-        });
-      } catch (error) {
-        console.warn(
-          `Warning: Could not read file ${entry.path}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+        }
       }
+    } catch (error) {
+      console.warn(
+        `Warning: Could not scan directory ${dirPath}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
-  return results;
+  scanDir('.');
+
+  if (results.length === 0) {
+    logSuccess('No comment issues found');
+    return;
+  }
+
+  console.log(`\n📋 Found ${results.length} comment items:\n`);
+
+  // Display results
+  results.forEach((item) => {
+    console.log(`🔸 ${item}`);
+  });
+
+  logError('Found forbidden comments - build failed');
+  process.exit(1);
 }
 
-const commands = {
-  init: async () => {
-    console.log("📦 Installing dependencies...");
-    const success = await runDenoCommand(
-      ["install"],
-      "Dependencies installation",
-    );
-    if (success) {
-      console.log("✅ Dependencies installed successfully");
-    } else {
-      console.log("❌ Failed to install dependencies");
-      Deno.exit(1);
-    }
-  },
+// Comprehensive project check function
+async function runCheck(): Promise<void> {
+  logProgress('Running comprehensive project check');
+  // Clean build artifacts
+  cleanBuildArtifacts();
+  // Build project
+  await buildProject();
+  // Format code
+  await formatCode();
+  // Lint code
+  await runCommand(['npx', 'eslint', '.', '--fix', '--max-warnings', '0'], 'Code linting');
+  // Scan for comments and issues
+  await scanComments();
+  // Run tests
+  await runCommand(['npx', 'vitest', 'run', '--config', 'vitest.config.ts'], 'Test execution');
 
-  "test-one": async () => {
-    const testPath = args._[1] as string;
-    if (!testPath) {
-      console.log("❌ Please provide a test path");
-      console.log("Usage: ./run.ts test-one <test_path>");
-      Deno.exit(1);
-    }
+  logSuccess('All checks passed!');
+}
 
-    console.log(`🧪 Running specific test: ${testPath}`);
-    const success = await runDenoCommand(
+// Development server function
+async function runDev(): Promise<void> {
+  logProgress('Starting development server');
+  logInfo('Server will be available at http://localhost:3000');
+  logInfo('Press Ctrl+C to stop the server');
+
+  try {
+    await runDevStop();
+    await runCheck();
+
+    // Build Docker image
+    logProgress('Building Docker image');
+    await runCommand(['docker', 'build', '-t', 'remote-job-scout-dev', '.'], 'Docker image build');
+    // Start container with volume mounts
+    logProgress('Starting development container');
+    await runCommandBackground(
       [
-        "test",
-        "--allow-read",
-        "--allow-net",
-        "--allow-write",
-        testPath,
+        'docker',
+        'run',
+        '--name',
+        'remote-job-scout-dev',
+        '--rm',
+        '-p',
+        '3000:3000',
+        '-v',
+        `${process.cwd()}/src:/app/src:cached`,
+        '-v',
+        `${process.cwd()}/documents:/app/documents:cached`,
+        '-v',
+        `${process.cwd()}/tests:/app/tests:cached`,
+        '-v',
+        `${process.cwd()}/package.json:/app/package.json:cached`,
+        '-e',
+        'NODE_ENV=development',
+        'remote-job-scout-dev',
       ],
-      `Test ${testPath}`,
+      'Development container',
     );
+  } catch (error) {
+    logError(`Failed to start development environment: ${error}`);
+    process.exit(1);
+  }
+}
 
-    if (!success) {
-      Deno.exit(1);
-    }
-  },
+// Stop development server function
+async function runDevStop(): Promise<void> {
+  logProgress('Stopping development server');
+  execSync('docker rm -f remote-job-scout-dev', { stdio: 'pipe' });
+}
 
-  cleanup: async () => {
-    console.log("🧹 Cleaning project...");
-    try {
-      // Clean build artifacts
-      await Deno.remove("dist", { recursive: true });
-    } catch {
-      // Ignore if dist doesn't exist
-    }
+// Help function
+function runHelp(): void {
+  console.log(`
+Remote Job Scout - CLI Tool (Node.js version)
 
-    try {
-      // Clean deno.lock if needed
-      await Deno.remove("deno.lock");
-    } catch {
-      // Ignore if deno.lock doesn't exist
-    }
-
-    console.log("✅ Project cleanup completed");
-    return true;
-  },
-
-  dev: async () => {
-    console.log("🚀 Starting development server...");
-    console.log("🌐 Server will be available at http://localhost:3000");
-    console.log("📝 Press Ctrl+C to stop the server");
-
-    try {
-      // Check if Docker is available
-      console.log("🔍 Checking Docker availability...");
-      const dockerCheck = new Deno.Command("docker", {
-        args: ["--version"],
-        stdout: "piped",
-        stderr: "piped",
-      });
-      const dockerCheckProcess = dockerCheck.spawn();
-      const dockerCheckStatus = await dockerCheckProcess.status;
-
-      if (dockerCheckStatus.code !== 0) {
-        console.log("❌ Docker is not installed or not running");
-        console.log("💡 Please install Docker to run the development server");
-        Deno.exit(1);
-      }
-
-      console.log("🐳 Using Docker development environment...");
-
-      // Stop any existing containers with the same name
-      console.log("🛑 Stopping previous containers...");
-      const stopCmd = new Deno.Command("docker", {
-        args: ["rm", "-f", "remote-job-scout-dev"],
-        stdout: "piped",
-        stderr: "piped",
-      });
-      const stopProcess = stopCmd.spawn();
-      await stopProcess.status; // Don't check status, container might not exist
-
-      // Build Docker image
-      console.log("🔨 Building Docker image...");
-      const buildCmd = new Deno.Command("docker", {
-        args: ["build", "-t", "remote-job-scout-dev", "."],
-        stdout: "inherit",
-        stderr: "inherit",
-      });
-      const buildProcess = buildCmd.spawn();
-      const buildStatus = await buildProcess.status;
-
-      if (buildStatus.code !== 0) {
-        throw new Error("Failed to build Docker image");
-      }
-
-      // Start container with volume mounts
-      console.log("🚀 Starting development container...");
-      const runCmd = new Deno.Command("docker", {
-        args: [
-          "run",
-          "--name",
-          "remote-job-scout-dev",
-          "--rm",
-          "-p",
-          "3000:3000",
-          "-v",
-          `${Deno.cwd()}/src:/app/src:cached`,
-          "-v",
-          `${Deno.cwd()}/documents:/app/documents:cached`,
-          "-v",
-          `${Deno.cwd()}/tests:/app/tests:cached`,
-          "-v",
-          `${Deno.cwd()}/deno.json:/app/deno.json:cached`,
-          "-v",
-          `${Deno.cwd()}/deno.lock:/app/deno.lock:cached`,
-          "-e",
-          "DENO_ENV=development",
-          "-e",
-          "DENO_WATCH=true",
-          "remote-job-scout-dev",
-        ],
-        stdout: "inherit",
-        stderr: "inherit",
-      });
-      const runProcess = runCmd.spawn();
-      await runProcess.status;
-    } catch (error) {
-      console.log(
-        `❌ Failed to start development environment: ${error}`,
-      );
-      Deno.exit(1);
-    }
-  },
-
-  check: async () => {
-    console.log("🔍 Running comprehensive project check...");
-
-    // Clean build artifacts directly
-    console.log("🧹 Cleaning build artifacts...");
-    try {
-      await Deno.remove("dist", { recursive: true });
-      console.log("✅ Clean completed");
-    } catch {
-      console.log("ℹ️  Nothing to clean");
-    }
-
-    // Check TypeScript compilation
-    try {
-      console.log("🔧 Compiling TypeScript...");
-      const compileCmd = new Deno.Command(Deno.execPath(), {
-        args: ["check"],
-        stdout: "inherit",
-        stderr: "inherit",
-      });
-      const compileProcess = compileCmd.spawn();
-      const compileStatus = await compileProcess.status;
-
-      if (compileStatus.code === 0) {
-        console.log("✅ Compiling TypeScript completed successfully");
-      } else {
-        console.log("❌ Compiling TypeScript failed");
-        Deno.exit(1);
-      }
-    } catch (error) {
-      console.log(`❌ Compiling TypeScript failed with error: ${error}`);
-      Deno.exit(1);
-    }
-
-    // Check formatting
-    try {
-      console.log("🔧 Formatting code...");
-      const fmtCmd = new Deno.Command(Deno.execPath(), {
-        args: ["fmt"],
-        stdout: "inherit",
-        stderr: "inherit",
-      });
-      const fmtProcess = fmtCmd.spawn();
-      const fmtStatus = await fmtProcess.status;
-
-      if (fmtStatus.code === 0) {
-        console.log("✅ Formatting code completed successfully");
-      } else {
-        console.log("❌ Formatting code failed");
-        Deno.exit(1);
-      }
-    } catch (error) {
-      console.log(`❌ Formatting code failed with error: ${error}`);
-      Deno.exit(1);
-    }
-
-    // Check linting
-    try {
-      console.log("🔧 Linting code...");
-      const lintCmd = new Deno.Command(Deno.execPath(), {
-        args: ["lint"],
-        stdout: "inherit",
-        stderr: "inherit",
-      });
-      const lintProcess = lintCmd.spawn();
-      const lintStatus = await lintProcess.status;
-
-      if (lintStatus.code === 0) {
-        console.log("✅ Linting code completed successfully");
-      } else {
-        console.log("❌ Linting code failed");
-        Deno.exit(1);
-      }
-    } catch (error) {
-      console.log(`❌ Linting code failed with error: ${error}`);
-      Deno.exit(1);
-    }
-
-    // Scan for comments and issues
-    try {
-      console.log(
-        "🔍 Scanning for TODOs, FIXMEs, debug prints and linter suppressions...",
-      );
-      const scanResults = await scanComments();
-
-      if (scanResults.length === 0) {
-        console.log("✅ No comment issues found");
-      } else {
-        console.log(`\n📋 Found ${scanResults.length} comment items:\n`);
-
-        const grouped = scanResults.reduce((acc, result) => {
-          if (!acc[result.type]) {
-            acc[result.type] = [];
-          }
-          acc[result.type].push(result);
-          return acc;
-        }, {} as Record<string, ScanResult[]>);
-
-        for (const [type, items] of Object.entries(grouped)) {
-          console.log(`🔸 ${type} (${items.length}):`);
-          items.forEach((item) => {
-            console.log(`  📄 ${item.file}:${item.line} - ${item.content}`);
-          });
-          console.log();
-        }
-
-        console.error("⚠️  Found comment issues");
-        Deno.exit(1);
-      }
-    } catch (error) {
-      console.log(`❌ Comment scanning failed with error: ${error}`);
-      Deno.exit(1);
-    }
-
-    // Run tests
-    try {
-      console.log("🔧 Running tests...");
-      const testCmd = new Deno.Command(Deno.execPath(), {
-        args: [
-          "test",
-          "--allow-read",
-          "--allow-net",
-          "--allow-write",
-          "--quiet",
-          "--parallel",
-        ],
-        stdout: "inherit",
-        stderr: "inherit",
-      });
-      const testProcess = testCmd.spawn();
-      const testStatus = await testProcess.status;
-
-      if (testStatus.code === 0) {
-        console.log("✅ Running tests completed successfully");
-      } else {
-        console.log("❌ Running tests failed");
-        Deno.exit(1);
-      }
-    } catch (error) {
-      console.log(`❌ Running tests failed with error: ${error}`);
-      Deno.exit(1);
-    }
-
-    console.log("✅ All checks passed!");
-  },
-
-  clean: async () => {
-    console.log("🧹 Cleaning build artifacts...");
-    try {
-      await Deno.remove("dist", { recursive: true });
-      console.log("✅ Clean completed");
-      return true;
-    } catch {
-      console.log("ℹ️  Nothing to clean");
-      return true;
-    }
-  },
-
-  "build:client": async () => {
-    console.log("🔨 Building React client...");
-    try {
-      // Import and run Vite build programmatically
-      const { build } = await import("npm:vite@5.4.19");
-
-      // Change to client directory for Vite config resolution
-      const originalCwd = Deno.cwd();
-      Deno.chdir("src/client");
-
-      await build();
-
-      // Return to original directory
-      Deno.chdir(originalCwd);
-
-      console.log("✅ Client build completed successfully!");
-    } catch (error) {
-      console.error("❌ Client build failed:", error);
-      Deno.exit(1);
-    }
-  },
-
-  build: async () => {
-    console.log("🔨 Building Remote Job Scout...");
-
-    try {
-      // First build the client
-      console.log("📦 Building client...");
-      await commands["build:client"]();
-
-      // Then copy server files if needed
-      console.log("📋 Copying server files...");
-      const { ensureDir, copy } = await import("https://deno.land/std@0.208.0/fs/mod.ts");
-
-      await ensureDir("dist");
-      await copy("src/server", "dist/server", { overwrite: true });
-
-      console.log("✅ Build completed!");
-    } catch (error) {
-      console.error("❌ Build failed:", error);
-      Deno.exit(1);
-    }
-  },
-
-  test: async () => {
-    const testId = args._[1] as string;
-    if (testId) {
-      console.log(`🧪 Running test: ${testId}`);
-      const success = await runDenoCommand(
-        [
-          "test",
-          "--allow-read",
-          "--allow-net",
-          "--allow-write",
-          testId,
-        ],
-        `Test ${testId}`,
-      );
-      if (!success) {
-        Deno.exit(1);
-      }
-    } else {
-      console.log("🧪 Running all tests...");
-      const success = await runDenoCommand(
-        ["test", "--allow-read", "--allow-net", "--allow-write"],
-        "All tests",
-      );
-      if (!success) {
-        Deno.exit(1);
-      }
-    }
-  },
-
-  help: () => {
-    console.log(`
-Remote Job Scout - CLI Tool
-
-Usage: ./run.ts <command> [args...]
+Usage: ./run <command> [args...]
 
 Commands:
-  init                Install dependencies
-  test-one <path>     Run specific test by path
-  cleanup             Clean project (artifacts, caches, etc.)
-  dev                 Run project in development mode with auto-restart (Docker preferred)
-  build               Build complete project (client + server)
-  build:client        Build React client with Vite
-  check               Run comprehensive project check with stages:
-                      clean → compile → format → lint → comment-scan → analyze → test
-  clean               Clean build artifacts (legacy command)
-  test <test_id>      Run test by relative path (legacy command)
+  check               Run all checks: cleanup, formatting, linting, analyze, build, test
+  test <test_id>      Run a single test by relative path.
+  start               Run the project in development mode
+  stop                Stop the project in development mode
   help                Show this help
     `);
+}
+
+// Parse command line arguments
+const { positionals, values } = parseArgs({
+  args: process.argv.slice(2),
+  options: {
+    help: { type: 'boolean', short: 'h' },
+    version: { type: 'boolean', short: 'v' },
   },
+  allowPositionals: true,
+});
+
+const command = positionals[0];
+
+const commands = {
+  start: runDev,
+  stop: runDevStop,
+  check: runCheck,
+  help: runHelp,
 };
 
-if (command && commands[command as keyof typeof commands]) {
+if (values.help || values.version) {
+  commands.help();
+} else if (command && commands[command as keyof typeof commands]) {
   await commands[command as keyof typeof commands]();
 } else {
   console.log(`❌ Unknown command: ${command}`);
   commands.help();
+  process.exit(1);
 }

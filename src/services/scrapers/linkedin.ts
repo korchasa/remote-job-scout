@@ -4,37 +4,28 @@
  * WARNING: LinkedIn имеет строгую защиту от скраппинга
  */
 
-import {
-  JobPost,
-  JobResponse,
-  Scraper,
-  ScraperInput,
-  Site,
-} from "../../types/scrapers.ts";
+import type { JobPost, JobResponse, ScraperInput } from '../../types/scrapers.js';
+import { Scraper, Site } from '../../types/scrapers.js';
 
 export class LinkedInScraper extends Scraper {
-  private readonly baseUrl = "https://www.linkedin.com";
+  private readonly baseUrl = 'https://www.linkedin.com';
 
-  constructor(
-    proxies?: string[] | string,
-    ca_cert?: string,
-    user_agent?: string,
-  ) {
+  constructor(proxies?: string[] | string, ca_cert?: string, user_agent?: string) {
     super(Site.LINKEDIN, proxies, ca_cert, user_agent);
   }
 
   getSourceName(): string {
-    return "LinkedIn";
+    return 'LinkedIn';
   }
 
   override async checkAvailability(): Promise<boolean> {
     try {
       const response = await fetch(`${this.baseUrl}/`, {
-        method: "HEAD",
+        method: 'HEAD',
         signal: AbortSignal.timeout(5000),
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
       });
       return response.ok;
@@ -48,40 +39,37 @@ export class LinkedInScraper extends Scraper {
     const jobs: JobPost[] = [];
 
     try {
-      console.warn(
-        "⚠️ LinkedIn scraping is challenging and may require proxy servers",
-      );
+      console.warn('⚠️ LinkedIn scraping is challenging and may require proxy servers');
 
       const searchParams = new URLSearchParams({
-        keywords: input.search_term || "",
-        location: input.location || "",
+        keywords: input.search_term ?? '',
+        location: input.location ?? '',
       });
 
       if (input.is_remote) {
-        searchParams.set("f_WT", "2"); // Remote work filter
+        searchParams.set('f_WT', '2'); // Remote work filter
       }
 
       if (input.job_type) {
         // LinkedIn job type filters
         const jobTypeMap: Record<string, string> = {
-          "fulltime": "F",
-          "parttime": "P",
-          "contract": "C",
-          "internship": "I",
+          fulltime: 'F',
+          parttime: 'P',
+          contract: 'C',
+          internship: 'I',
         };
         if (jobTypeMap[input.job_type]) {
-          searchParams.set("f_JT", jobTypeMap[input.job_type]);
+          searchParams.set('f_JT', jobTypeMap[input.job_type]);
         }
       }
 
-      const searchUrl =
-        `${this.baseUrl}/jobs/search/?${searchParams.toString()}`;
+      const searchUrl = `${this.baseUrl}/jobs/search/?${searchParams.toString()}`;
 
       const response = await this.fetchJobs(searchUrl, input);
       jobs.push(...response.jobs);
     } catch (error) {
       errors.push(`LinkedIn scraping failed: ${(error as Error).message}`);
-      console.error("LinkedIn scraping error:", error);
+      console.error('LinkedIn scraping error:', error);
     }
 
     return {
@@ -89,26 +77,22 @@ export class LinkedInScraper extends Scraper {
     };
   }
 
-  private async fetchJobs(
-    url: string,
-    input: ScraperInput,
-  ): Promise<{ jobs: JobPost[] }> {
+  private async fetchJobs(url: string, input: ScraperInput): Promise<{ jobs: JobPost[] }> {
     // LinkedIn требует специфических заголовков и cookies
     const headers = {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept":
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Accept-Encoding": "gzip, deflate, br",
-      "Connection": "keep-alive",
-      "Upgrade-Insecure-Requests": "1",
-      "Sec-Fetch-Dest": "document",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Site": "none",
-      "Cache-Control": "max-age=0",
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      Connection: 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Cache-Control': 'max-age=0',
       // LinkedIn specific headers
-      "X-Li-Track":
+      'X-Li-Track':
         '{"clientVersion":"1.13.3","mpVersion":"1.13.3","osName":"web","timezoneOffset":3,"timezone":"Europe/Moscow","deviceFormFactor":"DESKTOP","mpName":"voyager-web"}',
     };
 
@@ -119,10 +103,10 @@ export class LinkedInScraper extends Scraper {
 
     if (!response.ok) {
       if (response.status === 429) {
-        throw new Error("Rate limited by LinkedIn");
+        throw new Error('Rate limited by LinkedIn');
       }
       if (response.status === 403) {
-        throw new Error("Blocked by LinkedIn (may need proxy)");
+        throw new Error('Blocked by LinkedIn (may need proxy)');
       }
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
@@ -137,8 +121,7 @@ export class LinkedInScraper extends Scraper {
     const jobs: JobPost[] = [];
 
     // LinkedIn использует data-job-id атрибуты для вакансий
-    const jobCards =
-      html.match(/<div[^>]*data-job-id="[^"]*"[^>]*>.*?<\/div>/gs) || [];
+    const jobCards = html.match(/<div[^>]*data-job-id="[^"]*"[^>]*>.*?<\/div>/gs) ?? [];
 
     for (const card of jobCards) {
       try {
@@ -147,14 +130,11 @@ export class LinkedInScraper extends Scraper {
           jobs.push(job);
         }
       } catch (error) {
-        console.warn("Failed to parse LinkedIn job card:", error);
+        console.warn('Failed to parse LinkedIn job card:', error);
       }
     }
 
-    return jobs.slice(
-      0,
-      input.results_wanted || 50,
-    );
+    return jobs.slice(0, input.results_wanted ?? 50);
   }
 
   private parseJobCard(card: string): JobPost | null {
@@ -165,9 +145,7 @@ export class LinkedInScraper extends Scraper {
     const jobId = jobIdMatch[1];
 
     // Извлекаем заголовок
-    const titleMatch = card.match(
-      /<a[^>]*class="[^"]*job-card-list__title[^"]*"[^>]*>(.*?)<\/a>/s,
-    );
+    const titleMatch = card.match(/<a[^>]*class="[^"]*job-card-list__title[^"]*"[^>]*>(.*?)<\/a>/s);
     if (!titleMatch) return null;
 
     const title = this.cleanText(titleMatch[1]);
@@ -176,13 +154,13 @@ export class LinkedInScraper extends Scraper {
     const companyMatch = card.match(
       /<a[^>]*class="[^"]*job-card-container__company-name[^"]*"[^>]*>(.*?)<\/a>/s,
     );
-    const company = companyMatch ? this.cleanText(companyMatch[1]) : "Unknown";
+    const company = companyMatch ? this.cleanText(companyMatch[1]) : 'Unknown';
 
     // Извлекаем локацию
     const locationMatch = card.match(
       /<li[^>]*class="[^"]*job-card-container__metadata-item[^"]*"[^>]*>(.*?)<\/li>/s,
     );
-    const location = locationMatch ? this.cleanText(locationMatch[1]) : "";
+    const location = locationMatch ? this.cleanText(locationMatch[1]) : '';
 
     // Извлекаем URL
     const url = `${this.baseUrl}/jobs/view/${jobId}`;
@@ -191,9 +169,7 @@ export class LinkedInScraper extends Scraper {
     const descriptionMatch = card.match(
       /<p[^>]*class="[^"]*job-card-list__job-snippet[^"]*"[^>]*>(.*?)<\/p>/s,
     );
-    const description = descriptionMatch
-      ? this.cleanText(descriptionMatch[1])
-      : "";
+    const description = descriptionMatch ? this.cleanText(descriptionMatch[1]) : '';
 
     // Извлекаем дату
     const dateMatch = card.match(/<time[^>]*>(.*?)<\/time>/s);
@@ -205,34 +181,32 @@ export class LinkedInScraper extends Scraper {
       company_name: company,
       job_url: url,
       location: {
-        city: location.split(",")[0]?.trim(),
-        state: location.split(",")[1]?.trim(),
+        city: location.split(',')[0]?.trim(),
+        state: location.split(',')[1]?.trim(),
       },
       description,
       date_posted: date_posted ? new Date(date_posted) : null,
-      is_remote: location.toLowerCase().includes("remote") ||
-        description.toLowerCase().includes("remote"),
+      is_remote:
+        location.toLowerCase().includes('remote') || description.toLowerCase().includes('remote'),
     };
   }
 
   private cleanText(text: string): string {
     return text
-      .replace(/<[^>]*>/g, "")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
+      .replace(/<[^>]*>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
-      .replace(/\s+/g, " ")
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
   private parseDate(dateText: string): string | undefined {
     // LinkedIn использует форматы типа "1 day ago", "2 weeks ago", etc.
     const now = new Date();
-    const match = dateText.match(
-      /(\d+)\s+(second|minute|hour|day|week)s?\s+ago/i,
-    );
+    const match = dateText.match(/(\d+)\s+(second|minute|hour|day|week)s?\s+ago/i);
 
     if (!match) return undefined;
 
@@ -240,20 +214,20 @@ export class LinkedInScraper extends Scraper {
     const unit = match[2].toLowerCase();
 
     switch (unit) {
-      case "second":
+      case 'second':
         now.setSeconds(now.getSeconds() - amount);
         break;
-      case "minute":
+      case 'minute':
         now.setMinutes(now.getMinutes() - amount);
         break;
-      case "hour":
+      case 'hour':
         now.setHours(now.getHours() - amount);
         break;
-      case "day":
+      case 'day':
         now.setDate(now.getDate() - amount);
         break;
-      case "week":
-        now.setDate(now.getDate() - (amount * 7));
+      case 'week':
+        now.setDate(now.getDate() - amount * 7);
         break;
     }
 

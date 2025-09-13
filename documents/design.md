@@ -28,7 +28,7 @@ Based on JobSpy library principles for scalable job scraping, implemented in Nod
 - **Stack**: React 19, TypeScript strict mode, Vite build tool
 - **UI**: Shadcn/ui component library with Tailwind CSS
 - **State**: React Query for API management, custom hooks for data
-- **Features**: Dark/light themes, responsive design, WebSocket support
+- **Features**: Dark/light themes, responsive design, polling for progress updates
 
 ### Backend (Node.js/Express.js)
 
@@ -37,13 +37,13 @@ Based on JobSpy library principles for scalable job scraping, implemented in Nod
 - **Storage**: In-memory (production-ready for database migration)
 - **Services**: 6 business logic services with scraper implementations
 - **Middleware**: CORS, logging, security, error handling
-- **WebSocket**: Real-time communication for progress updates
+- **Polling**: HTTP polling for progress updates
 - **Testing**: Vitest framework with comprehensive test coverage
 
 ### Shared Layer
 
 - **Schemas**: Type-safe TypeScript definitions
-- **Communication**: REST API + WebSocket for real-time updates
+- **Communication**: REST API with HTTP polling for progress updates
 - **Validation**: Zod schema validation
 
 ## Data Architecture
@@ -123,13 +123,13 @@ Based on JobSpy library principles for scalable job scraping, implemented in Nod
 
 ## Constraints & Trade-offs
 
-### Migration Design Decisions
+### Design Decisions
 
-- **Deno to Node.js Migration**: Enterprise runtime adoption for better ecosystem support
+- **Node.js Runtime**: Enterprise JavaScript/TypeScript runtime with extensive ecosystem
 - Client-side settings storage (privacy over server persistence)
 - Single-table job storage (simplicity over normalization)
 - In-memory backend storage (development over production optimization)
-- REST polling over WebSocket (compatibility over real-time performance)
+- HTTP polling for progress updates (simplicity over real-time performance)
 - Modular Express.js architecture (maintainability over monolithic design)
 
 ### Performance Considerations
@@ -141,13 +141,14 @@ Based on JobSpy library principles for scalable job scraping, implemented in Nod
 
 ## Future Extensions
 
-### Post-Migration Enhancements
+### Current Enhancements
 
 - **Completed**: FR-4 (filtering) and FR-5 (LLM enrichment) services implemented
 - **Completed**: ESLint/Prettier configuration and TypeScript strict mode
 - **Completed**: Vitest testing framework with comprehensive coverage
 - **Completed**: Dev containers with VS Code integration
-- **Completed**: WebSocket implementation for real-time updates
+- **Completed**: HTTP polling implementation for progress updates
+- **Completed**: Code formatting improvements and style consistency
 - Database migration (SQLite/PostgreSQL)
 - Additional job sources (Glassdoor, Naukri, ZipRecruiter)
 - Advanced analytics and reporting

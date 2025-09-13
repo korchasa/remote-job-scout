@@ -3,19 +3,12 @@
  * Координирует сбор вакансий из множественных источников
  */
 
-import { SearchRequest, Vacancy } from "../types/database.ts";
-import {
-  Country,
-  countryFromString,
-  JobPost,
-  JobResponse,
-  Scraper,
-  ScraperInput,
-  Site,
-} from "../types/scrapers.ts";
-import { IndeedScraper } from "./scrapers/indeed.ts";
-import { LinkedInScraper } from "./scrapers/linkedin.ts";
-import { OpenAIWebSearchScraper } from "./scrapers/openai-web-search.ts";
+import type { SearchRequest, Vacancy } from '../types/database.js';
+import type { Country, JobPost, JobResponse, Scraper, ScraperInput } from '../types/scrapers.js';
+import { countryFromString, Site } from '../types/scrapers.js';
+import { IndeedScraper } from './scrapers/indeed.js';
+import { LinkedInScraper } from './scrapers/linkedin.js';
+import { OpenAIWebSearchScraper } from './scrapers/openai-web-search.js';
 
 export interface CollectionResult {
   success: boolean;
@@ -50,10 +43,10 @@ export class JobCollectionService {
    */
   private initializeScrapers(): void {
     // Indeed - самый надежный
-    this.scrapers.set("indeed", new IndeedScraper());
+    this.scrapers.set('indeed', new IndeedScraper());
 
     // LinkedIn - требует осторожности
-    this.scrapers.set("linkedin", new LinkedInScraper());
+    this.scrapers.set('linkedin', new LinkedInScraper());
 
     // Остальные скрапперы можно добавить позже
     // this.scrapers.set("glassdoor", new GlassdoorScraper());
@@ -78,7 +71,7 @@ export class JobCollectionService {
     const { session_id, settings } = request;
     const progress: CollectionProgress = {
       sessionId: session_id,
-      currentSource: "",
+      currentSource: '',
       sourcesCompleted: 0,
       totalSources: 0,
       jobsCollected: 0,
@@ -108,11 +101,7 @@ export class JobCollectionService {
         progress.currentSource = source;
 
         try {
-          const sourceVacancies = await this.processSource(
-            source,
-            settings,
-            session_id,
-          );
+          const sourceVacancies = await this.processSource(source, settings, session_id);
           allVacancies.push(...sourceVacancies);
           processedSources.push(source);
           progress.sourcesCompleted++;
@@ -129,21 +118,16 @@ export class JobCollectionService {
 
       // Обрабатываем OpenAI WebSearch если настроен
       if (this.shouldUseOpenAIWebSearch(settings)) {
-        progress.currentSource = "OpenAI WebSearch";
+        progress.currentSource = 'OpenAI WebSearch';
 
         try {
-          const openaiVacancies = await this.processOpenAIWebSearch(
-            settings,
-            session_id,
-          );
+          const openaiVacancies = await this.processOpenAIWebSearch(settings, session_id);
           allVacancies.push(...openaiVacancies);
-          processedSources.push("openai-websearch");
+          processedSources.push('openai-websearch');
           progress.sourcesCompleted++;
           progress.jobsCollected = allVacancies.length;
 
-          console.log(
-            `✅ OpenAI WebSearch: collected ${openaiVacancies.length} jobs`,
-          );
+          console.log(`✅ OpenAI WebSearch: collected ${openaiVacancies.length} jobs`);
         } catch (error) {
           const errorMsg = `OpenAI WebSearch: ${(error as Error).message}`;
           errors.push(errorMsg);
@@ -187,7 +171,7 @@ export class JobCollectionService {
    * Получить прогресс сбора для сессии
    */
   getProgress(sessionId: string): CollectionProgress | null {
-    return this.activeSessions.get(sessionId) || null;
+    return this.activeSessions.get(sessionId) ?? null;
   }
 
   /**
@@ -197,7 +181,7 @@ export class JobCollectionService {
     const progress = this.activeSessions.get(sessionId);
     if (progress && !progress.isComplete) {
       progress.isComplete = true;
-      progress.errors.push("Collection stopped by user");
+      progress.errors.push('Collection stopped by user');
       return true;
     }
     return false;
@@ -206,21 +190,17 @@ export class JobCollectionService {
   /**
    * Определить источники для обработки
    */
-  private getSourcesToProcess(settings: SearchRequest["settings"]): string[] {
+  private getSourcesToProcess(settings: SearchRequest['settings']): string[] {
     const requestedSources = settings.sources.jobSites;
 
     // Фильтруем только поддерживаемые источники
-    return requestedSources.filter((source) =>
-      this.scrapers.has(source.toLowerCase())
-    );
+    return requestedSources.filter((source) => this.scrapers.has(source.toLowerCase()));
   }
 
   /**
    * Проверить нужно ли использовать OpenAI WebSearch
    */
-  private shouldUseOpenAIWebSearch(
-    settings: SearchRequest["settings"],
-  ): boolean {
+  private shouldUseOpenAIWebSearch(settings: SearchRequest['settings']): boolean {
     return !!(
       this.openaiScraper &&
       settings.sources.openaiWebSearch?.apiKey &&
@@ -233,7 +213,7 @@ export class JobCollectionService {
    */
   private async processSource(
     source: string,
-    settings: SearchRequest["settings"],
+    settings: SearchRequest['settings'],
     sessionId: string,
   ): Promise<Vacancy[]> {
     const scraper = this.scrapers.get(source.toLowerCase());
@@ -261,21 +241,19 @@ export class JobCollectionService {
           country = countryFromString(settings.filters.countries[0].name);
         }
       } catch (error) {
-        console.warn(
-          `⚠️ Failed to parse country "${settings.filters.countries[0].name}":`,
-          error,
-        );
+        console.warn(`⚠️ Failed to parse country "${settings.filters.countries[0].name}":`, error);
         // Continue without country filter
       }
 
       const input: ScraperInput = {
         site_type: [Site.INDEED], // Пока только Indeed
         search_term: position,
-        location: (settings.filters?.countries &&
-            Array.isArray(settings.filters.countries) &&
-            settings.filters.countries.length > 0)
-          ? settings.filters.countries[0].name
-          : undefined,
+        location:
+          settings.filters?.countries &&
+          Array.isArray(settings.filters.countries) &&
+          settings.filters.countries.length > 0
+            ? settings.filters.countries[0].name
+            : undefined,
         country: country,
         is_remote: true, // Фокусируемся на remote вакансиях
         results_wanted: 25, // Ограничиваем для тестирования
@@ -284,30 +262,22 @@ export class JobCollectionService {
       const response: JobResponse = await scraper.scrape(input);
 
       if (response.jobs.length === 0) {
-        console.warn(
-          `⚠️ ${source} no jobs found for ${position}`,
-        );
+        console.warn(`⚠️ ${source} no jobs found for ${position}`);
       }
 
       // Проверяем, что response.jobs является массивом
       if (!response.jobs || !Array.isArray(response.jobs)) {
-        console.error(
-          `❌ ${source} returned invalid jobs data for ${position}:`,
-          response.jobs,
-        );
+        console.error(`❌ ${source} returned invalid jobs data for ${position}:`, response.jobs);
         continue;
       }
 
       // Конвертируем JobPost в Vacancy
       for (const job of response.jobs) {
-        if (job && typeof job === "object") {
+        if (job && typeof job === 'object') {
           const vacancy = this.convertJobToVacancy(job, sessionId);
           vacancies.push(vacancy);
         } else {
-          console.warn(
-            `⚠️ ${source} returned invalid job object for ${position}:`,
-            job,
-          );
+          console.warn(`⚠️ ${source} returned invalid job object for ${position}:`, job);
         }
       }
 
@@ -322,7 +292,7 @@ export class JobCollectionService {
    * Обработать OpenAI WebSearch
    */
   private async processOpenAIWebSearch(
-    settings: SearchRequest["settings"],
+    settings: SearchRequest['settings'],
     sessionId: string,
   ): Promise<Vacancy[]> {
     if (!this.openaiScraper || !settings.sources.openaiWebSearch) {
@@ -330,13 +300,13 @@ export class JobCollectionService {
     }
 
     // Комбинируем все позиции в один запрос
-    const combinedQuery = settings.searchPositions.join(" OR ");
+    const combinedQuery = settings.searchPositions.join(' OR ');
 
     const input: ScraperInput = {
       site_type: [Site.GOOGLE], // OpenAI web search
       search_term: combinedQuery,
       is_remote: true,
-      results_wanted: settings.sources.openaiWebSearch.maxResults || 50,
+      results_wanted: settings.sources.openaiWebSearch.maxResults ?? 50,
     };
 
     const response = await this.openaiScraper.scrape(input);
@@ -355,16 +325,14 @@ export class JobCollectionService {
     return {
       id: crypto.randomUUID(),
       title: job.title,
-      description: job.description || "",
+      description: job.description ?? '',
       url: job.job_url,
-      published_date: job.date_posted
-        ? job.date_posted.toISOString()
-        : undefined,
-      status: "collected",
+      published_date: job.date_posted ? job.date_posted.toISOString() : undefined,
+      status: 'collected',
       created_at: new Date().toISOString(),
       collected_at: new Date().toISOString(),
-      source: "indeed", // Default source
-      country: job.location?.country || undefined,
+      source: 'indeed', // Default source
+      country: job.location?.country ?? undefined,
       // data будет содержать дополнительную информацию в JSON формате
       data: JSON.stringify({
         company: job.company_name,

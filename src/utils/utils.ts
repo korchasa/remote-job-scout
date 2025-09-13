@@ -1,5 +1,5 @@
-import { stringify } from "yaml";
-import { inspect } from "node:util";
+import { stringify } from 'yaml';
+import { inspect } from 'node:util';
 
 /**
  * Convert simple arrays to flow style for more compact YAML output
@@ -7,11 +7,12 @@ import { inspect } from "node:util";
 function convertSimpleArraysToFlowStyle(value: unknown): unknown {
   if (Array.isArray(value)) {
     // Check if array contains only simple values (strings, numbers, booleans)
-    const isSimpleArray = value.every((item) =>
-      typeof item === "string" ||
-      typeof item === "number" ||
-      typeof item === "boolean" ||
-      item === null
+    const isSimpleArray = value.every(
+      (item) =>
+        typeof item === 'string' ||
+        typeof item === 'number' ||
+        typeof item === 'boolean' ||
+        item === null,
     );
 
     if (isSimpleArray && value.length <= 10) {
@@ -23,7 +24,7 @@ function convertSimpleArraysToFlowStyle(value: unknown): unknown {
     return value.map(convertSimpleArraysToFlowStyle);
   }
 
-  if (value && typeof value === "object") {
+  if (value && typeof value === 'object') {
     const obj = value as Record<string, unknown>;
     const result: Record<string, unknown> = {};
 
@@ -52,7 +53,7 @@ export function yamlDump(value: unknown): string {
       minContentWidth: 20,
       // Use PLAIN by default so that multi-line strings are emitted as block scalars (|)
       // and single-line strings are not needlessly quoted
-      defaultStringType: "PLAIN",
+      defaultStringType: 'PLAIN',
     });
   } catch {
     // fall back to util.inspect if YAML serialization fails

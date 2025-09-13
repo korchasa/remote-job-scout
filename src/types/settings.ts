@@ -27,7 +27,7 @@ export interface UserSettings {
 
 export interface CountryFilter {
   name: string;
-  type: "blacklist" | "whitelist";
+  type: 'blacklist' | 'whitelist';
 }
 
 export interface LanguageRequirement {
@@ -53,26 +53,26 @@ export interface LLMRule {
 }
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
-  searchPositions: ["Software Engineer", "Frontend Developer"],
+  searchPositions: ['Software Engineer', 'Frontend Developer'],
   filters: {
     blacklistedCompanies: [],
-    blacklistedWordsTitle: ["senior", "lead"],
-    blacklistedWordsDescription: ["agile", "scrum"],
+    blacklistedWordsTitle: ['senior', 'lead'],
+    blacklistedWordsDescription: ['agile', 'scrum'],
     countries: [],
-    languages: [{ language: "English", level: "Intermediate" }],
+    languages: [{ language: 'English', level: 'Intermediate' }],
   },
   sources: {
-    jobSites: ["linkedin", "indeed"],
+    jobSites: ['linkedin', 'indeed'],
     openaiWebSearch: {
-      apiKey: "",
-      searchSites: ["linkedin.com", "indeed.com"],
+      apiKey: '',
+      searchSites: ['linkedin.com', 'indeed.com'],
       globalSearch: false,
     },
   },
   llm: {
     enrichmentInstructions: [
-      "Extract company information and requirements",
-      "Analyze job responsibilities and skills needed",
+      'Extract company information and requirements',
+      'Analyze job responsibilities and skills needed',
     ],
     processingRules: [],
   },

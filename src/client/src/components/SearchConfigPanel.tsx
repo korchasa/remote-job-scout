@@ -1,60 +1,53 @@
-import { useEffect, useState } from "react";
-import { Button } from "./ui/button.tsx";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card.tsx";
-import { Input } from "./ui/input.tsx";
-import { Label } from "./ui/label.tsx";
-import { Textarea as _Textarea } from "./ui/textarea.tsx";
-import { Checkbox } from "./ui/checkbox.tsx";
-import { Badge } from "./ui/badge.tsx";
-import { Play, Plus, Settings, X } from "lucide-react";
-import type { SearchConfig } from "../shared/schema.ts";
+import { useEffect, useState } from 'react';
+import { Button } from './ui/button.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card.tsx';
+import { Input } from './ui/input.tsx';
+import { Label } from './ui/label.tsx';
+import { Checkbox } from './ui/checkbox.tsx';
+import { Badge } from './ui/badge.tsx';
+import { Play, Plus, Settings, X } from 'lucide-react';
+import type { SearchConfig } from '../shared/schema.ts';
 
 const defaultConfig: SearchConfig = {
-  positions: ["Senior React Developer", "Frontend Engineer"],
-  blacklistedWords: ["unpaid", "internship", "commission"],
+  positions: ['Senior React Developer', 'Frontend Engineer'],
+  blacklistedWords: ['unpaid', 'internship', 'commission'],
   blacklistedCompanies: [],
-  selectedSources: ["Indeed", "LinkedIn", "OpenAI"],
+  selectedSources: ['Indeed', 'LinkedIn', 'OpenAI'],
   filters: {
-    locations: ["Remote", "United States", "Europe"],
-    employmentTypes: ["Full-time"],
-    remoteTypes: ["Fully Remote", "Hybrid"],
+    locations: ['Remote', 'United States', 'Europe'],
+    employmentTypes: ['Full-time'],
+    remoteTypes: ['Fully Remote', 'Hybrid'],
   },
 };
 
-const availableSources = [
-  "Indeed",
-  "LinkedIn",
-  "OpenAI",
-];
+const availableSources = ['Indeed', 'LinkedIn', 'OpenAI'];
 
 interface SearchConfigPanelProps {
-  onStartSearch: (config: SearchConfig) => void;
+  onStartSearch: (config: SearchConfig) => Promise<void>;
   isSearching?: boolean;
 }
 
-export function SearchConfigPanel(
-  { onStartSearch, isSearching = false }: SearchConfigPanelProps,
-) {
+export function SearchConfigPanel({ onStartSearch, isSearching = false }: SearchConfigPanelProps) {
   const [config, setConfig] = useState<SearchConfig>(defaultConfig);
-  const [newPosition, setNewPosition] = useState("");
-  const [newBlacklistedWord, setNewBlacklistedWord] = useState("");
-  const [newBlacklistedCompany, setNewBlacklistedCompany] = useState("");
+  const [newPosition, setNewPosition] = useState('');
+  const [newBlacklistedWord, setNewBlacklistedWord] = useState('');
+  const [newBlacklistedCompany, setNewBlacklistedCompany] = useState('');
 
   // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("remote-job-scout-config");
+    const saved = localStorage.getItem('remote-job-scout-config');
     if (saved) {
       try {
         setConfig(JSON.parse(saved));
-      } catch (_e) {
-        console.log("Failed to parse saved config, using defaults");
+      } catch {
+        console.log('Failed to parse saved config, using defaults');
       }
     }
   }, []);
 
   // Save to localStorage on config change
   useEffect(() => {
-    localStorage.setItem("remote-job-scout-config", JSON.stringify(config));
+    localStorage.setItem('remote-job-scout-config', JSON.stringify(config));
   }, [config]);
 
   const addPosition = () => {
@@ -63,7 +56,7 @@ export function SearchConfigPanel(
         ...prev,
         positions: [...prev.positions, newPosition.trim()],
       }));
-      setNewPosition("");
+      setNewPosition('');
     }
   };
 
@@ -75,15 +68,12 @@ export function SearchConfigPanel(
   };
 
   const addBlacklistedWord = () => {
-    if (
-      newBlacklistedWord.trim() &&
-      !config.blacklistedWords.includes(newBlacklistedWord.trim())
-    ) {
+    if (newBlacklistedWord.trim() && !config.blacklistedWords.includes(newBlacklistedWord.trim())) {
       setConfig((prev) => ({
         ...prev,
         blacklistedWords: [...prev.blacklistedWords, newBlacklistedWord.trim()],
       }));
-      setNewBlacklistedWord("");
+      setNewBlacklistedWord('');
     }
   };
 
@@ -101,21 +91,16 @@ export function SearchConfigPanel(
     ) {
       setConfig((prev) => ({
         ...prev,
-        blacklistedCompanies: [
-          ...prev.blacklistedCompanies,
-          newBlacklistedCompany.trim(),
-        ],
+        blacklistedCompanies: [...prev.blacklistedCompanies, newBlacklistedCompany.trim()],
       }));
-      setNewBlacklistedCompany("");
+      setNewBlacklistedCompany('');
     }
   };
 
   const removeBlacklistedCompany = (company: string) => {
     setConfig((prev) => ({
       ...prev,
-      blacklistedCompanies: prev.blacklistedCompanies.filter((c) =>
-        c !== company
-      ),
+      blacklistedCompanies: prev.blacklistedCompanies.filter((c) => c !== company),
     }));
   };
 
@@ -129,8 +114,8 @@ export function SearchConfigPanel(
   };
 
   const handleStartSearch = () => {
-    console.log("Starting search with config:", config);
-    onStartSearch(config);
+    console.log('Starting search with config:', config);
+    onStartSearch(config).catch(console.error);
   };
 
   return (
@@ -151,14 +136,10 @@ export function SearchConfigPanel(
               placeholder="e.g., Senior React Developer"
               value={newPosition}
               onChange={(e) => setNewPosition(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addPosition()}
+              onKeyDown={(e) => e.key === 'Enter' && addPosition()}
               data-testid="input-new-position"
             />
-            <Button
-              size="sm"
-              onClick={addPosition}
-              data-testid="button-add-position"
-            >
+            <Button size="sm" onClick={addPosition} data-testid="button-add-position">
               <Plus className="h-3 w-3" />
             </Button>
           </div>
@@ -170,8 +151,7 @@ export function SearchConfigPanel(
                   variant="ghost"
                   size="sm"
                   className="h-3 w-3 p-0 ml-1"
-                  onClick={() =>
-                    removePosition(position)}
+                  onClick={() => removePosition(position)}
                   data-testid={`button-remove-position-${position}`}
                 >
                   <X className="h-2 w-2" />
@@ -190,11 +170,12 @@ export function SearchConfigPanel(
                 <Checkbox
                   id={source}
                   checked={config.selectedSources.includes(source)}
-                  onCheckedChange={() =>
-                    toggleSource(source)}
+                  onCheckedChange={() => toggleSource(source)}
                   data-testid={`checkbox-source-${source}`}
                 />
-                <Label htmlFor={source} className="text-sm">{source}</Label>
+                <Label htmlFor={source} className="text-sm">
+                  {source}
+                </Label>
               </div>
             ))}
           </div>
@@ -209,7 +190,7 @@ export function SearchConfigPanel(
               placeholder="e.g., unpaid, internship"
               value={newBlacklistedWord}
               onChange={(e) => setNewBlacklistedWord(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addBlacklistedWord()}
+              onKeyDown={(e) => e.key === 'Enter' && addBlacklistedWord()}
               data-testid="input-blacklisted-word"
             />
             <Button
@@ -228,8 +209,7 @@ export function SearchConfigPanel(
                   variant="ghost"
                   size="sm"
                   className="h-3 w-3 p-0 ml-1"
-                  onClick={() =>
-                    removeBlacklistedWord(word)}
+                  onClick={() => removeBlacklistedWord(word)}
                   data-testid={`button-remove-blacklisted-word-${word}`}
                 >
                   <X className="h-2 w-2" />
@@ -248,7 +228,7 @@ export function SearchConfigPanel(
               placeholder="e.g., Company Name"
               value={newBlacklistedCompany}
               onChange={(e) => setNewBlacklistedCompany(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addBlacklistedCompany()}
+              onKeyDown={(e) => e.key === 'Enter' && addBlacklistedCompany()}
               data-testid="input-blacklisted-company"
             />
             <Button
@@ -267,8 +247,7 @@ export function SearchConfigPanel(
                   variant="ghost"
                   size="sm"
                   className="h-3 w-3 p-0 ml-1"
-                  onClick={() =>
-                    removeBlacklistedCompany(company)}
+                  onClick={() => removeBlacklistedCompany(company)}
                   data-testid={`button-remove-blacklisted-company-${company}`}
                 >
                   <X className="h-2 w-2" />
@@ -282,12 +261,13 @@ export function SearchConfigPanel(
         <Button
           onClick={handleStartSearch}
           className="w-full"
-          disabled={isSearching || config.positions.length === 0 ||
-            config.selectedSources.length === 0}
+          disabled={
+            isSearching || config.positions.length === 0 || config.selectedSources.length === 0
+          }
           data-testid="button-start-search"
         >
           <Play className="h-4 w-4 mr-2" />
-          {isSearching ? "Searching..." : "Start Job Search"}
+          {isSearching ? 'Searching...' : 'Start Job Search'}
         </Button>
       </CardContent>
     </Card>

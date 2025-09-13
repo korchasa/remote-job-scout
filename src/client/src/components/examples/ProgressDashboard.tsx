@@ -1,9 +1,9 @@
-import { ProgressDashboard } from "../ProgressDashboard.tsx";
+import { ProgressDashboard } from '../ProgressDashboard.tsx';
 
 export default function ProgressDashboardExample() {
   const mockProgress = {
     currentStage: 2 as const,
-    status: "running" as const,
+    status: 'running' as const,
     totalJobs: 150,
     processedJobs: 120,
     filteredJobs: 85,
@@ -14,11 +14,11 @@ export default function ProgressDashboardExample() {
   };
 
   const handlePauseResume = () => {
-    console.log("Pause/Resume clicked");
+    console.log('Pause/Resume clicked');
   };
 
   const handleStop = () => {
-    console.log("Stop clicked");
+    console.log('Stop clicked');
   };
 
   return (

@@ -50,7 +50,6 @@ remote-job-scout/
 │   │   │   │   ├── useJobs.ts
 │   │   │   │   ├── useSearchSessions.ts
 │   │   │   │   ├── useUserConfig.ts
-│   │   │   │   ├── useWebSocket.ts
 │   │   │   │   ├── use-mobile.tsx
 │   │   │   │   └── use-toast.ts
 │   │   │   ├── lib/      # Utilities
@@ -64,7 +63,7 @@ remote-job-scout/
 │   │   ├── index.html
 │   │   └── vite.config.ts
 │   ├── server/          # Express.js backend
-│   │   ├── index.ts     # Server entry with WebSocket
+│   │   ├── index.ts     # Server entry with polling
 │   │   ├── middleware/  # Express middleware
 │   │   │   ├── cors.ts
 │   │   │   ├── logging.ts
@@ -132,7 +131,7 @@ remote-job-scout/
 
 - **Runtime**: Node.js 18+ with TypeScript strict mode
 - **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind CSS
-- **Backend**: Express.js, REST API, WebSocket, modular middleware architecture
+- **Backend**: Express.js, REST API, HTTP polling, modular middleware architecture
 - **Build**: Docker multi-stage build with production optimization
 - **Development**: Dev containers, hot reload, TypeScript compilation, ESLint/Prettier
 - **Testing**: Vitest framework with comprehensive coverage

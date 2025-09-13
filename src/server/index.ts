@@ -1,62 +1,137 @@
-import { join } from "https://deno.land/std@0.208.0/path/mod.ts";
-import { SearchRequest } from "../types/database.ts";
-import { CollectionController } from "../controllers/collectionController.ts";
+import type { Request, Response } from 'express';
+import express from 'express';
+import { join } from 'path';
+import { readFileSync, existsSync } from 'fs';
+import process from 'node:process';
 
-// Simple in-memory storage for demo (will be replaced with SQLite)
-interface SessionData {
-  status: string;
-  settings: unknown;
-  startedAt: string;
-  progress: number;
+// Import middleware
+import { corsMiddleware } from './middleware/cors.js';
+import { loggingMiddleware, logPerformance } from './middleware/logging.js';
+import { securityMiddleware } from './middleware/security.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+
+// Import routes
+import jobsRouter from './routes/jobs.js';
+import searchRouter from './routes/search.js';
+import multiStageRouter from './routes/multiStage.js';
+
+// Import storage
+
+// Create Express application
+const app = express();
+const PORT = process.env.PORT ?? 3000;
+
+// Using HTTP polling for real-time progress updates
+
+// Trust proxy for proper IP detection
+app.set('trust proxy', 1);
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Security middleware
+if (process.env.NODE_ENV === 'production') {
+  app.use(securityMiddleware);
 }
-const sessions = new Map<string, SessionData>();
 
-// Simple in-memory storage for jobs (will be replaced with SQLite)
-import type { Vacancy } from "../types/database.ts";
-import type { JobPost } from "../shared/schema.ts";
-const jobs = new Map<string, Vacancy>();
+// CORS middleware
+app.use(corsMiddleware);
 
-// Collection controller
-const collectionController = new CollectionController(jobs);
+// Logging middleware
+app.use(loggingMiddleware);
 
-// Performance monitoring helper
-function logPerformance(
-  method: string,
-  path: string,
-  startTime: number,
-  status: number = 200,
-) {
-  const duration = performance.now() - startTime;
-  console.log(`📊 ${method} ${path} - ${duration.toFixed(2)}ms - ${status}`);
-}
+// Sessions routes (must be before other routes)
+app.get('/api/sessions', (req: Request, res: Response) => {
+  try {
+    const limit = parseInt((req.query.limit as string) ?? '10');
 
-async function handleRequest(request: Request): Promise<Response> {
-  const startTime = performance.now();
-  const url = new URL(request.url);
+    // Mock sessions data
+    const mockSessions = [
+      {
+        id: 'session-1',
+        name: 'Software Engineer Search',
+        status: 'completed',
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 3600000).toISOString(),
+        progress: {
+          total: 150,
+          processed: 150,
+          successful: 142,
+          failed: 8,
+        },
+        settings: {
+          positions: ['Software Engineer'],
+          sources: ['indeed', 'linkedin'],
+          filters: {
+            locations: ['Remote'],
+            employmentTypes: ['Full-time'],
+          },
+        },
+      },
+      {
+        id: 'session-2',
+        name: 'Frontend Developer Search',
+        status: 'running',
+        createdAt: new Date(Date.now() - 3600000).toISOString(),
+        updatedAt: new Date().toISOString(),
+        progress: {
+          total: 100,
+          processed: 45,
+          successful: 43,
+          failed: 2,
+        },
+        settings: {
+          positions: ['Frontend Developer'],
+          sources: ['indeed'],
+          filters: {
+            locations: ['Remote'],
+            employmentTypes: ['Full-time'],
+          },
+        },
+      },
+    ];
 
-  // Serve React app or simple test page
-  if (url.pathname === "/" || url.pathname === "/index.html") {
+    res.json({
+      sessions: mockSessions.slice(0, limit),
+      total: mockSessions.length,
+    });
+  } catch (error) {
+    console.error('❌ Sessions API error:', error);
+    res.status(500).json({ error: 'Failed to fetch sessions' });
+  }
+});
+
+// API Routes
+app.use('/api/jobs', jobsRouter);
+app.use('/api/search', searchRouter);
+app.use('/api/multi-stage', multiStageRouter);
+
+// Serve React app or simple test page
+app.get('/', (req: Request, res: Response) => {
+  try {
+    const startTime = performance.now();
+
+    // Try to serve built React app
+    const indexPath = join(process.cwd(), 'dist/client/index.html');
+    if (existsSync(indexPath)) {
+      const html = readFileSync(indexPath, 'utf8');
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+      logPerformance(req.method, req.path, startTime, 200);
+      return;
+    }
+
+    // Fallback to development HTML if build doesn't exist
     try {
-      const html = await Deno.readTextFile(
-        join(Deno.cwd(), "dist/client/index.html"),
-      );
-      const response = new Response(html, {
-        headers: { "Content-Type": "text/html" },
-      });
-      logPerformance(request.method, url.pathname, startTime, 200);
-      return response;
+      const devIndexPath = join(process.cwd(), 'src/client/index.html');
+      const html = readFileSync(devIndexPath, 'utf8');
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+      return;
     } catch {
-      // Fallback to development HTML if build doesn't exist
-      try {
-        const html = await Deno.readTextFile(
-          join(Deno.cwd(), "src/client/index.html"),
-        );
-        return new Response(html, {
-          headers: { "Content-Type": "text/html" },
-        });
-      } catch {
-        // Create a simple test page for integration testing
-        const testHtml = `
+      // Create a simple test page for integration testing
+      const testHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -134,399 +209,112 @@ async function handleRequest(request: Request): Promise<Response> {
     </script>
 </body>
 </html>`;
-        return new Response(testHtml, {
-          headers: { "Content-Type": "text/html" },
-        });
-      }
+      res.setHeader('Content-Type', 'text/html');
+      res.send(testHtml);
     }
+  } catch (error) {
+    console.error('❌ Error serving index.html:', error);
+    res.status(500).send('Internal Server Error');
   }
+});
 
-  // Serve React build assets
-  if (
-    url.pathname.startsWith("/assets/") || url.pathname.endsWith(".js") ||
-    url.pathname.endsWith(".css") || url.pathname.endsWith(".tsx") ||
-    url.pathname.endsWith(".ts")
-  ) {
-    try {
-      const filePath = join(Deno.cwd(), "dist/client", url.pathname);
-      const file = await Deno.readFile(filePath);
-
-      let contentType = "application/octet-stream";
-      if (
-        url.pathname.endsWith(".js") || url.pathname.endsWith(".mjs") ||
-        url.pathname.endsWith(".ts") || url.pathname.endsWith(".tsx")
-      ) {
-        contentType = "application/javascript";
-      } else if (url.pathname.endsWith(".css")) {
-        contentType = "text/css";
-      }
-
-      return new Response(file, {
-        headers: { "Content-Type": contentType },
-      });
-    } catch {
-      // Try development assets
-      try {
-        const filePath = join(Deno.cwd(), "src/client", url.pathname);
-        const file = await Deno.readFile(filePath);
-
-        let contentType = "application/octet-stream";
-        if (
-          url.pathname.endsWith(".js") || url.pathname.endsWith(".mjs") ||
-          url.pathname.endsWith(".ts") || url.pathname.endsWith(".tsx")
-        ) {
-          contentType = "application/javascript";
-        } else if (url.pathname.endsWith(".css")) {
-          contentType = "text/css";
-        }
-
-        return new Response(file, {
-          headers: { "Content-Type": contentType },
-        });
-      } catch {
-        return new Response("Asset not found", { status: 404 });
-      }
+// Serve React build assets
+app.get('/assets/*', (req: Request, res: Response) => {
+  try {
+    const assetPath = join(process.cwd(), 'dist/client', req.path);
+    if (existsSync(assetPath)) {
+      const file = readFileSync(assetPath);
+      // Set appropriate content type based on file extension
+      const ext = req.path.split('.').pop();
+      let contentType = 'application/octet-stream';
+      if (ext === 'js' || ext === 'mjs') contentType = 'application/javascript';
+      else if (ext === 'css') contentType = 'text/css';
+      res.setHeader('Content-Type', contentType);
+      res.send(file);
+    } else {
+      res.status(404).send('Asset not found');
     }
+  } catch {
+    res.status(404).send('Asset not found');
   }
+});
 
-  // Serve React development files from src/client/src/
-  if (url.pathname.startsWith("/src/")) {
-    try {
-      // Remove leading slash and construct path relative to src/client/src/
-      const relativePath = url.pathname.slice(1); // Remove leading /
-      const filePath = join(Deno.cwd(), "src", "client", relativePath);
-      const file = await Deno.readFile(filePath);
-
+// Serve React development files from src/client/src/
+app.get('/src/*', (req: Request, res: Response) => {
+  try {
+    // Remove leading slash and construct path relative to src/client/src/
+    const relativePath = req.path.slice(1); // Remove leading /
+    const filePath = join(process.cwd(), 'src', 'client', relativePath);
+    if (existsSync(filePath)) {
+      const file = readFileSync(filePath);
       // Determine content type based on file extension
-      let contentType = "text/plain";
-      if (
-        relativePath.endsWith(".js") || relativePath.endsWith(".mjs") ||
-        relativePath.endsWith(".ts") || relativePath.endsWith(".tsx")
-      ) {
-        contentType = "application/javascript";
-      } else if (relativePath.endsWith(".css")) {
-        contentType = "text/css";
-      } else if (relativePath.endsWith(".json")) {
-        contentType = "application/json";
-      } else if (relativePath.endsWith(".html")) {
-        contentType = "text/html";
+      let contentType = 'text/plain';
+      const ext = relativePath.split('.').pop();
+      if (ext === 'js' || ext === 'mjs' || ext === 'ts' || ext === 'tsx') {
+        contentType = 'application/javascript';
+      } else if (ext === 'css') {
+        contentType = 'text/css';
+      } else if (ext === 'json') {
+        contentType = 'application/json';
+      } else if (ext === 'html') {
+        contentType = 'text/html';
       }
-
-      const response = new Response(file, {
-        headers: { "Content-Type": contentType },
-      });
-      logPerformance(request.method, url.pathname, startTime, 200);
-      return response;
-    } catch (error) {
-      console.log(`❌ Static file not found: ${url.pathname} - ${error}`);
-      logPerformance(request.method, url.pathname, startTime, 404);
-      return new Response("Not found", { status: 404 });
-    }
-  }
-
-  // API endpoints
-  if (url.pathname === "/api/search" && request.method === "POST") {
-    try {
-      const searchRequest: SearchRequest = await request.json();
-
-      console.log("🔍 New search request:", {
-        sessionId: searchRequest.session_id,
-        positions: searchRequest.settings.searchPositions,
-        sources: searchRequest.settings.sources.jobSites,
-      });
-
-      // Используем новый collection controller
-      const response = await collectionController.startCollection(
-        searchRequest,
-      );
-
-      // Store session for backward compatibility
-      sessions.set(searchRequest.session_id, {
-        status: response.success ? "collecting" : "failed",
-        settings: searchRequest.settings,
-        startedAt: new Date().toISOString(),
-        progress: 0,
-      });
-
-      return new Response(
-        JSON.stringify(response),
-        {
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    } catch (error) {
-      console.error("❌ Search API error:", error);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Invalid request",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    }
-  }
-
-  if (url.pathname.startsWith("/api/progress/")) {
-    const sessionId = url.pathname.split("/").pop();
-    const progress = collectionController.getCollectionProgress(
-      sessionId || "",
-    );
-
-    if (progress) {
-      return new Response(
-        JSON.stringify({
-          session_id: sessionId,
-          status: progress.isComplete ? "completed" : "collecting",
-          progress: Math.round(
-            (progress.sourcesCompleted / progress.totalSources) * 100,
-          ),
-          current_source: progress.currentSource,
-          jobs_collected: progress.jobsCollected,
-          sources_completed: progress.sourcesCompleted,
-          total_sources: progress.totalSources,
-          errors: progress.errors,
-        }),
-        {
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      res.setHeader('Content-Type', contentType);
+      res.send(file);
     } else {
-      return new Response(JSON.stringify({ error: "Session not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      console.log(`❌ Static file not found: ${req.path}`);
+      res.status(404).send('Not found');
     }
+  } catch (error) {
+    console.log(`❌ Static file error: ${req.path} - ${error}`);
+    res.status(404).send('Not found');
   }
+});
 
-  // Stop collection endpoint
-  if (url.pathname.startsWith("/api/stop/") && request.method === "POST") {
-    const sessionId = url.pathname.split("/").pop();
-    const result = collectionController.stopCollection(sessionId || "");
-
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Collection stats endpoint
-  if (url.pathname.startsWith("/api/stats/")) {
-    const sessionId = url.pathname.split("/").pop();
-    const stats = collectionController.getCollectionStats(sessionId || "");
-
-    return new Response(JSON.stringify(stats), {
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Multi-stage search endpoint
-  if (url.pathname === "/api/multi-stage/search" && request.method === "POST") {
-    try {
-      const searchRequest: SearchRequest = await request.json();
-
-      console.log("🚀 New multi-stage search request:", {
-        sessionId: searchRequest.session_id,
-        positions: searchRequest.settings.searchPositions,
-        sources: searchRequest.settings.sources.jobSites,
-      });
-
-      const response = await collectionController.startMultiStageSearch(
-        searchRequest,
-      );
-
-      const apiResponse = new Response(
-        JSON.stringify(response),
-        {
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      logPerformance(request.method, url.pathname, startTime, 200);
-      return apiResponse;
-    } catch (error) {
-      console.error("❌ Multi-stage search API error:", error);
-      logPerformance(request.method, url.pathname, startTime, 400);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Invalid request",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    }
-  }
-
-  // Multi-stage progress endpoint
-  if (url.pathname.startsWith("/api/multi-stage/progress/")) {
-    const sessionId = url.pathname.split("/").pop();
-    const progress = collectionController.getMultiStageProgress(
-      sessionId || "",
-    );
-
-    if (progress) {
-      return new Response(
-        JSON.stringify(progress),
-        {
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+// Serve test files from project root
+app.get('/test-*.html', (req: Request, res: Response) => {
+  try {
+    const filePath = join(process.cwd(), req.path.slice(1)); // Remove leading /
+    if (existsSync(filePath)) {
+      const file = readFileSync(filePath);
+      res.setHeader('Content-Type', 'text/html');
+      res.send(file);
     } else {
-      return new Response(JSON.stringify({ error: "Session not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      console.log(`❌ Test file not found: ${req.path}`);
+      res.status(404).send('Test file not found');
     }
+  } catch (error) {
+    console.log(`❌ Test file error: ${req.path} - ${error}`);
+    res.status(404).send('Test file error');
   }
+});
 
-  // Stop multi-stage search endpoint
-  if (
-    url.pathname.startsWith("/api/multi-stage/stop/") &&
-    request.method === "POST"
-  ) {
-    const sessionId = url.pathname.split("/").pop();
-    const result = collectionController.stopMultiStageSearch(sessionId || "");
+// Health check endpoint
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: process.version,
+  });
+});
 
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+// 404 handler for unmatched routes
+app.use(notFoundHandler);
 
-  // Jobs API endpoints
-  if (url.pathname === "/api/jobs" && request.method === "GET") {
-    try {
-      const allJobs = Array.from(jobs.values());
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
-      // Apply filters
-      const status = url.searchParams.get("status");
-      const source = url.searchParams.get("source");
-      const limit = parseInt(url.searchParams.get("limit") || "50");
-      const offset = parseInt(url.searchParams.get("offset") || "0");
-
-      let filteredJobs = allJobs;
-      if (status) {
-        filteredJobs = filteredJobs.filter((job) => job.status === status);
-      }
-      if (source) {
-        filteredJobs = filteredJobs.filter((job) => job.source === source);
-      }
-
-      // Apply pagination
-      const paginatedJobs = filteredJobs.slice(offset, offset + limit);
-
-      // Convert to JobPost format for frontend
-      const jobPosts: JobPost[] = paginatedJobs.map((job) => ({
-        id: job.id,
-        title: job.title,
-        company: job.data
-          ? JSON.parse(job.data).company || "Unknown"
-          : "Unknown",
-        description: job.description,
-        originalUrl: job.url,
-        source: job.source,
-        location: job.country,
-        status: job.status as JobPost["status"],
-        statusReason: job.skip_reason,
-        createdAt: new Date(job.created_at),
-        rawData: job.data ? JSON.parse(job.data) : undefined,
-      }));
-
-      const response = new Response(
-        JSON.stringify({
-          jobs: jobPosts,
-          total: filteredJobs.length,
-          count: jobPosts.length,
-        }),
-        {
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      logPerformance(request.method, url.pathname, startTime, 200);
-      return response;
-    } catch (error) {
-      console.error("❌ Jobs API error:", error);
-      logPerformance(request.method, url.pathname, startTime, 500);
-      return new Response(JSON.stringify({ error: "Failed to fetch jobs" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-  }
-
-  // Get single job endpoint
-  if (url.pathname.startsWith("/api/jobs/") && request.method === "GET") {
-    const jobId = url.pathname.split("/").pop();
-    const job = jobs.get(jobId || "");
-
-    if (!job) {
-      return new Response(JSON.stringify({ error: "Job not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const jobPost: JobPost = {
-      id: job.id,
-      title: job.title,
-      company: job.data ? JSON.parse(job.data).company || "Unknown" : "Unknown",
-      description: job.description,
-      originalUrl: job.url,
-      source: job.source,
-      location: job.country,
-      status: job.status as JobPost["status"],
-      statusReason: job.skip_reason,
-      createdAt: new Date(job.created_at),
-      rawData: job.data ? JSON.parse(job.data) : undefined,
-    };
-
-    logPerformance(request.method, url.pathname, startTime, 200);
-    return new Response(JSON.stringify(jobPost), {
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Update job endpoint
-  if (url.pathname.startsWith("/api/jobs/") && request.method === "PATCH") {
-    try {
-      const jobId = url.pathname.split("/").pop();
-      const updates = await request.json();
-
-      const job = jobs.get(jobId || "");
-      if (!job) {
-        return new Response(JSON.stringify({ error: "Job not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      // Update job
-      const updatedJob = { ...job, ...updates };
-      jobs.set(jobId!, updatedJob);
-
-      logPerformance(request.method, url.pathname, startTime, 200);
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      console.error("❌ Update job API error:", error);
-      logPerformance(request.method, url.pathname, startTime, 500);
-      return new Response(JSON.stringify({ error: "Failed to update job" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-  }
-
-  logPerformance(request.method, url.pathname, startTime, 404);
-  return new Response("Not found", { status: 404 });
+// Start server only if not in build mode
+const isBuildMode = process.argv.includes('--build');
+if (import.meta.url === `file://${process.argv[1]}` && !isBuildMode) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📊 Health check available at http://localhost:${PORT}/health`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV ?? 'development'}`);
+    console.log(`🔄 Using HTTP polling for progress updates`);
+  });
 }
 
-// Export default handler for deno serve
-export default {
-  async fetch(request: Request): Promise<Response> {
-    return await handleRequest(request);
-  },
-} satisfies Deno.ServeDefaultExport;
+export default app;

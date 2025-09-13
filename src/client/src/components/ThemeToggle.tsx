@@ -1,6 +1,6 @@
-import { Moon, Sun } from "lucide-react";
-import { Button } from "./ui/button.tsx";
-import { useTheme } from "./ThemeProvider.tsx";
+import { Moon, Sun } from 'lucide-react';
+import { Button } from './ui/button.tsx';
+import { useTheme } from './ThemeProvider.tsx';
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -9,7 +9,7 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
       data-testid="button-theme-toggle"
     >
       <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

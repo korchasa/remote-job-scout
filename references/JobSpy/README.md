@@ -35,7 +35,7 @@ jobs = scrape_jobs(
     results_wanted=20,
     hours_old=72,
     country_indeed='USA',
-    
+
     # linkedin_fetch_description=True # gets more info such as description, direct job url (slower)
     # proxies=["208.195.175.46:65095", "208.195.175.45:65095", "localhost"],
 )
@@ -60,7 +60,7 @@ zip_recruiter Software Developer                 TEKsystems        Phoenix      
 
 ```plaintext
 Optional
-├── site_name (list|str): 
+├── site_name (list|str):
 |    linkedin, zip_recruiter, indeed, glassdoor, google, bayt, bdjobs
 |    (default is all)
 │
@@ -71,51 +71,51 @@ Optional
 │
 ├── location (str)
 │
-├── distance (int): 
+├── distance (int):
 |    in miles, default 50
 │
-├── job_type (str): 
+├── job_type (str):
 |    fulltime, parttime, internship, contract
 │
-├── proxies (list): 
+├── proxies (list):
 |    in format ['user:pass@host:port', 'localhost']
 |    each job board scraper will round robin through the proxies
 |
 ├── is_remote (bool)
 │
-├── results_wanted (int): 
+├── results_wanted (int):
 |    number of job results to retrieve for each site specified in 'site_name'
 │
-├── easy_apply (bool): 
+├── easy_apply (bool):
 |    filters for jobs that are hosted on the job board site (LinkedIn easy apply filter no longer works)
 |
-├── user_agent (str): 
+├── user_agent (str):
 |    override the default user agent which may be outdated
 │
-├── description_format (str): 
+├── description_format (str):
 |    markdown, html (Format type of the job descriptions. Default is markdown.)
 │
-├── offset (int): 
+├── offset (int):
 |    starts the search from an offset (e.g. 25 will start the search from the 25th result)
 │
-├── hours_old (int): 
-|    filters jobs by the number of hours since the job was posted 
+├── hours_old (int):
+|    filters jobs by the number of hours since the job was posted
 |    (ZipRecruiter and Glassdoor round up to next day.)
 │
-├── verbose (int) {0, 1, 2}: 
-|    Controls the verbosity of the runtime printouts 
+├── verbose (int) {0, 1, 2}:
+|    Controls the verbosity of the runtime printouts
 |    (0 prints only errors, 1 is errors+warnings, 2 is all logs. Default is 2.)
 
-├── linkedin_fetch_description (bool): 
+├── linkedin_fetch_description (bool):
 |    fetches full description and direct job url for LinkedIn (Increases requests by O(n))
 │
-├── linkedin_company_ids (list[int]): 
+├── linkedin_company_ids (list[int]):
 |    searches for linkedin jobs with specific company ids
 |
-├── country_indeed (str): 
+├── country_indeed (str):
 |    filters the country on Indeed & Glassdoor (see below for correct spelling)
 |
-├── enforce_annual_salary (bool): 
+├── enforce_annual_salary (bool):
 |    converts wages to annual salary
 |
 ├── ca_cert (str)
@@ -153,26 +153,26 @@ is required. Additionally, use the `location` parameter to narrow down the
 location, e.g. city & state if necessary.
 
 You can specify the following countries when searching on Indeed (use the exact
-name, * indicates support for Glassdoor):
+name, \* indicates support for Glassdoor):
 
-|                      |              |            |                |
-| -------------------- | ------------ | ---------- | -------------- |
-| Argentina            | Australia*   | Austria*   | Bahrain        |
-| Belgium*             | Brazil*      | Canada*    | Chile          |
-| China                | Colombia     | Costa Rica | Czech Republic |
-| Denmark              | Ecuador      | Egypt      | Finland        |
-| France*              | Germany*     | Greece     | Hong Kong*     |
-| Hungary              | India*       | Indonesia  | Ireland*       |
-| Israel               | Italy*       | Japan      | Kuwait         |
-| Luxembourg           | Malaysia     | Mexico*    | Morocco        |
-| Netherlands*         | New Zealand* | Nigeria    | Norway         |
-| Oman                 | Pakistan     | Panama     | Peru           |
-| Philippines          | Poland       | Portugal   | Qatar          |
-| Romania              | Saudi Arabia | Singapore* | South Africa   |
-| South Korea          | Spain*       | Sweden     | Switzerland*   |
-| Taiwan               | Thailand     | Turkey     | Ukraine        |
-| United Arab Emirates | UK*          | USA*       | Uruguay        |
-| Venezuela            | Vietnam*     |            |                |
+|                      |               |             |                |
+| -------------------- | ------------- | ----------- | -------------- |
+| Argentina            | Australia\*   | Austria\*   | Bahrain        |
+| Belgium\*            | Brazil\*      | Canada\*    | Chile          |
+| China                | Colombia      | Costa Rica  | Czech Republic |
+| Denmark              | Ecuador       | Egypt       | Finland        |
+| France\*             | Germany\*     | Greece      | Hong Kong\*    |
+| Hungary              | India\*       | Indonesia   | Ireland\*      |
+| Israel               | Italy\*       | Japan       | Kuwait         |
+| Luxembourg           | Malaysia      | Mexico\*    | Morocco        |
+| Netherlands\*        | New Zealand\* | Nigeria     | Norway         |
+| Oman                 | Pakistan      | Panama      | Peru           |
+| Philippines          | Poland        | Portugal    | Qatar          |
+| Romania              | Saudi Arabia  | Singapore\* | South Africa   |
+| South Korea          | Spain\*       | Sweden      | Switzerland\*  |
+| Taiwan               | Thailand      | Turkey      | Ukraine        |
+| United Arab Emirates | UK\*          | USA\*       | Uruguay        |
+| Venezuela            | Vietnam\*     |             |                |
 
 ### **Bayt**
 
@@ -188,6 +188,7 @@ Bayt only uses the search_term parameter currently and searches internationally
 ## Frequently Asked Questions
 
 ---
+
 **Q: Why is Indeed giving unrelated roles?**
 **A:** Indeed searches the description too.
 
@@ -200,8 +201,7 @@ Example of a good Indeed query
 search_term='"engineering intern" software summer (java OR python OR c++) 2025 -tax -marketing'
 ```
 
-This searches the description/title and must include software, summer, 2025, one of the languages, engineering intern exactly, no tax, no marketing.
----
+## This searches the description/title and must include software, summer, 2025, one of the languages, engineering intern exactly, no tax, no marketing.
 
 **Q: No results when using "google"?**\
 **A:** You have to use super specific syntax. Search for google jobs on your

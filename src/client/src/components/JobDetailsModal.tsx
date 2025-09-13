@@ -1,8 +1,8 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog.tsx";
-import { Badge } from "./ui/badge.tsx";
-import { Button } from "./ui/button.tsx";
-import { Separator } from "./ui/separator.tsx";
-import { ScrollArea } from "./ui/scroll-area.tsx";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog.tsx';
+import { Badge } from './ui/badge.tsx';
+import { Button } from './ui/button.tsx';
+import { Separator } from './ui/separator.tsx';
+import { ScrollArea } from './ui/scroll-area.tsx';
 import {
   Ban,
   Building,
@@ -16,16 +16,16 @@ import {
   Tag,
   Users,
   X,
-} from "lucide-react";
-import type { JobPost } from "../../shared/schema.ts";
+} from 'lucide-react';
+import type { JobPost } from '../../../shared/schema.ts';
 
 interface JobDetailsModalProps {
   job: JobPost | null;
   isOpen: boolean;
   onClose: () => void;
-  onSkip: (job: JobPost) => void;
-  onDefer: (job: JobPost) => void;
-  onBlacklist: (job: JobPost) => void;
+  onSkip: (job: JobPost) => Promise<void>;
+  onDefer: (job: JobPost) => Promise<void>;
+  onBlacklist: (job: JobPost) => Promise<void>;
 }
 
 export function JobDetailsModal({
@@ -45,16 +45,17 @@ export function JobDetailsModal({
     if (job.compensation) {
       return job.compensation;
     }
-    return "Salary not specified";
+    return 'Salary not specified';
   };
 
   const handleOpenOriginal = () => {
-    globalThis.open(job.originalUrl, "_blank");
+    globalThis.open(job.originalUrl, '_blank');
   };
 
-  const handleAction = (action: () => void) => () => {
-    action();
-    onClose();
+  const handleAction = (action: () => Promise<void>) => () => {
+    action()
+      .then(() => onClose())
+      .catch(console.error);
   };
 
   return (
@@ -140,9 +141,8 @@ export function JobDetailsModal({
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    Posted {job.createdAt
-                      ? new Date(job.createdAt).toLocaleDateString()
-                      : "Unknown"}
+                    Posted{' '}
+                    {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : 'Unknown'}
                   </span>
                 </div>
               </div>
@@ -193,7 +193,7 @@ export function JobDetailsModal({
             )}
 
             {/* Company Info */}
-            {(job.companyWebsite || job.industry || job.companySize) && (
+            {(job.companyWebsite ?? job.industry ?? job.companySize) && (
               <div>
                 <h3 className="font-semibold mb-2">Company Information</h3>
                 <div className="space-y-2 text-sm">

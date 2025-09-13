@@ -5,75 +5,75 @@
 
 // Enums
 export enum JobType {
-  FULL_TIME = "fulltime",
-  PART_TIME = "parttime",
-  CONTRACT = "contract",
-  TEMPORARY = "temporary",
-  INTERNSHIP = "internship",
-  PER_DIEM = "perdiem",
-  NIGHTS = "nights",
-  OTHER = "other",
-  SUMMER = "summer",
-  VOLUNTEER = "volunteer",
+  FULL_TIME = 'fulltime',
+  PART_TIME = 'parttime',
+  CONTRACT = 'contract',
+  TEMPORARY = 'temporary',
+  INTERNSHIP = 'internship',
+  PER_DIEM = 'perdiem',
+  NIGHTS = 'nights',
+  OTHER = 'other',
+  SUMMER = 'summer',
+  VOLUNTEER = 'volunteer',
 }
 
 export enum Country {
-  USA = "usa,us,united states",
-  CANADA = "canada",
-  UK = "uk,united kingdom",
-  GERMANY = "germany",
-  FRANCE = "france",
-  AUSTRALIA = "australia",
-  INDIA = "india",
-  BRAZIL = "brazil",
-  SPAIN = "spain",
-  ITALY = "italy",
-  NETHERLANDS = "netherlands",
-  SWEDEN = "sweden",
-  NORWAY = "norway",
-  DENMARK = "denmark",
-  FINLAND = "finland",
-  POLAND = "poland",
-  BELGIUM = "belgium",
-  AUSTRIA = "austria",
-  SWITZERLAND = "switzerland",
-  PORTUGAL = "portugal",
-  IRELAND = "ireland",
-  NEWZEALAND = "new zealand",
-  SINGAPORE = "singapore",
-  JAPAN = "japan",
-  SOUTHKOREA = "south korea",
-  CHINA = "china",
-  MEXICO = "mexico",
-  ARGENTINA = "argentina",
-  CHILE = "chile",
-  COLOMBIA = "colombia",
-  PERU = "peru",
+  USA = 'usa,us,united states',
+  CANADA = 'canada',
+  UK = 'uk,united kingdom',
+  GERMANY = 'germany',
+  FRANCE = 'france',
+  AUSTRALIA = 'australia',
+  INDIA = 'india',
+  BRAZIL = 'brazil',
+  SPAIN = 'spain',
+  ITALY = 'italy',
+  NETHERLANDS = 'netherlands',
+  SWEDEN = 'sweden',
+  NORWAY = 'norway',
+  DENMARK = 'denmark',
+  FINLAND = 'finland',
+  POLAND = 'poland',
+  BELGIUM = 'belgium',
+  AUSTRIA = 'austria',
+  SWITZERLAND = 'switzerland',
+  PORTUGAL = 'portugal',
+  IRELAND = 'ireland',
+  NEWZEALAND = 'new zealand',
+  SINGAPORE = 'singapore',
+  JAPAN = 'japan',
+  SOUTHKOREA = 'south korea',
+  CHINA = 'china',
+  MEXICO = 'mexico',
+  ARGENTINA = 'argentina',
+  CHILE = 'chile',
+  COLOMBIA = 'colombia',
+  PERU = 'peru',
 }
 
 export enum Site {
-  LINKEDIN = "linkedin",
-  INDEED = "indeed",
-  ZIP_RECRUITER = "zip_recruiter",
-  GLASSDOOR = "glassdoor",
-  GOOGLE = "google",
-  BAYT = "bayt",
-  NAUKRI = "naukri",
-  BDJOBS = "bdjobs",
+  LINKEDIN = 'linkedin',
+  INDEED = 'indeed',
+  ZIP_RECRUITER = 'zip_recruiter',
+  GLASSDOOR = 'glassdoor',
+  GOOGLE = 'google',
+  BAYT = 'bayt',
+  NAUKRI = 'naukri',
+  BDJOBS = 'bdjobs',
 }
 
 export enum DescriptionFormat {
-  MARKDOWN = "markdown",
-  HTML = "html",
-  PLAIN = "plain",
+  MARKDOWN = 'markdown',
+  HTML = 'html',
+  PLAIN = 'plain',
 }
 
 export enum CompensationInterval {
-  YEARLY = "yearly",
-  MONTHLY = "monthly",
-  WEEKLY = "weekly",
-  DAILY = "daily",
-  HOURLY = "hourly",
+  YEARLY = 'yearly',
+  MONTHLY = 'monthly',
+  WEEKLY = 'weekly',
+  DAILY = 'daily',
+  HOURLY = 'hourly',
 }
 
 // Interfaces and Types
@@ -145,21 +145,14 @@ export abstract class Scraper {
   ca_cert?: string;
   user_agent?: string;
 
-  constructor(
-    site: Site,
-    proxies?: string[] | string,
-    ca_cert?: string,
-    user_agent?: string,
-  ) {
+  constructor(site: Site, proxies?: string[] | string, ca_cert?: string, user_agent?: string) {
     this.site = site;
     this.proxies = proxies;
     this.ca_cert = ca_cert;
     this.user_agent = user_agent;
   }
 
-  abstract scrape(
-    scraper_input: ScraperInput,
-  ): JobResponse | Promise<JobResponse>;
+  abstract scrape(scraper_input: ScraperInput): JobResponse | Promise<JobResponse>;
 
   /**
    * Проверить доступность источника
@@ -171,42 +164,42 @@ export abstract class Scraper {
 
 // Domain mapping for countries - exactly like JobSpy
 const COUNTRY_DOMAIN_MAPPING: Record<Country, [string, string]> = {
-  [Country.USA]: ["www", "us"],
-  [Country.CANADA]: ["ca", "ca"],
-  [Country.UK]: ["uk", "gb"],
-  [Country.GERMANY]: ["de", "de"],
-  [Country.FRANCE]: ["fr", "fr"],
-  [Country.AUSTRALIA]: ["au", "au"],
-  [Country.INDIA]: ["in", "in"],
-  [Country.BRAZIL]: ["br", "br"],
-  [Country.SPAIN]: ["es", "es"],
-  [Country.ITALY]: ["it", "it"],
-  [Country.NETHERLANDS]: ["nl", "nl"],
-  [Country.SWEDEN]: ["se", "se"],
-  [Country.NORWAY]: ["no", "no"],
-  [Country.DENMARK]: ["dk", "dk"],
-  [Country.FINLAND]: ["fi", "fi"],
-  [Country.POLAND]: ["pl", "pl"],
-  [Country.BELGIUM]: ["be", "be"],
-  [Country.AUSTRIA]: ["at", "at"],
-  [Country.SWITZERLAND]: ["ch", "ch"],
-  [Country.PORTUGAL]: ["pt", "pt"],
-  [Country.IRELAND]: ["ie", "ie"],
-  [Country.NEWZEALAND]: ["nz", "nz"],
-  [Country.SINGAPORE]: ["sg", "sg"],
-  [Country.JAPAN]: ["jp", "jp"],
-  [Country.SOUTHKOREA]: ["kr", "kr"],
-  [Country.CHINA]: ["cn", "cn"],
-  [Country.MEXICO]: ["mx", "mx"],
-  [Country.ARGENTINA]: ["ar", "ar"],
-  [Country.CHILE]: ["cl", "cl"],
-  [Country.COLOMBIA]: ["co", "co"],
-  [Country.PERU]: ["pe", "pe"],
+  [Country.USA]: ['www', 'us'],
+  [Country.CANADA]: ['ca', 'ca'],
+  [Country.UK]: ['uk', 'gb'],
+  [Country.GERMANY]: ['de', 'de'],
+  [Country.FRANCE]: ['fr', 'fr'],
+  [Country.AUSTRALIA]: ['au', 'au'],
+  [Country.INDIA]: ['in', 'in'],
+  [Country.BRAZIL]: ['br', 'br'],
+  [Country.SPAIN]: ['es', 'es'],
+  [Country.ITALY]: ['it', 'it'],
+  [Country.NETHERLANDS]: ['nl', 'nl'],
+  [Country.SWEDEN]: ['se', 'se'],
+  [Country.NORWAY]: ['no', 'no'],
+  [Country.DENMARK]: ['dk', 'dk'],
+  [Country.FINLAND]: ['fi', 'fi'],
+  [Country.POLAND]: ['pl', 'pl'],
+  [Country.BELGIUM]: ['be', 'be'],
+  [Country.AUSTRIA]: ['at', 'at'],
+  [Country.SWITZERLAND]: ['ch', 'ch'],
+  [Country.PORTUGAL]: ['pt', 'pt'],
+  [Country.IRELAND]: ['ie', 'ie'],
+  [Country.NEWZEALAND]: ['nz', 'nz'],
+  [Country.SINGAPORE]: ['sg', 'sg'],
+  [Country.JAPAN]: ['jp', 'jp'],
+  [Country.SOUTHKOREA]: ['kr', 'kr'],
+  [Country.CHINA]: ['cn', 'cn'],
+  [Country.MEXICO]: ['mx', 'mx'],
+  [Country.ARGENTINA]: ['ar', 'ar'],
+  [Country.CHILE]: ['cl', 'cl'],
+  [Country.COLOMBIA]: ['co', 'co'],
+  [Country.PERU]: ['pe', 'pe'],
 };
 
 // Helper function to get domain mapping - JobSpy compatible
 export function getCountryDomain(country: Country): [string, string] {
-  const mapping = COUNTRY_DOMAIN_MAPPING[country] || ["www", "us"];
+  const mapping = COUNTRY_DOMAIN_MAPPING[country] || ['www', 'us'];
   // Return country code in uppercase to match JobSpy indeed_domain_value
   return [mapping[0], mapping[1].toUpperCase()];
 }
@@ -215,22 +208,18 @@ export function getCountryDomain(country: Country): [string, string] {
 export function countryFromString(country_str: string): Country {
   country_str = country_str.trim().toLowerCase();
   for (const [key, value] of Object.entries(Country)) {
-    if (typeof value === "string") {
-      const country_names = value.split(",").map((name) =>
-        name.trim().toLowerCase()
-      );
+    if (typeof value === 'string') {
+      const country_names = value.split(',').map((name) => name.trim().toLowerCase());
       if (country_names.includes(country_str)) {
         return Country[key as keyof typeof Country];
       }
     }
   }
   const valid_countries = Object.values(Country)
-    .filter((country) => typeof country === "string")
-    .map((country) => (country as string).split(",")[0]);
+    .filter((country) => typeof country === 'string')
+    .map((country) => (country as string).split(',')[0]);
   throw new Error(
-    `Invalid country string: '${country_str}'. Valid countries are: ${
-      valid_countries.join(", ")
-    }`,
+    `Invalid country string: '${country_str}'. Valid countries are: ${valid_countries.join(', ')}`,
   );
 }
 

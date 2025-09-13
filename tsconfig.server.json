@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "target": "ES2022",
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "outDir": "./dist/server",
+    "declaration": false,
+    "jsx": "react-jsx",
+    "lib": ["ES2022"],
+    "types": ["node", "express"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/client/src/*"],
+      "@shared/*": ["./src/shared/*"]
+    }
+  },
+  "include": [
+    "src/server/**/*",
+    "src/shared/**/*",
+    "src/controllers/**/*",
+    "src/services/**/*",
+    "src/types/**/*",
+    "src/utils/**/*"
+  ],
+  "exclude": ["node_modules", "dist", "src/client/**/*", "**/*.test.ts"]
+}

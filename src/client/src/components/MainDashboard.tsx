@@ -15,11 +15,11 @@ import {
   usePauseSearch,
   useSearchProgress,
 } from '../hooks/useSearchSessions.ts';
-import { useWebSocket } from '../hooks/useWebSocket.ts';
+// Using HTTP polling for progress updates
 import { useToast } from '../hooks/use-toast.ts';
 import { queryClient } from '../lib/queryClient.ts';
 import { BarChart3, Briefcase, Search, Settings, TrendingUp, Zap } from 'lucide-react';
-import type { JobPost, SearchConfig } from '../../../shared/schema.ts';
+import type { JobPost, ProgressData, SearchConfig } from '../../../shared/schema.ts';
 
 // Real data is now fetched from API hooks above
 
@@ -40,30 +40,44 @@ export function MainDashboard() {
   const stopSearchMutation = useStopSearch();
   const pauseSearchMutation = usePauseSearch();
   const { data: progressData, isLoading: progressLoading } = useSearchProgress(currentSessionId);
-  const { lastUpdate, isConnected: _isConnected } = useWebSocket(currentSessionId ?? undefined);
+  // Using HTTP polling for progress updates
 
   const jobs = jobsResponse?.jobs ?? [];
-  const isSearching = (startSearchMutation.isPending || currentSessionId !== null) && !isPaused;
+  const progressUnion = (progressData ?? null) as ProgressData | null;
+  const normalizedProgress: ProgressData = progressUnion ?? {
+    currentStage: 1,
+    status: 'running',
+    totalJobs: 0,
+    processedJobs: 0,
+    filteredJobs: 0,
+    enrichedJobs: 0,
+    totalCost: 0,
+    estimatedTimeRemaining: 0,
+    processingSpeed: 0,
+  };
+  const isCompleted =
+    normalizedProgress.status === 'completed' ||
+    normalizedProgress.status === 'error' ||
+    normalizedProgress.status === 'stopped';
+  const isSearching = !isPaused && currentSessionId !== null && !isCompleted;
 
-  // Handle WebSocket updates
+  // When backend process finishes, stop searching and switch to results
   useEffect(() => {
-    if (lastUpdate && lastUpdate.type === 'session_update') {
-      console.log('Received session update:', lastUpdate.data);
-      // Update local state with progress data
-      if (lastUpdate.data.status === 'completed' || lastUpdate.data.status === 'stopped') {
-        setCurrentSessionId(null);
-        setIsPaused(false);
-        setViewMode('results');
-        // Refresh jobs data when search completes
-        void queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
-      }
+    if (currentSessionId && isCompleted) {
+      setIsPaused(false);
+      setViewMode('results');
     }
-  }, [lastUpdate]);
+  }, [currentSessionId, isCompleted]);
+
+  // Using HTTP polling for progress updates
+
+  // Progress updates handled by HTTP polling via useSearchProgress hook
 
   const handleStartSearch = async (config: SearchConfig) => {
-    console.log('Starting search with config:', config);
+    console.log('🏠 [REACT] Starting search with config:', config);
     try {
       const result = await startSearchMutation.mutateAsync(config);
+      console.log('🏠 [REACT] Search started, setting sessionId:', result.sessionId);
       setCurrentSessionId(result.sessionId);
       setViewMode('progress');
       setIsPaused(false);
@@ -72,7 +86,7 @@ export function MainDashboard() {
         description: 'Your job search has been initiated successfully.',
       });
     } catch (error) {
-      console.error('Failed to start search:', error);
+      console.error('🏠 [REACT] Failed to start search:', error);
       toast({
         title: 'Search Failed',
         description: 'Failed to start the job search. Please try again.',
@@ -332,19 +346,7 @@ export function MainDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <ProgressDashboard
-                progress={
-                  progressData ?? {
-                    currentStage: 1,
-                    status: 'running' as const,
-                    totalJobs: 0,
-                    processedJobs: 0,
-                    filteredJobs: 0,
-                    enrichedJobs: 0,
-                    totalCost: 0,
-                    estimatedTimeRemaining: 0,
-                    processingSpeed: 0,
-                  }
-                }
+                progress={normalizedProgress}
                 onPauseResume={handlePauseResume}
                 onStop={handleStopSearch}
               />
@@ -358,35 +360,39 @@ export function MainDashboard() {
                 <CardContent className="space-y-3">
                   {progressLoading ? (
                     <div className="text-sm text-muted-foreground">Loading progress...</div>
-                  ) : progressData ? (
+                  ) : progressUnion ? (
                     <>
                       <div className="text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Current Stage</span>
-                          <Badge variant="default">Stage {progressData.currentStage}</Badge>
+                          <Badge variant="default">Stage {normalizedProgress.currentStage}</Badge>
                         </div>
                       </div>
                       <div className="text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Speed</span>
                           <span className="font-mono">
-                            {progressData.processingSpeed.toFixed(1)} jobs/min
+                            {normalizedProgress.processingSpeed.toFixed(1)} jobs/min
                           </span>
                         </div>
                       </div>
                       <div className="text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Cost</span>
-                          <span className="font-mono">${progressData.totalCost.toFixed(4)}</span>
+                          <span className="font-mono">
+                            ${normalizedProgress.totalCost.toFixed(4)}
+                          </span>
                         </div>
                       </div>
                       <div className="text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Status</span>
                           <Badge
-                            variant={progressData.status === 'running' ? 'default' : 'secondary'}
+                            variant={
+                              normalizedProgress.status === 'running' ? 'default' : 'secondary'
+                            }
                           >
-                            {progressData.status}
+                            {normalizedProgress.status}
                           </Badge>
                         </div>
                       </div>

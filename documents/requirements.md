@@ -2,7 +2,7 @@
 
 ## System Overview
 
-Web application for remote job search with AI-powered analysis and filtering. Migrated from Deno to Node.js runtime with Express.js backend and modular architecture.
+Web application for remote job search with AI-powered analysis and filtering. Built with Node.js runtime, Express.js backend and modular architecture.
 
 ## Functional Requirements
 
@@ -92,6 +92,7 @@ Web application for remote job search with AI-powered analysis and filtering. Mi
 - REST API communication
 - JSON data exchange
 - YAML serialization for jobs
+- HTTP polling for progress updates
 - Modular Express.js middleware architecture
 
 ### UI/UX Requirements
@@ -106,8 +107,7 @@ Web application for remote job search with AI-powered analysis and filtering. Mi
 
 ### Completed Features (95%)
 
-- ✅ Deno to Node.js migration
-- ✅ Express.js server with modular architecture
+- ✅ Node.js runtime with Express.js server and modular architecture
 - ✅ React/TypeScript frontend with Vite
 - ✅ Multi-stage search orchestration
 - ✅ 3 scraper implementations (Indeed, LinkedIn, OpenAI)
@@ -117,11 +117,12 @@ Web application for remote job search with AI-powered analysis and filtering. Mi
 - ✅ TypeScript configuration for client/server
 - ✅ FR-4: Preliminary filtering service implementation
 - ✅ FR-5: LLM enrichment service implementation
-- ✅ WebSocket real-time updates
+- ✅ HTTP polling for progress updates
 - ✅ Enhanced testing suite (Vitest)
 - ✅ Code quality tools (ESLint, Prettier)
 - ✅ Dev containers with VS Code integration
 - ✅ CLI runner for unified development workflow
+- ✅ Code formatting improvements and style consistency
 
 ### Remaining Features (5%)
 

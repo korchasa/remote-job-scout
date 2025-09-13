@@ -24,18 +24,15 @@
  * https://apis.indeed.com/graphql
  */
 
+import type { Compensation, JobPost, JobResponse, ScraperInput } from '../../types/scrapers.js';
 import {
-  Compensation,
   CompensationInterval,
   DescriptionFormat,
   getCountryDomain,
-  JobPost,
-  JobResponse,
   JobType,
   Scraper,
-  ScraperInput,
   Site,
-} from "../../types/scrapers.ts";
+} from '../../types/scrapers.js';
 
 // GraphQL query template based on JobSpy
 const JOB_SEARCH_QUERY = `
@@ -139,17 +136,15 @@ const JOB_SEARCH_QUERY = `
 
 // API headers based on JobSpy
 const API_HEADERS = {
-  "Host": "apis.indeed.com",
-  "content-type": "application/json",
-  "indeed-api-key":
-    "161092c2017b5bbab13edb12461a62d5a833871e7cad6d9d475304573de67ac8",
-  "accept": "application/json",
-  "indeed-locale": "en-US",
-  "accept-language": "en-US,en;q=0.9",
-  "user-agent":
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 193.1",
-  "indeed-app-info":
-    "appv=193.1; appid=com.indeed.jobsearch; osv=16.6.1; os=ios; dtype=phone",
+  Host: 'apis.indeed.com',
+  'content-type': 'application/json',
+  'indeed-api-key': '161092c2017b5bbab13edb12461a62d5a833871e7cad6d9d475304573de67ac8',
+  accept: 'application/json',
+  'indeed-locale': 'en-US',
+  'accept-language': 'en-US,en;q=0.9',
+  'user-agent':
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 193.1',
+  'indeed-app-info': 'appv=193.1; appid=com.indeed.jobsearch; osv=16.6.1; os=ios; dtype=phone',
 };
 
 interface IndeedLocation {
@@ -255,23 +250,18 @@ interface GraphQLJobSearchResponse {
 export class IndeedScraper extends Scraper {
   private scraper_input: ScraperInput | null = null;
   private jobs_per_page = 100;
-  private num_workers = 10;
   private seen_urls = new Set<string>();
   private headers: Record<string, string> | null = null;
-  private api_country_code = "";
-  private base_url = "";
-  private api_url = "https://apis.indeed.com/graphql";
+  private api_country_code = '';
+  private base_url = '';
+  private api_url = 'https://apis.indeed.com/graphql';
 
-  constructor(
-    proxies?: string[] | string,
-    ca_cert?: string,
-    user_agent?: string,
-  ) {
+  constructor(proxies?: string[] | string, ca_cert?: string, user_agent?: string) {
     super(Site.INDEED, proxies, ca_cert, user_agent);
   }
 
   override async checkAvailability(): Promise<boolean> {
-    console.log("🔍 Checking Indeed API availability", {
+    console.log('🔍 Checking Indeed API availability', {
       apiUrl: this.api_url,
       headers: API_HEADERS,
       timestamp: new Date().toISOString(),
@@ -280,17 +270,17 @@ export class IndeedScraper extends Scraper {
     try {
       // Проверяем доступность API с простым запросом
       const testPayload = {
-        query: "{ jobSearch { pageInfo { nextCursor } } }",
+        query: '{ jobSearch { pageInfo { nextCursor } } }',
       };
       const response = await fetch(this.api_url, {
-        method: "POST",
+        method: 'POST',
         headers: API_HEADERS,
         body: JSON.stringify(testPayload),
       });
 
       const isAvailable = response.status === 200 || response.status === 400; // 400 тоже означает, что API работает, просто запрос некорректный
 
-      console.log("📊 Indeed availability check result:", {
+      console.log('📊 Indeed availability check result:', {
         apiUrl: this.api_url,
         responseStatus: response.status,
         responseStatusText: response.statusText,
@@ -300,7 +290,7 @@ export class IndeedScraper extends Scraper {
 
       return isAvailable;
     } catch (error) {
-      console.error("❌ Indeed availability check failed:", {
+      console.error('❌ Indeed availability check failed:', {
         error: error,
         errorMessage: (error as Error).message,
         apiUrl: this.api_url,
@@ -313,7 +303,7 @@ export class IndeedScraper extends Scraper {
   async scrape(scraper_input: ScraperInput): Promise<JobResponse> {
     this.scraper_input = scraper_input;
 
-    console.log("🚀 Starting Indeed scrape", {
+    console.log('🚀 Starting Indeed scrape', {
       scraperInput: scraper_input,
       timestamp: new Date().toISOString(),
     });
@@ -321,11 +311,11 @@ export class IndeedScraper extends Scraper {
     // Get domain and country code
     const [domain, countryCode] = this.scraper_input.country
       ? getCountryDomain(this.scraper_input.country)
-      : ["www", "US"];
+      : ['www', 'US'];
     this.api_country_code = countryCode;
     this.base_url = `https://${domain}.indeed.com`;
 
-    console.log("🌍 Indeed domain configuration:", {
+    console.log('🌍 Indeed domain configuration:', {
       domain,
       countryCode,
       baseUrl: this.base_url,
@@ -334,12 +324,12 @@ export class IndeedScraper extends Scraper {
 
     this.headers = { ...API_HEADERS };
     if (this.api_country_code) {
-      this.headers["indeed-co"] = this.api_country_code;
+      this.headers['indeed-co'] = this.api_country_code;
     }
 
-    console.log("🔧 Indeed headers configured:", {
+    console.log('🔧 Indeed headers configured:', {
       headersCount: Object.keys(this.headers).length,
-      hasApiKey: !!this.headers["indeed-api-key"],
+      hasApiKey: !!this.headers['indeed-api-key'],
       countryCode: this.api_country_code,
     });
 
@@ -349,15 +339,12 @@ export class IndeedScraper extends Scraper {
 
     while (
       this.seen_urls.size <
-        ((scraper_input.results_wanted || 15) + (scraper_input.offset || 0))
+      (scraper_input.results_wanted ?? 15) + (scraper_input.offset ?? 0)
     ) {
       console.log(
-        `search page: ${page} / ${
-          Math.ceil(
-            ((scraper_input.results_wanted || 15) +
-              (scraper_input.offset || 0)) / this.jobs_per_page,
-          )
-        }`,
+        `search page: ${page} / ${Math.ceil(
+          ((scraper_input.results_wanted ?? 15) + (scraper_input.offset ?? 0)) / this.jobs_per_page,
+        )}`,
       );
 
       const jobs = await this._scrape_page(cursor);
@@ -374,8 +361,8 @@ export class IndeedScraper extends Scraper {
       page++;
     }
 
-    const offset = scraper_input.offset || 0;
-    const results_wanted = scraper_input.results_wanted || 15;
+    const offset = scraper_input.offset ?? 0;
+    const results_wanted = scraper_input.results_wanted ?? 15;
 
     return {
       jobs: job_list.slice(offset, offset + results_wanted),
@@ -388,31 +375,30 @@ export class IndeedScraper extends Scraper {
 
     const search_term = this.scraper_input?.search_term
       ? this.scraper_input.search_term.replace('"', '\\"')
-      : "";
+      : '';
 
     // Format query exactly like JobSpy
-    const query = JOB_SEARCH_QUERY
-      .replace("{what}", search_term ? `what: "${search_term}"` : "")
+    const query = JOB_SEARCH_QUERY.replace('{what}', search_term ? `what: "${search_term}"` : '')
       .replace(
-        "{location}",
+        '{location}',
         this.scraper_input?.location
           ? `location: {where: "${this.scraper_input.location}", radius: ${
-            this.scraper_input.distance || 25
-          }, radiusUnit: MILES}`
-          : "",
+              this.scraper_input.distance ?? 25
+            }, radiusUnit: MILES}`
+          : '',
       )
-      .replace("{cursor}", cursor ? `cursor: "${cursor}"` : "")
-      .replace("{filters}", filters)
-      .replace(/{\s*}/g, "") // Remove empty braces
-      .replace(/,(\s*,|\s*})/g, "$1"); // Remove trailing commas
+      .replace('{cursor}', cursor ? `cursor: "${cursor}"` : '')
+      .replace('{filters}', filters)
+      .replace(/{\s*}/g, '') // Remove empty braces
+      .replace(/,(\s*,|\s*})/g, '$1'); // Remove trailing commas
 
     const payload = { query };
 
     // Логируем параметры запроса к Indeed API
-    console.log("🌐 Indeed API Request:", {
+    console.log('🌐 Indeed API Request:', {
       url: this.api_url,
-      method: "POST",
-      headers: this.headers || API_HEADERS,
+      method: 'POST',
+      headers: this.headers ?? API_HEADERS,
       payload: payload,
       scraper_input: {
         search_term: this.scraper_input?.search_term,
@@ -427,13 +413,13 @@ export class IndeedScraper extends Scraper {
 
     try {
       const response = await fetch(this.api_url, {
-        method: "POST",
-        headers: this.headers || API_HEADERS,
+        method: 'POST',
+        headers: this.headers ?? API_HEADERS,
         body: JSON.stringify(payload),
       });
 
       // Логируем ответ от Indeed API
-      console.log("📥 Indeed API Response:", {
+      console.log('📥 Indeed API Response:', {
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries()),
@@ -447,20 +433,20 @@ export class IndeedScraper extends Scraper {
         // Consume response body to prevent memory leaks
         try {
           const errorText = await response.text();
-          console.log("❌ Indeed API error response body:", errorText);
+          console.log('❌ Indeed API error response body:', errorText);
         } catch {
           // Ignore errors when consuming response body
         }
         return jobs;
       }
 
-      const data: GraphQLJobSearchResponse = await response.json();
+      const data = (await response.json()) as GraphQLJobSearchResponse;
 
       // Логируем успешный ответ с данными
-      console.log("✅ Indeed API successful response:", {
+      console.log('✅ Indeed API successful response:', {
         hasData: !!data.data,
         hasJobSearch: !!data.data?.jobSearch,
-        resultsCount: data.data?.jobSearch?.results?.length || 0,
+        resultsCount: data.data?.jobSearch?.results?.length ?? 0,
         hasErrors: !!data.errors,
         errors: data.errors,
         nextCursor: data.data?.jobSearch?.pageInfo?.nextCursor,
@@ -480,15 +466,15 @@ export class IndeedScraper extends Scraper {
 
       return job_list;
     } catch (error) {
-      console.error("Error scraping page:", error);
+      console.error('Error scraping page:', error);
       return jobs;
     }
   }
 
   private _build_filters(): string {
-    if (!this.scraper_input) return "";
+    if (!this.scraper_input) return '';
 
-    let filters_str = "";
+    let filters_str = '';
 
     if (this.scraper_input.hours_old) {
       filters_str = `
@@ -510,10 +496,10 @@ export class IndeedScraper extends Scraper {
       `;
     } else if (this.scraper_input.job_type || this.scraper_input.is_remote) {
       const job_type_key_mapping: Partial<Record<JobType, string>> = {
-        [JobType.FULL_TIME]: "CF3CP",
-        [JobType.PART_TIME]: "75GKK",
-        [JobType.CONTRACT]: "NJXCK",
-        [JobType.INTERNSHIP]: "VDTG7",
+        [JobType.FULL_TIME]: 'CF3CP',
+        [JobType.PART_TIME]: '75GKK',
+        [JobType.CONTRACT]: 'NJXCK',
+        [JobType.INTERNSHIP]: 'VDTG7',
       };
 
       const keys: string[] = [];
@@ -526,7 +512,7 @@ export class IndeedScraper extends Scraper {
       }
 
       if (this.scraper_input.is_remote) {
-        keys.push("DSQF7");
+        keys.push('DSQF7');
       }
 
       if (keys.length > 0) {
@@ -549,37 +535,34 @@ export class IndeedScraper extends Scraper {
     return filters_str;
   }
 
-  private async _get_next_cursor(
-    current_cursor: string | null,
-  ): Promise<string | null> {
+  private async _get_next_cursor(current_cursor: string | null): Promise<string | null> {
     if (!this.scraper_input) return null;
 
     const filters = this._build_filters();
     const search_term = this.scraper_input.search_term
       ? this.scraper_input.search_term.replace('"', '\\"')
-      : "";
+      : '';
 
-    const query = JOB_SEARCH_QUERY
-      .replace("{what}", search_term ? `what: "${search_term}"` : "")
+    const query = JOB_SEARCH_QUERY.replace('{what}', search_term ? `what: "${search_term}"` : '')
       .replace(
-        "{location}",
+        '{location}',
         this.scraper_input.location
           ? `location: {where: "${this.scraper_input.location}", radius: ${
-            this.scraper_input.distance || 25
-          }, radiusUnit: MILES}`
-          : "",
+              this.scraper_input.distance ?? 25
+            }, radiusUnit: MILES}`
+          : '',
       )
-      .replace("{cursor}", current_cursor ? `cursor: "${current_cursor}"` : "")
-      .replace("{filters}", filters)
-      .replace(/{\s*}/g, "")
-      .replace(/,(\s*,|\s*})/g, "$1");
+      .replace('{cursor}', current_cursor ? `cursor: "${current_cursor}"` : '')
+      .replace('{filters}', filters)
+      .replace(/{\s*}/g, '')
+      .replace(/,(\s*,|\s*})/g, '$1');
 
     const payload = { query };
 
     try {
       const response = await fetch(this.api_url, {
-        method: "POST",
-        headers: this.headers || API_HEADERS,
+        method: 'POST',
+        headers: this.headers ?? API_HEADERS,
         body: JSON.stringify(payload),
       });
 
@@ -593,8 +576,8 @@ export class IndeedScraper extends Scraper {
         return null;
       }
 
-      const data: GraphQLJobSearchResponse = await response.json();
-      return data.data?.jobSearch?.pageInfo?.nextCursor || null;
+      const data = (await response.json()) as GraphQLJobSearchResponse;
+      return data.data?.jobSearch?.pageInfo?.nextCursor ?? null;
     } catch {
       return null;
     }
@@ -614,9 +597,7 @@ export class IndeedScraper extends Scraper {
     // Convert HTML to markdown if needed
     if (this.scraper_input?.description_format === DescriptionFormat.MARKDOWN) {
       description = this._markdown_converter(description);
-    } else if (
-      this.scraper_input?.description_format === DescriptionFormat.PLAIN
-    ) {
+    } else if (this.scraper_input?.description_format === DescriptionFormat.PLAIN) {
       description = this._plain_converter(description);
     }
 
@@ -624,46 +605,47 @@ export class IndeedScraper extends Scraper {
     const date_posted = new Date(job.datePublished);
 
     const employer = job.employer?.dossier;
-    const employer_details = employer?.employerDetails || {};
+    const employer_details = employer?.employerDetails ?? {};
 
     const rel_url = job.employer?.relativeCompanyPageUrl;
 
     return {
       id: `in-${job.key}`,
       title: job.title,
-      company_name: job.employer?.name || null,
+      company_name: job.employer?.name ?? null,
       job_url: job_url,
-      job_url_direct: job.recruit?.viewJobUrl || null,
+      job_url_direct: job.recruit?.viewJobUrl ?? null,
       location: {
-        city: job.location.city || null,
-        state: job.location.admin1Code || null,
-        country: job.location.countryCode || null,
+        city: job.location.city ?? null,
+        state: job.location.admin1Code ?? null,
+        country: job.location.countryCode ?? null,
       },
       description: description,
       company_url: rel_url ? `${this.base_url}${rel_url}` : null,
-      company_url_direct: employer?.links?.corporateWebsite || null,
+      company_url_direct: employer?.links?.corporateWebsite ?? null,
       job_type: job_type,
       compensation: this._get_compensation(job.compensation),
       date_posted: date_posted,
       emails: this._extract_emails_from_text(description),
       is_remote: this._is_job_remote(job, description),
-      company_addresses: employer_details.addresses?.[0] || null,
+      company_addresses: employer_details.addresses?.[0] ?? null,
       company_industry: employer_details.industry
-        ? employer_details.industry.replace("Iv1", "").replace("_", " ")
-          .replace(/\b\w/g, (l) => l.toUpperCase())
+        ? employer_details.industry
+            .replace('Iv1', '')
+            .replace('_', ' ')
+            .replace(/\b\w/g, (l) => l.toUpperCase())
         : null,
-      company_num_employees: employer_details.employeesLocalizedLabel || null,
-      company_revenue: employer_details.revenueLocalizedLabel || null,
-      company_description: employer_details.briefDescription || null,
-      company_logo: employer?.images?.squareLogoUrl || null,
+      company_num_employees: employer_details.employeesLocalizedLabel ?? null,
+      company_revenue: employer_details.revenueLocalizedLabel ?? null,
+      company_description: employer_details.briefDescription ?? null,
+      company_logo: employer?.images?.squareLogoUrl ?? null,
     };
   }
 
   private _get_job_type(attributes: IndeedAttribute[]): JobType[] {
     const job_types: JobType[] = [];
     for (const attribute of attributes) {
-      const job_type_str = attribute.label.replace("-", "").replace(" ", "")
-        .toLowerCase();
+      const job_type_str = attribute.label.replace('-', '').replace(' ', '').toLowerCase();
       const job_type = this._get_enum_from_job_type(job_type_str);
       if (job_type) {
         job_types.push(job_type);
@@ -672,14 +654,12 @@ export class IndeedScraper extends Scraper {
     return job_types;
   }
 
-  private _get_compensation(
-    compensation?: IndeedCompensation,
-  ): Compensation | null {
+  private _get_compensation(compensation?: IndeedCompensation): Compensation | null {
     if (!compensation?.baseSalary && !compensation?.estimated) {
       return null;
     }
 
-    const comp = compensation.baseSalary || compensation.estimated?.baseSalary;
+    const comp = compensation.baseSalary ?? compensation.estimated?.baseSalary;
     if (!comp) return null;
 
     const interval = this._get_compensation_interval(comp.unitOfWork);
@@ -690,46 +670,41 @@ export class IndeedScraper extends Scraper {
 
     return {
       interval: interval,
-      min_amount: min_range || null,
-      max_amount: max_range || null,
-      currency: compensation.estimated?.currencyCode ||
-        compensation.currencyCode || "USD",
+      min_amount: min_range ?? null,
+      max_amount: max_range ?? null,
+      currency: compensation.estimated?.currencyCode ?? compensation.currencyCode ?? 'USD',
     };
   }
 
   private _is_job_remote(job: IndeedJob, description: string): boolean | null {
-    const remote_keywords = ["remote", "work from home", "wfh"];
+    const remote_keywords = ['remote', 'work from home', 'wfh'];
 
     const is_remote_in_attributes = job.attributes.some((attr) =>
-      remote_keywords.some((keyword) =>
-        attr.label.toLowerCase().includes(keyword)
-      )
+      remote_keywords.some((keyword) => attr.label.toLowerCase().includes(keyword)),
     );
 
     const is_remote_in_description = remote_keywords.some((keyword) =>
-      description.toLowerCase().includes(keyword)
+      description.toLowerCase().includes(keyword),
     );
 
-    const is_remote_in_location = job.location.formatted?.long &&
+    const is_remote_in_location =
+      job.location.formatted?.long &&
       remote_keywords.some((keyword) =>
-        job.location.formatted.long.toLowerCase().includes(keyword)
+        job.location.formatted.long.toLowerCase().includes(keyword),
       );
 
-    return is_remote_in_attributes || is_remote_in_description ||
-      is_remote_in_location || null;
+    return is_remote_in_attributes || is_remote_in_description || is_remote_in_location || null;
   }
 
-  private _get_compensation_interval(
-    interval?: string,
-  ): CompensationInterval | null {
+  private _get_compensation_interval(interval?: string): CompensationInterval | null {
     if (!interval) return null;
 
     const interval_mapping: Record<string, CompensationInterval> = {
-      "DAY": CompensationInterval.DAILY,
-      "YEAR": CompensationInterval.YEARLY,
-      "HOUR": CompensationInterval.HOURLY,
-      "WEEK": CompensationInterval.WEEKLY,
-      "MONTH": CompensationInterval.MONTHLY,
+      DAY: CompensationInterval.DAILY,
+      YEAR: CompensationInterval.YEARLY,
+      HOUR: CompensationInterval.HOURLY,
+      WEEK: CompensationInterval.WEEKLY,
+      MONTH: CompensationInterval.MONTHLY,
     };
 
     return interval_mapping[interval.toUpperCase()] || null;
@@ -737,10 +712,7 @@ export class IndeedScraper extends Scraper {
 
   private _get_enum_from_job_type(job_type_str: string): JobType | null {
     for (const job_type of Object.values(JobType)) {
-      if (
-        typeof job_type === "string" &&
-        job_type_str.includes(job_type.toLowerCase())
-      ) {
+      if (typeof job_type === 'string' && job_type_str.includes(job_type.toLowerCase())) {
         return job_type as JobType;
       }
     }
@@ -750,18 +722,18 @@ export class IndeedScraper extends Scraper {
   private _markdown_converter(description_html: string): string {
     // Simple HTML to markdown conversion
     return description_html
-      .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, "# $1\n\n")
-      .replace(/<p[^>]*>(.*?)<\/p>/gi, "$1\n\n")
-      .replace(/<br[^>]*>/gi, "\n")
-      .replace(/<strong[^>]*>(.*?)<\/strong>/gi, "**$1**")
-      .replace(/<em[^>]*>(.*?)<\/em>/gi, "*$1*")
-      .replace(/<ul[^>]*>(.*?)<\/ul>/gi, "$1")
-      .replace(/<li[^>]*>(.*?)<\/li>/gi, "- $1\n")
-      .replace(/<[^>]*>/g, "")
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
+      .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '# $1\n\n')
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+      .replace(/<br[^>]*>/gi, '\n')
+      .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+      .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+      .replace(/<ul[^>]*>(.*?)<\/ul>/gi, '$1')
+      .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
       .trim();
@@ -769,14 +741,14 @@ export class IndeedScraper extends Scraper {
 
   private _plain_converter(description_html: string): string {
     return description_html
-      .replace(/<[^>]*>/g, "")
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
-      .replace(/\s+/g, " ")
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
@@ -786,6 +758,6 @@ export class IndeedScraper extends Scraper {
     const email_regex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
     const emails = text.match(email_regex);
 
-    return emails || null;
+    return emails ?? null;
   }
 }

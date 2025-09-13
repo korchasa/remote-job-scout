@@ -1,82 +1,32 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import process from 'node:process';
 
 export default defineConfig({
-  plugins: [react({
-    jsxRuntime: 'automatic',
-    jsxImportSource: 'react',
-  })],
-  root: ".",
+  plugins: [
+    react({
+      jsxRuntime: 'automatic',
+      jsxImportSource: 'react',
+    }),
+  ],
+  root: process.cwd() + '/src/client',
   build: {
-    outDir: "../../dist/client",
+    outDir: '../../dist/client',
     emptyOutDir: true,
-    rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
-    },
   },
   resolve: {
     alias: {
-      "@": "./src",
-      "@shared": "../shared",
-      "react": "https://esm.sh/react@19.1.1",
-      "@types/react": "https://esm.sh/@types/react@19.1.1",
-      "react-dom": "https://esm.sh/react-dom@19.1.1",
-      "react-dom/client": "https://esm.sh/react-dom@19.1.1/client",
-      "react/jsx-runtime": "https://esm.sh/react@19.1.1/jsx-runtime",
-      "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@5.60.5",
-      "wouter": "https://esm.sh/wouter@3.3.5",
-      "lucide-react": "https://esm.sh/lucide-react@0.468.0",
-      "class-variance-authority": "https://esm.sh/class-variance-authority@0.7.1",
-      "clsx": "https://esm.sh/clsx@2.1.1",
-      "tailwind-merge": "https://esm.sh/tailwind-merge@2.6.0",
-      "yaml": "https://esm.sh/yaml@2.4.5",
-      "zod": "https://esm.sh/zod@3.24.2",
-      "@radix-ui/react-accordion": "https://esm.sh/@radix-ui/react-accordion@1.2.4",
-      "@radix-ui/react-alert-dialog": "https://esm.sh/@radix-ui/react-alert-dialog@1.1.7",
-      "@radix-ui/react-aspect-ratio": "https://esm.sh/@radix-ui/react-aspect-ratio@1.1.3",
-      "@radix-ui/react-avatar": "https://esm.sh/@radix-ui/react-avatar@1.1.4",
-      "@radix-ui/react-checkbox": "https://esm.sh/@radix-ui/react-checkbox@1.1.5",
-      "@radix-ui/react-collapsible": "https://esm.sh/@radix-ui/react-collapsible@1.1.4",
-      "@radix-ui/react-context-menu": "https://esm.sh/@radix-ui/react-context-menu@2.2.7",
-      "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.1.7",
-      "@radix-ui/react-dropdown-menu": "https://esm.sh/@radix-ui/react-dropdown-menu@2.1.7",
-      "@radix-ui/react-hover-card": "https://esm.sh/@radix-ui/react-hover-card@1.1.7",
-      "@radix-ui/react-label": "https://esm.sh/@radix-ui/react-label@2.1.3",
-      "@radix-ui/react-menubar": "https://esm.sh/@radix-ui/react-menubar@1.1.7",
-      "@radix-ui/react-navigation-menu": "https://esm.sh/@radix-ui/react-navigation-menu@1.2.6",
-      "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.1.7",
-      "@radix-ui/react-progress": "https://esm.sh/@radix-ui/react-progress@1.1.3",
-      "@radix-ui/react-radio-group": "https://esm.sh/@radix-ui/react-radio-group@1.2.4",
-      "@radix-ui/react-scroll-area": "https://esm.sh/@radix-ui/react-scroll-area@1.2.4",
-      "@radix-ui/react-select": "https://esm.sh/@radix-ui/react-select@2.1.7",
-      "@radix-ui/react-separator": "https://esm.sh/@radix-ui/react-separator@1.1.3",
-      "@radix-ui/react-slider": "https://esm.sh/@radix-ui/react-slider@1.2.4",
-      "@radix-ui/react-switch": "https://esm.sh/@radix-ui/react-switch@1.1.4",
-      "@radix-ui/react-tabs": "https://esm.sh/@radix-ui/react-tabs@1.1.4",
-      "@radix-ui/react-toast": "https://esm.sh/@radix-ui/react-toast@1.2.7",
-      "@radix-ui/react-toggle": "https://esm.sh/@radix-ui/react-toggle@1.1.3",
-      "@radix-ui/react-toggle-group": "https://esm.sh/@radix-ui/react-toggle-group@1.1.3",
-      "@radix-ui/react-tooltip": "https://esm.sh/@radix-ui/react-tooltip@1.2.0",
-      "@radix-ui/react-slot": "https://esm.sh/@radix-ui/react-slot@1.2.0",
-      "@radix-ui/react-calendar": "https://esm.sh/@radix-ui/react-calendar@1.1.2",
-      "cmdk": "https://esm.sh/cmdk@1.1.1",
-      "input-otp": "https://esm.sh/input-otp@1.4.2",
-      "react-day-picker": "https://esm.sh/react-day-picker@8.10.1",
-      "embla-carousel-react": "https://esm.sh/embla-carousel-react@8.6.0",
-      "vaul": "https://esm.sh/vaul@1.1.2",
-      "recharts": "https://esm.sh/recharts@2.15.2",
-      "react-hook-form": "https://esm.sh/react-hook-form@7.55.0",
-      "@hookform/resolvers": "https://esm.sh/@hookform/resolvers@3.10.0",
-      "react-resizable-panels": "https://esm.sh/react-resizable-panels@2.1.7",
+      '@': process.cwd() + '/src/client/src',
+      '@shared': process.cwd() + '/src/shared',
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react/jsx-runtime', 'clsx', 'tailwind-merge'],
+    include: ['clsx', 'tailwind-merge'],
   },
   server: {
     proxy: {
-      "/api": {
-        target: "http://localhost:3000",
+      '/api': {
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },

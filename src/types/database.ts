@@ -18,11 +18,11 @@ export interface Vacancy {
 }
 
 export type VacancyStatus =
-  | "collected" // Собран
-  | "filtered" // Прошел фильтрацию
-  | "skipped" // Пропущен
-  | "enriched" // Обогащен LLM
-  | "completed"; // Завершен
+  | 'collected' // Собран
+  | 'filtered' // Прошел фильтрацию
+  | 'skipped' // Пропущен
+  | 'enriched' // Обогащен LLM
+  | 'completed'; // Завершен
 
 export interface Company {
   id: string;
@@ -64,7 +64,7 @@ export interface Log {
   created_at: string;
 }
 
-export type LogLevel = "info" | "warning" | "error" | "debug";
+export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
 
 export interface PerformanceMetric {
   id: string;
@@ -83,10 +83,10 @@ export interface PerformanceMetric {
 }
 
 export type ProcessingStage =
-  | "collecting" // Сбор вакансий
-  | "filtering" // Фильтрация
-  | "enriching" // LLM обогащение
-  | "completed"; // Завершено
+  | 'collecting' // Сбор вакансий
+  | 'filtering' // Фильтрация
+  | 'enriching' // LLM обогащение
+  | 'completed'; // Завершено
 
 export interface MultiStageProgress {
   sessionId: string;
@@ -106,7 +106,7 @@ export interface MultiStageProgress {
 }
 
 export interface StageProgress {
-  status: "pending" | "running" | "completed" | "failed" | "stopped";
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'stopped';
   progress: number; // 0-100%
   itemsProcessed: number;
   itemsTotal: number;
@@ -123,8 +123,8 @@ export interface SearchRequest {
       blacklistedCompanies: string[];
       blacklistedWordsTitle: string[];
       blacklistedWordsDescription: string[];
-      countries: { name: string; type: "blacklist" | "whitelist" }[];
-      languages: { language: string; level: string }[];
+      countries: Array<{ name: string; type: 'blacklist' | 'whitelist' }>;
+      languages: Array<{ language: string; level: string }>;
       workTime?: { start: string; end: string; timezone: string };
     };
     sources: {
@@ -138,7 +138,7 @@ export interface SearchRequest {
     };
     llm: {
       enrichmentInstructions: string[];
-      processingRules: { name: string; prompt: string }[];
+      processingRules: Array<{ name: string; prompt: string }>;
     };
   };
   session_id: string;

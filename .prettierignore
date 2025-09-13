@@ -1,0 +1,9 @@
+node_modules
+dist
+build
+coverage
+data
+references
+tests
+.DS_Store
+*.log

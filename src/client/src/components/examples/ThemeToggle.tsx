@@ -1,5 +1,5 @@
-import { ThemeToggle } from "../ThemeToggle.tsx";
-import { ThemeProvider } from "../ThemeProvider.tsx";
+import { ThemeToggle } from '../ThemeToggle.tsx';
+import { ThemeProvider } from '../ThemeProvider.tsx';
 
 export default function ThemeToggleExample() {
   return (

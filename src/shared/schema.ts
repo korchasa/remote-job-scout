@@ -80,21 +80,10 @@ export interface ProgressData {
   processingSpeed: number;
 }
 
-// WebSocket message types
-export interface WebSocketMessage {
-  type: "session_update" | "job_update" | "progress_update";
-  data: Record<string, unknown>;
-}
-
 // Job status types
-export type JobStatus =
-  | "pending"
-  | "filtered"
-  | "enriched"
-  | "skipped"
-  | "blacklisted";
+export type JobStatus = 'pending' | 'filtered' | 'enriched' | 'skipped' | 'blacklisted';
 export type SearchStage = 1 | 2 | 3; // Collection, Filtering, Enrichment
-export type ProcessingStatus = "running" | "completed" | "stopped" | "error";
+export type ProcessingStatus = 'running' | 'completed' | 'stopped' | 'error';
 
 // API Response types
 export interface ApiResponse<T> {
@@ -159,7 +148,7 @@ export interface UserSettings {
 
 export interface LanguageRequirement {
   language: string;
-  level: "basic" | "intermediate" | "advanced" | "native";
+  level: 'basic' | 'intermediate' | 'advanced' | 'native';
 }
 
 export interface CountryFilter {

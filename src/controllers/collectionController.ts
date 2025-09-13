@@ -3,27 +3,24 @@
  * Обрабатывает HTTP запросы для сбора вакансий
  */
 
-import {
+import type {
   MultiStageProgress,
   SearchRequest,
   SearchResponse,
   Vacancy,
-} from "../types/database.ts";
-import {
-  CollectionProgress,
-  JobCollectionService,
-} from "../services/jobCollectionService.ts";
-import { MultiStageSearchOrchestrator } from "../services/multiStageSearchOrchestrator.ts";
+} from '../types/database.js';
+import type { CollectionProgress } from '../services/jobCollectionService.js';
+import { JobCollectionService } from '../services/jobCollectionService.js';
+import { MultiStageSearchOrchestrator } from '../services/multiStageSearchOrchestrator.js';
+// Using HTTP polling for progress updates
 
 export class CollectionController {
   private collectionService: JobCollectionService;
   private multiStageOrchestrator: MultiStageSearchOrchestrator;
-  private jobsStorage?: Map<string, Vacancy>;
 
   constructor(jobsStorage?: Map<string, Vacancy>) {
     this.collectionService = new JobCollectionService();
     this.multiStageOrchestrator = new MultiStageSearchOrchestrator(jobsStorage);
-    this.jobsStorage = jobsStorage;
   }
 
   /**
@@ -31,7 +28,7 @@ export class CollectionController {
    */
   startCollection(request: SearchRequest): Promise<SearchResponse> {
     try {
-      console.log("🚀 Starting job collection process");
+      console.log('🚀 Starting job collection process');
 
       // Настраиваем OpenAI WebSearch если указан API ключ
       if (request.settings.sources.openaiWebSearch?.apiKey) {
@@ -42,28 +39,25 @@ export class CollectionController {
       }
 
       // Запускаем сбор в фоне (асинхронно, без блокировки)
-      (async () => {
+      void (async () => {
         try {
           const result = await this.collectionService.collectJobs(request);
           console.log(
             `✅ Collection completed for session ${request.session_id}: ${result.totalCollected} jobs`,
           );
         } catch (error) {
-          console.error(
-            `❌ Collection failed for session ${request.session_id}:`,
-            error,
-          );
+          console.error(`❌ Collection failed for session ${request.session_id}:`, error);
         }
       })();
 
       return Promise.resolve({
         success: true,
         session_id: request.session_id,
-        message: "Job collection started successfully",
+        message: 'Job collection started successfully',
         total_found: 0, // Будет обновлено по мере сбора
       });
     } catch (error) {
-      console.error("❌ Failed to start collection:", error);
+      console.error('❌ Failed to start collection:', error);
       return Promise.resolve({
         success: false,
         session_id: request.session_id,
@@ -110,7 +104,7 @@ export class CollectionController {
 
     return {
       sessionId,
-      progress: progress || undefined,
+      progress: progress ?? undefined,
       isActive: progress ? !progress.isComplete : false,
     };
   }
@@ -120,39 +114,36 @@ export class CollectionController {
    */
   startMultiStageSearch(request: SearchRequest): Promise<SearchResponse> {
     try {
-      console.log("🚀 Starting multi-stage search process");
+      console.log('🚀 Starting multi-stage search process');
+      console.log(
+        `🔄 Progress updates will be available via polling: GET /api/multi-stage/progress/${request.session_id}`,
+      );
 
       // Запускаем процесс в фоне
-      (async () => {
+      void (async () => {
         try {
-          const result = await this.multiStageOrchestrator
-            .startMultiStageSearch(request);
+          const result = await this.multiStageOrchestrator.startMultiStageSearch(request);
           console.log(
             `✅ Multi-stage search completed for session ${request.session_id}: ${
-              result.success ? "SUCCESS" : "FAILED"
+              result.success ? 'SUCCESS' : 'FAILED'
             }`,
           );
         } catch (error) {
-          console.error(
-            `❌ Multi-stage search failed for session ${request.session_id}:`,
-            error,
-          );
+          console.error(`❌ Multi-stage search failed for session ${request.session_id}:`, error);
         }
       })();
 
       return Promise.resolve({
         success: true,
         session_id: request.session_id,
-        message: "Multi-stage search started successfully",
+        message: 'Multi-stage search started successfully',
       });
     } catch (error) {
-      console.error("❌ Failed to start multi-stage search:", error);
+      console.error('❌ Failed to start multi-stage search:', error);
       return Promise.resolve({
         success: false,
         session_id: request.session_id,
-        message: `Failed to start multi-stage search: ${
-          (error as Error).message
-        }`,
+        message: `Failed to start multi-stage search: ${(error as Error).message}`,
       });
     }
   }
@@ -167,9 +158,7 @@ export class CollectionController {
   /**
    * Остановить многоэтапный поиск
    */
-  stopMultiStageSearch(
-    sessionId: string,
-  ): { success: boolean; message: string } {
+  stopMultiStageSearch(sessionId: string): { success: boolean; message: string } {
     const stopped = this.multiStageOrchestrator.stopProcess(sessionId);
 
     if (stopped) {

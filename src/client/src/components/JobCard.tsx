@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader } from "./ui/card.tsx";
-import { Badge } from "./ui/badge.tsx";
-import { Button } from "./ui/button.tsx";
+import { Card, CardContent, CardHeader } from './ui/card.tsx';
+import { Badge } from './ui/badge.tsx';
+import { Button } from './ui/button.tsx';
 import {
   Ban,
   Building,
@@ -11,34 +11,32 @@ import {
   Eye,
   MapPin,
   X,
-} from "lucide-react";
-import type { JobPost } from "../../shared/schema.ts";
+} from 'lucide-react';
+import type { JobPost } from '../../../shared/schema.ts';
 
 interface JobCardProps {
   job: JobPost;
   onViewDetails: (job: JobPost) => void;
-  onSkip: (job: JobPost) => void;
-  onDefer: (job: JobPost) => void;
-  onBlacklist: (job: JobPost) => void;
+  onSkip: (job: JobPost) => Promise<void>;
+  onDefer: (job: JobPost) => Promise<void>;
+  onBlacklist: (job: JobPost) => Promise<void>;
 }
 
-export function JobCard(
-  { job, onViewDetails, onSkip, onDefer, onBlacklist }: JobCardProps,
-) {
+export function JobCard({ job, onViewDetails, onSkip, onDefer, onBlacklist }: JobCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
-        return "bg-yellow-500";
-      case "filtered":
-        return "bg-blue-500";
-      case "enriched":
-        return "bg-green-500";
-      case "skipped":
-        return "bg-gray-500";
-      case "blacklisted":
-        return "bg-red-500";
+      case 'pending':
+        return 'bg-yellow-500';
+      case 'filtered':
+        return 'bg-blue-500';
+      case 'enriched':
+        return 'bg-green-500';
+      case 'skipped':
+        return 'bg-gray-500';
+      case 'blacklisted':
+        return 'bg-red-500';
       default:
-        return "bg-gray-500";
+        return 'bg-gray-500';
     }
   };
 
@@ -49,17 +47,17 @@ export function JobCard(
     if (job.compensation) {
       return job.compensation;
     }
-    return "Salary not specified";
+    return 'Salary not specified';
   };
 
   const handleOpenOriginal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    globalThis.open(job.originalUrl, "_blank");
+    globalThis.open(job.originalUrl, '_blank');
   };
 
-  const handleAction = (action: () => void) => (e: React.MouseEvent) => {
+  const handleAction = (action: () => Promise<void>) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    action();
+    action().catch(console.error);
   };
 
   return (
@@ -85,10 +83,10 @@ export function JobCard(
             </div>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-            <Badge variant="secondary" className="text-xs">{job.source}</Badge>
-            <div
-              className={`w-2 h-2 rounded-full ${getStatusColor(job.status)}`}
-            />
+            <Badge variant="secondary" className="text-xs">
+              {job.source}
+            </Badge>
+            <div className={`w-2 h-2 rounded-full ${getStatusColor(job.status)}`} />
           </div>
         </div>
       </CardHeader>
@@ -137,7 +135,9 @@ export function JobCard(
             <span className="truncate">{formatSalary()}</span>
           </div>
           {job.seniority && (
-            <Badge variant="outline" className="text-xs">{job.seniority}</Badge>
+            <Badge variant="outline" className="text-xs">
+              {job.seniority}
+            </Badge>
           )}
         </div>
 
@@ -145,9 +145,7 @@ export function JobCard(
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
           <span>
-            Posted {job.createdAt
-              ? new Date(job.createdAt).toLocaleDateString()
-              : "Unknown"}
+            Posted {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : 'Unknown'}
           </span>
         </div>
 
