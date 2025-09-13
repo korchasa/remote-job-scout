@@ -1,33 +1,32 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card.tsx";
-import { Button } from "./ui/button.tsx";
-import { Badge } from "./ui/badge.tsx";
-import { Separator } from "./ui/separator.tsx";
-import { SearchConfigPanel } from "./SearchConfigPanel.tsx";
-import { ProgressDashboard } from "./ProgressDashboard.tsx";
-import { JobListView } from "./JobListView.tsx";
-import { ThemeToggle } from "./ThemeToggle.tsx";
-import { useJobs } from "../hooks/useJobs.ts";
-import { useSearchSessions, useStartSearch, useStopSearch, usePauseSearch, useSearchProgress } from "../hooks/useSearchSessions.ts";
-import { useWebSocket } from "../hooks/useWebSocket.ts";
-import { useToast } from "../hooks/use-toast.ts";
-import { queryClient } from "../lib/queryClient.ts";
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card.tsx';
+import { Button } from './ui/button.tsx';
+import { Badge } from './ui/badge.tsx';
+import { Separator } from './ui/separator.tsx';
+import { SearchConfigPanel } from './SearchConfigPanel.tsx';
+import { ProgressDashboard } from './ProgressDashboard.tsx';
+import { JobListView } from './JobListView.tsx';
+import { ThemeToggle } from './ThemeToggle.tsx';
+import { useJobs } from '../hooks/useJobs.ts';
 import {
-  BarChart3,
-  Briefcase,
-  Search,
-  Settings,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
-import type { JobPost, SearchConfig } from "../../shared/schema.ts";
+  useSearchSessions,
+  useStartSearch,
+  useStopSearch,
+  usePauseSearch,
+  useSearchProgress,
+} from '../hooks/useSearchSessions.ts';
+import { useWebSocket } from '../hooks/useWebSocket.ts';
+import { useToast } from '../hooks/use-toast.ts';
+import { queryClient } from '../lib/queryClient.ts';
+import { BarChart3, Briefcase, Search, Settings, TrendingUp, Zap } from 'lucide-react';
+import type { JobPost, SearchConfig } from '../../../shared/schema.ts';
 
 // Real data is now fetched from API hooks above
 
-type ViewMode = "config" | "progress" | "results";
+type ViewMode = 'config' | 'progress' | 'results';
 
 export function MainDashboard() {
-  const [viewMode, setViewMode] = useState<ViewMode>("config");
+  const [viewMode, setViewMode] = useState<ViewMode>('config');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -41,45 +40,43 @@ export function MainDashboard() {
   const stopSearchMutation = useStopSearch();
   const pauseSearchMutation = usePauseSearch();
   const { data: progressData, isLoading: progressLoading } = useSearchProgress(currentSessionId);
-  const { lastUpdate, isConnected: _isConnected } = useWebSocket(
-    currentSessionId || undefined,
-  );
+  const { lastUpdate, isConnected: _isConnected } = useWebSocket(currentSessionId ?? undefined);
 
-  const jobs = jobsResponse?.jobs || [];
+  const jobs = jobsResponse?.jobs ?? [];
   const isSearching = (startSearchMutation.isPending || currentSessionId !== null) && !isPaused;
 
   // Handle WebSocket updates
   useEffect(() => {
-    if (lastUpdate && lastUpdate.type === "session_update") {
-      console.log("Received session update:", lastUpdate.data);
+    if (lastUpdate && lastUpdate.type === 'session_update') {
+      console.log('Received session update:', lastUpdate.data);
       // Update local state with progress data
-      if (lastUpdate.data.status === "completed" || lastUpdate.data.status === "stopped") {
+      if (lastUpdate.data.status === 'completed' || lastUpdate.data.status === 'stopped') {
         setCurrentSessionId(null);
         setIsPaused(false);
-        setViewMode("results");
+        setViewMode('results');
         // Refresh jobs data when search completes
-        queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+        void queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
       }
     }
   }, [lastUpdate]);
 
   const handleStartSearch = async (config: SearchConfig) => {
-    console.log("Starting search with config:", config);
+    console.log('Starting search with config:', config);
     try {
       const result = await startSearchMutation.mutateAsync(config);
       setCurrentSessionId(result.sessionId);
-      setViewMode("progress");
+      setViewMode('progress');
       setIsPaused(false);
       toast({
-        title: "Search Started",
-        description: "Your job search has been initiated successfully.",
+        title: 'Search Started',
+        description: 'Your job search has been initiated successfully.',
       });
     } catch (error) {
-      console.error("Failed to start search:", error);
+      console.error('Failed to start search:', error);
       toast({
-        title: "Search Failed",
-        description: "Failed to start the job search. Please try again.",
-        variant: "destructive",
+        title: 'Search Failed',
+        description: 'Failed to start the job search. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -91,93 +88,88 @@ export function MainDashboard() {
       if (isPaused) {
         // Resume search - for now, we'll just show a message since resume logic is not implemented yet
         toast({
-          title: "Resume Not Available",
-          description: "Resume functionality is not yet implemented.",
+          title: 'Resume Not Available',
+          description: 'Resume functionality is not yet implemented.',
         });
       } else {
         // Pause search
         await pauseSearchMutation.mutateAsync(currentSessionId);
         setIsPaused(true);
         toast({
-          title: "Search Paused",
-          description: "Your job search has been paused.",
+          title: 'Search Paused',
+          description: 'Your job search has been paused.',
         });
       }
     } catch (error) {
-      console.error("Failed to pause/resume search:", error);
+      console.error('Failed to pause/resume search:', error);
       toast({
-        title: "Operation Failed",
-        description: "Failed to pause/resume the search. Please try again.",
-        variant: "destructive",
+        title: 'Operation Failed',
+        description: 'Failed to pause/resume the search. Please try again.',
+        variant: 'destructive',
       });
     }
   };
 
   const handleStopSearch = async () => {
-    console.log("Stop search");
+    console.log('Stop search');
     if (currentSessionId) {
       try {
         await stopSearchMutation.mutateAsync(currentSessionId);
         setCurrentSessionId(null);
         setIsPaused(false);
         toast({
-          title: "Search Stopped",
-          description: "Your job search has been stopped.",
+          title: 'Search Stopped',
+          description: 'Your job search has been stopped.',
         });
       } catch (error) {
-        console.error("Failed to stop search:", error);
+        console.error('Failed to stop search:', error);
         toast({
-          title: "Stop Failed",
-          description: "Failed to stop the search. Please try again.",
-          variant: "destructive",
+          title: 'Stop Failed',
+          description: 'Failed to stop the search. Please try again.',
+          variant: 'destructive',
         });
       }
     }
-    setViewMode("results");
+    setViewMode('results');
   };
 
-  const handleJobAction = async (
-    job: JobPost,
-    action: "skip" | "defer" | "blacklist",
-  ) => {
+  const handleJobAction = async (job: JobPost, action: 'skip' | 'defer' | 'blacklist') => {
     console.log(`${action} job:`, job.id);
     try {
       // Update job status via API
       await fetch(`/api/jobs/${job.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status: action === "blacklist" ? "blacklisted" : "skipped",
+          status: action === 'blacklist' ? 'blacklisted' : 'skipped',
           statusReason: action,
         }),
       });
       // Refresh jobs list
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
 
       toast({
-        title: "Job Updated",
-        description: `Job has been ${action === "blacklist" ? "blacklisted" : action === "skip" ? "skipped" : "deferred"}.`,
+        title: 'Job Updated',
+        description: `Job has been ${action === 'blacklist' ? 'blacklisted' : action === 'skip' ? 'skipped' : 'deferred'}.`,
       });
     } catch (error) {
       console.error(`Failed to ${action} job:`, error);
       toast({
-        title: "Update Failed",
+        title: 'Update Failed',
         description: `Failed to ${action} the job. Please try again.`,
-        variant: "destructive",
+        variant: 'destructive',
       });
     }
   };
 
   const getActiveJobs = () =>
-    jobs.filter((job) =>
-      job.status !== "skipped" && job.status !== "blacklisted"
-    );
-  const getEnrichedJobs = () => jobs.filter((job) => job.status === "enriched");
+    jobs.filter((job) => job.status !== 'skipped' && job.status !== 'blacklisted');
+  const getEnrichedJobs = () => jobs.filter((job) => job.status === 'enriched');
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
+      <header className="bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -187,9 +179,7 @@ export function MainDashboard() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold">Remote Job Scout</h1>
-                  <p className="text-sm text-muted-foreground">
-                    AI-powered remote job discovery
-                  </p>
+                  <p className="text-sm text-muted-foreground">AI-powered remote job discovery</p>
                 </div>
               </div>
             </div>
@@ -198,7 +188,9 @@ export function MainDashboard() {
               {/* Status Indicator */}
               {isSearching && (
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-green-500 animate-pulse'}`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-green-500 animate-pulse'}`}
+                  />
                   <span className="text-sm text-muted-foreground">
                     {isPaused ? 'Paused' : 'Searching...'}
                   </span>
@@ -208,12 +200,8 @@ export function MainDashboard() {
               {/* Quick Stats */}
               {jobs.length > 0 && (
                 <div className="flex items-center gap-3 text-sm">
-                  <Badge variant="secondary">
-                    {getActiveJobs().length} Active
-                  </Badge>
-                  <Badge variant="default">
-                    {getEnrichedJobs().length} Enriched
-                  </Badge>
+                  <Badge variant="secondary">{getActiveJobs().length} Active</Badge>
+                  <Badge variant="default">{getEnrichedJobs().length} Enriched</Badge>
                 </div>
               )}
 
@@ -224,13 +212,13 @@ export function MainDashboard() {
       </header>
 
       {/* Navigation */}
-      <div className="border-b bg-card">
+      <div className="bg-card">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-1">
             <Button
-              variant={viewMode === "config" ? "default" : "ghost"}
+              variant={viewMode === 'config' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setViewMode("config")}
+              onClick={() => setViewMode('config')}
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
               data-testid="button-nav-config"
             >
@@ -238,9 +226,9 @@ export function MainDashboard() {
               Configuration
             </Button>
             <Button
-              variant={viewMode === "progress" ? "default" : "ghost"}
+              variant={viewMode === 'progress' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setViewMode("progress")}
+              onClick={() => setViewMode('progress')}
               disabled={!isSearching && jobs.length === 0}
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
               data-testid="button-nav-progress"
@@ -249,9 +237,9 @@ export function MainDashboard() {
               Progress
             </Button>
             <Button
-              variant={viewMode === "results" ? "default" : "ghost"}
+              variant={viewMode === 'results' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setViewMode("results")}
+              onClick={() => setViewMode('results')}
               disabled={jobs.length === 0}
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
               data-testid="button-nav-results"
@@ -265,13 +253,10 @@ export function MainDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
-        {viewMode === "config" && (
+        {viewMode === 'config' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <SearchConfigPanel
-                onStartSearch={handleStartSearch}
-                isSearching={isSearching}
-              />
+              <SearchConfigPanel onStartSearch={handleStartSearch} isSearching={isSearching} />
             </div>
             <div className="space-y-6">
               {/* Welcome Card */}
@@ -286,24 +271,21 @@ export function MainDashboard() {
                   <div className="space-y-2">
                     <h4 className="font-medium">1. Configure Search</h4>
                     <p className="text-sm text-muted-foreground">
-                      Set up your target positions, blacklists, and preferred
-                      job sources.
+                      Set up your target positions, blacklists, and preferred job sources.
                     </p>
                   </div>
                   <Separator />
                   <div className="space-y-2">
                     <h4 className="font-medium">2. Start Search</h4>
                     <p className="text-sm text-muted-foreground">
-                      Our AI will collect, filter, and enrich job listings in
-                      real-time.
+                      Our AI will collect, filter, and enrich job listings in real-time.
                     </p>
                   </div>
                   <Separator />
                   <div className="space-y-2">
                     <h4 className="font-medium">3. Review Results</h4>
                     <p className="text-sm text-muted-foreground">
-                      Browse enriched job listings with structured data and
-                      company insights.
+                      Browse enriched job listings with structured data and company insights.
                     </p>
                   </div>
                 </CardContent>
@@ -346,21 +328,23 @@ export function MainDashboard() {
           </div>
         )}
 
-        {viewMode === "progress" && (
+        {viewMode === 'progress' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <ProgressDashboard
-                progress={progressData || {
-                  currentStage: 1,
-                  status: "running" as const,
-                  totalJobs: 0,
-                  processedJobs: 0,
-                  filteredJobs: 0,
-                  enrichedJobs: 0,
-                  totalCost: 0,
-                  estimatedTimeRemaining: 0,
-                  processingSpeed: 0,
-                }}
+                progress={
+                  progressData ?? {
+                    currentStage: 1,
+                    status: 'running' as const,
+                    totalJobs: 0,
+                    processedJobs: 0,
+                    filteredJobs: 0,
+                    enrichedJobs: 0,
+                    totalCost: 0,
+                    estimatedTimeRemaining: 0,
+                    processingSpeed: 0,
+                  }
+                }
                 onPauseResume={handlePauseResume}
                 onStop={handleStopSearch}
               />
@@ -369,25 +353,17 @@ export function MainDashboard() {
               {/* Live Updates */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-medium">
-                    Live Updates
-                  </CardTitle>
+                  <CardTitle className="text-lg font-medium">Live Updates</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {progressLoading ? (
-                    <div className="text-sm text-muted-foreground">
-                      Loading progress...
-                    </div>
+                    <div className="text-sm text-muted-foreground">Loading progress...</div>
                   ) : progressData ? (
                     <>
                       <div className="text-sm">
                         <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Current Stage
-                          </span>
-                          <Badge variant="default">
-                            Stage {progressData.currentStage}
-                          </Badge>
+                          <span className="text-muted-foreground">Current Stage</span>
+                          <Badge variant="default">Stage {progressData.currentStage}</Badge>
                         </div>
                       </div>
                       <div className="text-sm">
@@ -401,24 +377,22 @@ export function MainDashboard() {
                       <div className="text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Cost</span>
-                          <span className="font-mono">
-                            ${progressData.totalCost.toFixed(4)}
-                          </span>
+                          <span className="font-mono">${progressData.totalCost.toFixed(4)}</span>
                         </div>
                       </div>
                       <div className="text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Status</span>
-                          <Badge variant={progressData.status === "running" ? "default" : "secondary"}>
+                          <Badge
+                            variant={progressData.status === 'running' ? 'default' : 'secondary'}
+                          >
                             {progressData.status}
                           </Badge>
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className="text-sm text-muted-foreground">
-                      No progress data available
-                    </div>
+                    <div className="text-sm text-muted-foreground">No progress data available</div>
                   )}
                 </CardContent>
               </Card>
@@ -426,9 +400,7 @@ export function MainDashboard() {
           </div>
         )}
 
-        {viewMode === "results" && (
-          <JobListView jobs={jobs} onJobAction={handleJobAction} />
-        )}
+        {viewMode === 'results' && <JobListView jobs={jobs} onJobAction={handleJobAction} />}
       </main>
     </div>
   );
