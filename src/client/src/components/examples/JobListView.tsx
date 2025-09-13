@@ -1,0 +1,114 @@
+import { JobListView } from "../JobListView.tsx";
+import type { JobPost } from "../../shared/schema.ts";
+
+export default function JobListViewExample() {
+  const mockJobs: JobPost[] = [
+    {
+      id: "1",
+      title: "Senior React Developer",
+      company: "TechCorp Solutions",
+      description:
+        "We are looking for an experienced React developer to join our team...",
+      originalUrl: "https://example.com/job/1",
+      source: "LinkedIn",
+      location: "Remote (US)",
+      employmentType: "Full-time",
+      status: "enriched",
+      statusReason: null,
+      rawData: null,
+      techStack: ["React", "TypeScript", "Node.js", "PostgreSQL"],
+      responsibilities: "Build scalable web applications...",
+      requirements: "5+ years React experience...",
+      compensation: "$120,000 - $150,000",
+      currency: "USD",
+      salaryMin: 120000,
+      salaryMax: 150000,
+      seniority: "Senior",
+      remoteType: "Fully Remote",
+      timeZone: "EST",
+      companySize: "50-200 employees",
+      industry: "FinTech",
+      companyWebsite: "https://techcorp.com",
+      processingStage: 3,
+      llmCost: 0.0123,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: "2",
+      title: "Full Stack Engineer",
+      company: "StartupXYZ",
+      description:
+        "Join our early-stage startup to build the future of developer tools...",
+      originalUrl: "https://example.com/job/2",
+      source: "AngelList",
+      location: "San Francisco, CA",
+      employmentType: "Full-time",
+      status: "filtered",
+      statusReason: null,
+      rawData: null,
+      techStack: ["Vue.js", "Python", "Django", "PostgreSQL"],
+      responsibilities: null,
+      requirements: null,
+      compensation: "$100,000 - $140,000 + equity",
+      currency: "USD",
+      salaryMin: 100000,
+      salaryMax: 140000,
+      seniority: "Mid",
+      remoteType: "Hybrid",
+      timeZone: "PST",
+      companySize: "10-50 employees",
+      industry: "Developer Tools",
+      companyWebsite: "https://startupxyz.com",
+      processingStage: 2,
+      llmCost: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: "3",
+      title: "Frontend Developer",
+      company: "MegaCorp Inc",
+      description:
+        "Looking for a creative frontend developer to enhance user experiences...",
+      originalUrl: "https://example.com/job/3",
+      source: "Indeed",
+      location: "Remote",
+      employmentType: "Contract",
+      status: "pending",
+      statusReason: null,
+      rawData: null,
+      techStack: ["Angular", "TypeScript", "SCSS"],
+      responsibilities: null,
+      requirements: null,
+      compensation: "$80/hour",
+      currency: "USD",
+      salaryMin: null,
+      salaryMax: null,
+      seniority: "Mid",
+      remoteType: "Fully Remote",
+      timeZone: "EST",
+      companySize: "1000+ employees",
+      industry: "E-commerce",
+      companyWebsite: "https://megacorp.com",
+      processingStage: 1,
+      llmCost: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ];
+
+  const handleJobAction = (
+    job: JobPost,
+    action: "skip" | "defer" | "blacklist",
+  ) => {
+    console.log(`${action} job:`, job.id);
+  };
+
+  return (
+    <JobListView
+      jobs={mockJobs}
+      onJobAction={handleJobAction}
+    />
+  );
+}

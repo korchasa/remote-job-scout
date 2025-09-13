@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-deno run --allow-run --allow-read --allow-write --allow-net --allow-env ./run.ts "$@"
+deno run --allow-run --allow-read --allow-write --allow-net --allow-env --allow-ffi --allow-sys ./run.ts "$@"

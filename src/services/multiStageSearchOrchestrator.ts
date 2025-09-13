@@ -30,11 +30,13 @@ export class MultiStageSearchOrchestrator {
   private filteringService: FilteringService;
   private enrichmentService: EnrichmentService;
   private activeProcesses: Map<string, MultiStageProgress> = new Map();
+  private jobsStorage?: Map<string, Vacancy>;
 
-  constructor() {
+  constructor(jobsStorage?: Map<string, Vacancy>) {
     this.collectionService = new JobCollectionService();
     this.filteringService = new FilteringService();
     this.enrichmentService = new EnrichmentService();
+    this.jobsStorage = jobsStorage;
   }
 
   /**
@@ -108,6 +110,9 @@ export class MultiStageSearchOrchestrator {
         throw new Error("Collection stage failed or returned no vacancies");
       }
 
+      // Save collected vacancies
+      this.saveVacancies(collectionResult.vacancies, session_id);
+
       // Stage 2: Filtering
       const filteringResult = this.executeFilteringStage(
         collectionResult.vacancies,
@@ -115,6 +120,9 @@ export class MultiStageSearchOrchestrator {
         progress,
       );
       result.filteringResult = filteringResult;
+
+      // Update vacancy statuses after filtering
+      this.updateVacancyStatuses(filteringResult, session_id);
 
       if (!filteringResult.success) {
         console.warn(
@@ -413,5 +421,61 @@ export class MultiStageSearchOrchestrator {
         }`,
       );
     }
+  }
+
+  /**
+   * Сохраняет вакансии в хранилище
+   */
+  private saveVacancies(vacancies: Vacancy[], sessionId: string): void {
+    if (!this.jobsStorage) return;
+
+    for (const vacancy of vacancies) {
+      const vacancyWithSession = {
+        ...vacancy,
+        session_id: sessionId,
+      };
+      this.jobsStorage.set(vacancy.id, vacancyWithSession);
+    }
+
+    console.log(`💾 Saved ${vacancies.length} vacancies to storage`);
+  }
+
+  /**
+   * Обновляет статусы вакансий после фильтрации
+   */
+  private updateVacancyStatuses(
+    filteringResult: FilteringResult,
+    _sessionId: string,
+  ): void {
+    if (!this.jobsStorage) return;
+
+    // Update filtered vacancies
+    for (const vacancy of filteringResult.filteredVacancies) {
+      const existing = this.jobsStorage.get(vacancy.id);
+      if (existing) {
+        this.jobsStorage.set(vacancy.id, {
+          ...existing,
+          status: "filtered",
+          filtered_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    // Update skipped vacancies
+    for (const vacancy of filteringResult.skippedVacancies) {
+      const existing = this.jobsStorage.get(vacancy.id);
+      if (existing) {
+        this.jobsStorage.set(vacancy.id, {
+          ...existing,
+          status: "skipped",
+          skip_reason: vacancy.skip_reason,
+          filtered_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    console.log(
+      `📝 Updated vacancy statuses: ${filteringResult.filteredCount} filtered, ${filteringResult.skippedCount} skipped`,
+    );
   }
 }

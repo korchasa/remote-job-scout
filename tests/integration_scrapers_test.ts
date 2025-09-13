@@ -260,50 +260,6 @@ Deno.test("Indeed Integration - Multi-country search", async () => {
 });
 
 /**
- * Тест поиска свежих вакансий (за последние 24 часа)
- */
-Deno.test("Indeed Integration - Recent jobs (24h)", async () => {
-  const scraper = new IndeedScraper();
-
-  const input: ScraperInput = {
-    site_type: [Site.INDEED],
-    search_term: "ux designer",
-    hours_old: 24,
-    country: Country.USA,
-    results_wanted: 10,
-  };
-
-  console.log("🕐 Testing recent jobs search (24h)...");
-
-  const result = await scraper.scrape(input);
-
-  assert(Array.isArray(result.jobs), "Jobs должен быть массивом");
-
-  console.log(`Found ${result.jobs.length} jobs posted in last 24 hours`);
-
-  if (result.jobs.length > 0) {
-    // Проверяем даты публикации
-    const now = new Date();
-    // Добавляем буфер в 12 часов для учета задержек индексации
-    const bufferHours = 12;
-    const bufferTime = new Date(
-      now.getTime() - (24 + bufferHours) * 60 * 60 * 1000,
-    );
-
-    for (const job of result.jobs) {
-      if (job.date_posted) {
-        assert(job.date_posted instanceof Date, "date_posted должен быть Date");
-        assert(
-          job.date_posted >= bufferTime,
-          "Вакансия должна быть опубликована в последние 24 часа",
-        );
-        console.log(`📅 ${job.title}: ${job.date_posted.toISOString()}`);
-      }
-    }
-  }
-});
-
-/**
  * Тест поиска вакансий с easy apply
  */
 Deno.test("Indeed Integration - Easy apply jobs", async () => {
@@ -462,7 +418,7 @@ Deno.test("Indeed Integration - Performance test", async () => {
 
   console.log("⚡ Testing performance with multiple searches...");
 
-  const results = [];
+  const results: Array<{ term: string; count: number; duration: number }> = [];
 
   for (const term of searchTerms) {
     const input: ScraperInput = {

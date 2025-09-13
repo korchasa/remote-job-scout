@@ -30,4 +30,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/ || exit 1
 
 # Default command for development
-CMD ["deno", "serve", "--watch", "--allow-net", "--allow-read", "--allow-write", "--allow-run", "--allow-env", "--port", "3000", "--watch-exclude=node_modules", "--watch-exclude=.git", "--watch-exclude=dist", "--watch-exclude=build", "src/web/server.ts", "src/types/", "src/services/", "src/web/"]
+CMD ["deno", "serve", "--watch", "--allow-net", "--allow-read", "--allow-write", "--allow-run", "--allow-env", "--port", "3000", "--watch-exclude=node_modules", "--watch-exclude=.git", "--watch-exclude=dist", "--watch-exclude=build", "src/server/index.ts", "src/shared/", "src/types/", "src/services/"]

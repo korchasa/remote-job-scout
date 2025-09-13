@@ -7,6 +7,7 @@ import {
   MultiStageProgress,
   SearchRequest,
   SearchResponse,
+  Vacancy,
 } from "../types/database.ts";
 import {
   CollectionProgress,
@@ -17,10 +18,12 @@ import { MultiStageSearchOrchestrator } from "../services/multiStageSearchOrches
 export class CollectionController {
   private collectionService: JobCollectionService;
   private multiStageOrchestrator: MultiStageSearchOrchestrator;
+  private jobsStorage?: Map<string, Vacancy>;
 
-  constructor() {
+  constructor(jobsStorage?: Map<string, Vacancy>) {
     this.collectionService = new JobCollectionService();
-    this.multiStageOrchestrator = new MultiStageSearchOrchestrator();
+    this.multiStageOrchestrator = new MultiStageSearchOrchestrator(jobsStorage);
+    this.jobsStorage = jobsStorage;
   }
 
   /**
