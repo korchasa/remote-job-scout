@@ -15,7 +15,7 @@ Client-server web application with Node.js/Express.js backend and React frontend
 - **LLM Processing**: OpenAI-powered data enhancement and company research
 - **Results Management**: Job storage and UI presentation
 - **Modular Backend**: Express.js with middleware, routes, and controllers separation
-- **Dev Container**: Docker-based development environment with VS Code integration
+- **Optimized API**: Streamlined endpoints with HTTP polling for progress updates
 
 ### Reference Architecture
 
@@ -34,10 +34,10 @@ Based on JobSpy library principles for scalable job scraping, implemented in Nod
 
 - **Framework**: Express.js for REST API routing with modular middleware
 - **Architecture**: Service-oriented with clear separation of concerns
-- **Storage**: In-memory (production-ready for database migration)
+- **Storage**: In-memory job storage (production-ready for database migration)
 - **Services**: 6 business logic services with scraper implementations
 - **Middleware**: CORS, logging, security, error handling
-- **Polling**: HTTP polling for progress updates
+- **API**: Streamlined endpoints with optimized HTTP polling
 - **Testing**: Vitest framework with comprehensive test coverage
 
 ### Shared Layer
@@ -52,13 +52,14 @@ Based on JobSpy library principles for scalable job scraping, implemented in Nod
 
 - **Vacancy**: Core job data with JSON metadata storage
 - **Settings**: User configuration with validation
-- **Search Sessions**: Process tracking with progress states
+- **Search Progress**: Real-time process tracking with multi-stage states
 
 ### Storage Strategy
 
 - **Client**: localStorage for user settings (privacy-focused)
-- **Server**: In-memory maps (SQLite migration path ready)
+- **Server**: In-memory job storage (SQLite migration path ready)
 - **Serialization**: YAML for job data, JSON for API communication
+- **Progress**: Real-time tracking without persistent session storage
 
 ## Algorithm Design
 
@@ -115,7 +116,6 @@ Based on JobSpy library principles for scalable job scraping, implemented in Nod
 ### Development Tools
 
 - **Docker**: Multi-stage containerized development and production
-- **Dev Containers**: VS Code integration with automated setup
 - **Vitest**: Modern testing framework for unit and integration tests
 - **ESLint/Prettier**: Code quality and formatting tools
 - **TypeScript Compiler**: Strict compilation for client/server
@@ -129,8 +129,9 @@ Based on JobSpy library principles for scalable job scraping, implemented in Nod
 - Client-side settings storage (privacy over server persistence)
 - Single-table job storage (simplicity over normalization)
 - In-memory backend storage (development over production optimization)
-- HTTP polling for progress updates (simplicity over real-time performance)
+- Optimized HTTP polling (efficiency over real-time performance)
 - Modular Express.js architecture (maintainability over monolithic design)
+- Streamlined API endpoints (simplicity over feature completeness)
 
 ### Performance Considerations
 
@@ -141,24 +142,15 @@ Based on JobSpy library principles for scalable job scraping, implemented in Nod
 
 ## Future Extensions
 
-### Current Enhancements
+### Roadmap
 
-- **Completed**: FR-4 (filtering) and FR-5 (LLM enrichment) services implemented
-- **Completed**: ESLint/Prettier configuration and TypeScript strict mode
-- **Completed**: Vitest testing framework with comprehensive coverage
-- **Completed**: Dev containers with VS Code integration
-- **Completed**: HTTP polling implementation for progress updates
-- **Completed**: Code formatting improvements and style consistency
-- Database migration (SQLite/PostgreSQL)
-- Additional job sources (Glassdoor, Naukri, ZipRecruiter)
-- Advanced analytics and reporting
-- Mobile application development
-- Team collaboration features
-- API for third-party integrations
+- Fix filtering stage
+- Fix enrichment stage
+- Fix search on LinkedIn
+- Fix OpenAI WebSearch
+- Cost tracking & optimization
 
 ### Scalability Considerations
 
 - Service modularization for microservices migration
 - Database indexing strategy
-- CDN integration for static assets
-- Load balancing for concurrent users

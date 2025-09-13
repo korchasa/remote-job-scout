@@ -3,11 +3,6 @@
 ```
 remote-job-scout/
 ├── .cursor/              # IDE configurations
-├── .devcontainer/        # Dev container configuration
-│   ├── devcontainer.json # VS Code dev container config
-│   ├── Dockerfile        # Dev container Dockerfile
-│   ├── dev.env.example   # Environment variables template
-│   └── README.md         # Dev container documentation
 ├── .dockerignore         # Docker exclusions
 ├── .prettierignore       # Prettier exclusions
 ├── .prettierrc.json      # Prettier configuration
@@ -24,9 +19,7 @@ remote-job-scout/
 ├── documents/           # Documentation
 │   ├── design.md        # Design spec
 │   ├── file_structure.md # This file
-│   ├── requirements.md  # Requirements spec
-│   ├── whiteboard.md    # Migration status
-│   └── demo.html        # HTML demo
+│   └── requirements.md  # Requirements spec
 ├── references/          # External resources
 │   ├── JobSpy/          # Scraping reference library
 │   ├── JobSpy-review.md # Library analysis
@@ -124,15 +117,14 @@ remote-job-scout/
 - **Backend**: Modular Express.js server with middleware, routes, controllers
 - **Services**: 6 business logic services with scraper implementations
 - **Tests**: 8 test files covering all functionality with Vitest
-- **Dev Container**: VS Code integration with automated setup
 - **CLI**: Unified `run` script for all development tasks
 
 ### Technologies
 
 - **Runtime**: Node.js 18+ with TypeScript strict mode
 - **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind CSS
-- **Backend**: Express.js, REST API, HTTP polling, modular middleware architecture
+- **Backend**: Express.js, REST API, optimized HTTP polling, modular middleware
 - **Build**: Docker multi-stage build with production optimization
-- **Development**: Dev containers, hot reload, TypeScript compilation, ESLint/Prettier
+- **Development**: Hot reload, TypeScript compilation, ESLint/Prettier
 - **Testing**: Vitest framework with comprehensive coverage
 - **CLI**: Unified development workflow with `run` script
