@@ -47,6 +47,7 @@ export class MultiStageSearchOrchestrator {
     const progress: MultiStageProgress = {
       sessionId: session_id,
       currentStage: 'collecting',
+      status: 'running',
       overallProgress: 0,
       stageProgress: 0,
       stages: {
@@ -139,6 +140,7 @@ export class MultiStageSearchOrchestrator {
 
       // Завершаем процесс
       progress.currentStage = 'completed';
+      progress.status = 'completed';
       progress.isComplete = true;
       progress.canStop = false;
       progress.overallProgress = 100;
@@ -153,6 +155,7 @@ export class MultiStageSearchOrchestrator {
 
       return result;
     } catch (error) {
+      progress.status = 'error';
       progress.isComplete = true;
       progress.canStop = false;
       progress.errors.push((error as Error).message);
@@ -191,6 +194,7 @@ export class MultiStageSearchOrchestrator {
       progress.stages[currentStage].status = 'stopped';
       progress.stages[currentStage].endTime = new Date().toISOString();
     }
+    progress.status = 'stopped';
     progress.isComplete = true;
     progress.canStop = false;
     progress.errors.push(`Process stopped at ${currentStage} stage`);

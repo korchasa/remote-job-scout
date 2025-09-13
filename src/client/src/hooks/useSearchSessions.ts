@@ -1,36 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '../lib/queryClient.ts';
-import type { SearchSession, ProgressData } from '@shared/schema';
-
-interface SearchSessionsResponse {
-  sessions: SearchSession[];
-}
-
-export function useSearchSessions(limit?: number) {
-  return useQuery({
-    queryKey: ['/api/sessions', { limit }],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (limit) params.append('limit', limit.toString());
-
-      const response = await fetch(`/api/sessions?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch sessions');
-      return response.json() as Promise<SearchSessionsResponse>;
-    },
-  });
-}
-
-export function useSearchSession(id: string) {
-  return useQuery({
-    queryKey: ['/api/sessions', id],
-    queryFn: async () => {
-      const response = await fetch(`/api/sessions/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch session');
-      return response.json() as Promise<SearchSession>;
-    },
-    enabled: !!id,
-  });
-}
+import { apiRequest } from '../lib/queryClient.ts';
+import type { ProgressData } from '@shared/schema';
 
 export function useStartSearch() {
   return useMutation({
@@ -70,9 +40,7 @@ export function useStartSearch() {
       const payload = await response.json();
       return { ...payload, sessionId } as { sessionId: string } & Record<string, unknown>;
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
-    },
+    // Sessions invalidation removed - using multi-stage search instead
   });
 }
 
@@ -82,9 +50,7 @@ export function usePauseSearch() {
       const response = await apiRequest('POST', `/api/search/${sessionId}/pause`);
       return response.json();
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
-    },
+    // Sessions invalidation removed - using multi-stage search instead
   });
 }
 
@@ -94,9 +60,7 @@ export function useStopSearch() {
       const response = await apiRequest('POST', `/api/multi-stage/stop/${sessionId}`);
       return response.json();
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
-    },
+    // Sessions invalidation removed - using multi-stage search instead
   });
 }
 
@@ -141,11 +105,9 @@ export function useSearchProgress(sessionId: string | null) {
 
         const progress: ProgressData = {
           currentStage: mapStageToNumber(raw?.currentStage),
-          status: raw?.isComplete
-            ? 'completed'
-            : raw?.stages?.[raw?.currentStage]?.status === 'failed'
-              ? 'error'
-              : 'running',
+          status:
+            raw?.status ??
+            (raw?.isComplete || raw?.currentStage === 'completed' ? 'completed' : 'running'),
           totalJobs: Number(raw?.stages?.collecting?.itemsTotal ?? 0),
           processedJobs: Number(raw?.stages?.collecting?.itemsProcessed ?? 0),
           filteredJobs: Number(raw?.stages?.filtering?.itemsProcessed ?? 0),
@@ -163,18 +125,16 @@ export function useSearchProgress(sessionId: string | null) {
     },
     enabled: !!sessionId,
     refetchInterval: (data: ProgressData | null) => {
-      // Stop polling when search is completed or failed
-      if (data && (data.status === 'completed' || data.status === 'error')) {
-        console.log('🛑 [REACT] Stopping polling - search completed or failed');
+      if (data?.status && data.status !== 'running') {
+        console.log('🛑 [REACT] Stopping polling - status:', data.status);
         return false;
       }
-
-      console.log('🔄 [REACT] Polling every 1 second during active search');
-      // Poll every 1 second during active search
       return 1000;
     },
     refetchIntervalInBackground: true,
-    refetchOnMount: true,
-    refetchOnReconnect: true,
+    // Disable automatic refetches to prevent unnecessary requests after completion
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

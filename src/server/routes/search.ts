@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 import type { SearchRequest } from '../../types/database.js';
 import { CollectionController } from '../../controllers/collectionController.js';
-import { jobs, sessions } from '../storage.js';
+import { jobs } from '../storage.js';
 import { logPerformance } from '../middleware/logging.js';
 
 // Create collection controller instance
@@ -26,14 +26,7 @@ router.post('/', (req: Request, res: Response) => {
       // Use collection controller
       const response = await collectionController.startCollection(searchRequest);
 
-      // Store session for backward compatibility
-      sessions.set(searchRequest.session_id, {
-        status: response.success ? 'collecting' : 'failed',
-        settings: searchRequest.settings,
-        startedAt: new Date().toISOString(),
-        progress: 0,
-      });
-
+      // Session storage removed - using multi-stage search instead
       res.json(response);
       logPerformance(req.method, req.path, startTime, 200);
     } catch (error) {
@@ -81,80 +74,7 @@ router.get('/stats/:sessionId', (req: Request, res: Response) => {
   res.json(stats);
 });
 
-// GET /api/sessions - Get all search sessions
-router.get('/sessions', (req: Request, res: Response) => {
-  try {
-    const limit = parseInt((req.query.limit as string) ?? '10');
-    const allSessions = Array.from(sessions.values());
-
-    // Convert sessions to frontend format
-    const sessionList = allSessions.slice(0, limit).map((session, index) => {
-      const sessionId = `session-${Date.now()}-${Math.random()}-${index}`;
-      return {
-        id: sessionId,
-        name: `Search Session ${sessionId}`,
-        status: session.status ?? 'completed',
-        createdAt: session.startedAt ?? new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        progress: {
-          total: 100,
-          processed: Math.floor(Math.random() * 100), // Mock data
-          successful: Math.floor(Math.random() * 80),
-          failed: Math.floor(Math.random() * 20),
-        },
-        settings: session.settings ?? {
-          positions: ['Software Engineer'],
-          sources: ['indeed'],
-          filters: {},
-        },
-      };
-    });
-
-    res.json({
-      sessions: sessionList,
-      total: allSessions.length,
-    });
-  } catch (error) {
-    console.error('❌ Sessions API error:', error);
-    res.status(500).json({ error: 'Failed to fetch sessions' });
-  }
-});
-
-// GET /api/sessions/:id - Get single session
-router.get('/sessions/:id', (req: Request, res: Response) => {
-  try {
-    const sessionId = req.params.id;
-    const session = sessions.get(sessionId);
-
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-
-    const sessionData = {
-      id: sessionId,
-      name: `Search Session ${sessionId}`,
-      status: session.status ?? 'completed',
-      createdAt: session.startedAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      progress: {
-        total: 100,
-        processed: Math.floor(Math.random() * 100),
-        successful: Math.floor(Math.random() * 80),
-        failed: Math.floor(Math.random() * 20),
-      },
-      settings: session.settings ?? {
-        positions: ['Software Engineer'],
-        sources: ['indeed'],
-        filters: {},
-      },
-    };
-
-    res.json(sessionData);
-  } catch (error) {
-    console.error('❌ Session API error:', error);
-    res.status(500).json({ error: 'Failed to fetch session' });
-  }
-});
+// Sessions endpoints removed - using multi-stage search instead
 
 // POST /api/search/:sessionId/pause - Pause search session
 router.post('/:sessionId/pause', (req: Request, res: Response) => {

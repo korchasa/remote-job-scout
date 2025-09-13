@@ -91,6 +91,7 @@ export type ProcessingStage =
 export interface MultiStageProgress {
   sessionId: string;
   currentStage: ProcessingStage;
+  status: 'running' | 'completed' | 'stopped' | 'error';
   overallProgress: number; // 0-100%
   stageProgress: number; // 0-100% для текущей стадии
   stages: {

@@ -9,7 +9,6 @@ import { JobListView } from './JobListView.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { useJobs } from '../hooks/useJobs.ts';
 import {
-  useSearchSessions,
   useStartSearch,
   useStopSearch,
   usePauseSearch,
@@ -35,7 +34,6 @@ export function MainDashboard() {
 
   // API hooks
   const { data: jobsResponse, isLoading: _jobsLoading } = useJobs();
-  const { data: _sessionsResponse } = useSearchSessions(10);
   const startSearchMutation = useStartSearch();
   const stopSearchMutation = useStopSearch();
   const pauseSearchMutation = usePauseSearch();
@@ -61,7 +59,7 @@ export function MainDashboard() {
     normalizedProgress.status === 'stopped';
   const isSearching = !isPaused && currentSessionId !== null && !isCompleted;
 
-  // When backend process finishes, stop searching and switch to results
+  // When backend process finishes, switch to results but keep sessionId to allow viewing progress snapshot
   useEffect(() => {
     if (currentSessionId && isCompleted) {
       setIsPaused(false);
@@ -243,7 +241,7 @@ export function MainDashboard() {
               variant={viewMode === 'progress' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('progress')}
-              disabled={!isSearching && jobs.length === 0}
+              disabled={!isSearching && !isCompleted && jobs.length === 0}
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
               data-testid="button-nav-progress"
             >

@@ -1,0 +1,13 @@
+---
+description: Execute the task
+alwaysApply: false
+---
+# INSTRUCIONS (until STOP section)
+
+Use To-Do and follow these steps:
+1. Read existing documentation in `./documents`.
+2. Read task in `./documents/whiteboard.md`.
+3. Complete the task in a TDD manner and Autonomous Mode, updating the progress in `./documents/whiteboard.md` throughout the process.
+4. Run `./run check` and fix all founded issues, until `./run check` shows the absence of errors, warnings, and linting problems.
+5. Funnaly update `./documents/whiteboard.md`
+6. STOP

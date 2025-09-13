@@ -224,13 +224,17 @@ async function runDev(): Promise<void> {
 
   try {
     await runDevStop();
-    await runCheck();
+
+    // if --no-check is not set, run check
+    if (!values.noCheck && !values.help && !values.version) {
+      await runCheck();
+    }
 
     // Build Docker image
     logProgress('Building Docker image');
     await runCommand(['docker', 'build', '-t', 'remote-job-scout-dev', '.'], 'Docker image build');
     // Start container with volume mounts
-    logProgress('Starting development container');
+    logProgress('Starting container');
     await runCommandBackground(
       [
         'docker',
@@ -241,35 +245,29 @@ async function runDev(): Promise<void> {
         '-p',
         '3000:3000',
         '-v',
-        `${process.cwd()}/src:/app/src:cached`,
-        '-v',
-        `${process.cwd()}/documents:/app/documents:cached`,
-        '-v',
-        `${process.cwd()}/tests:/app/tests:cached`,
-        '-v',
-        `${process.cwd()}/package.json:/app/package.json:cached`,
+        `${process.cwd()}/dist:/app/dist:cached`,
         '-e',
         'NODE_ENV=development',
         'remote-job-scout-dev',
       ],
-      'Development container',
+      'Container',
     );
   } catch (error) {
-    logError(`Failed to start development environment: ${error}`);
+    logError(`Failed to start environment: ${error}`);
     process.exit(1);
   }
 }
 
 // Stop development server function
 async function runDevStop(): Promise<void> {
-  logProgress('Stopping development server');
+  logProgress('Stopping server');
   execSync('docker rm -f remote-job-scout-dev', { stdio: 'pipe' });
 }
 
 // Help function
 function runHelp(): void {
   console.log(`
-Remote Job Scout - CLI Tool (Node.js version)
+Remote Job Scout - CLI Tool
 
 Usage: ./run <command> [args...]
 
@@ -288,6 +286,7 @@ const { positionals, values } = parseArgs({
   options: {
     help: { type: 'boolean', short: 'h' },
     version: { type: 'boolean', short: 'v' },
+    noCheck: { type: 'boolean', short: 'n' },
   },
   allowPositionals: true,
 });

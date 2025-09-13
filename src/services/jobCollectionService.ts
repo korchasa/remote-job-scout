@@ -3,6 +3,8 @@
  * Координирует сбор вакансий из множественных источников
  */
 
+import { randomUUID } from 'node:crypto';
+
 import type { SearchRequest, Vacancy } from '../types/database.js';
 import type { Country, JobPost, JobResponse, Scraper, ScraperInput } from '../types/scrapers.js';
 import { countryFromString, Site } from '../types/scrapers.js';
@@ -323,7 +325,7 @@ export class JobCollectionService {
    */
   private convertJobToVacancy(job: JobPost, _sessionId: string): Vacancy {
     return {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       title: job.title,
       description: job.description ?? '',
       url: job.job_url,

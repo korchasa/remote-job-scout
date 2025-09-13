@@ -41,66 +41,7 @@ app.use(corsMiddleware);
 // Logging middleware
 app.use(loggingMiddleware);
 
-// Sessions routes (must be before other routes)
-app.get('/api/sessions', (req: Request, res: Response) => {
-  try {
-    const limit = parseInt((req.query.limit as string) ?? '10');
-
-    // Mock sessions data
-    const mockSessions = [
-      {
-        id: 'session-1',
-        name: 'Software Engineer Search',
-        status: 'completed',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 3600000).toISOString(),
-        progress: {
-          total: 150,
-          processed: 150,
-          successful: 142,
-          failed: 8,
-        },
-        settings: {
-          positions: ['Software Engineer'],
-          sources: ['indeed', 'linkedin'],
-          filters: {
-            locations: ['Remote'],
-            employmentTypes: ['Full-time'],
-          },
-        },
-      },
-      {
-        id: 'session-2',
-        name: 'Frontend Developer Search',
-        status: 'running',
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        progress: {
-          total: 100,
-          processed: 45,
-          successful: 43,
-          failed: 2,
-        },
-        settings: {
-          positions: ['Frontend Developer'],
-          sources: ['indeed'],
-          filters: {
-            locations: ['Remote'],
-            employmentTypes: ['Full-time'],
-          },
-        },
-      },
-    ];
-
-    res.json({
-      sessions: mockSessions.slice(0, limit),
-      total: mockSessions.length,
-    });
-  } catch (error) {
-    console.error('❌ Sessions API error:', error);
-    res.status(500).json({ error: 'Failed to fetch sessions' });
-  }
-});
+// Sessions routes removed - using multi-stage search instead
 
 // API Routes
 app.use('/api/jobs', jobsRouter);

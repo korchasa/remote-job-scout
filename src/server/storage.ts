@@ -3,16 +3,6 @@ import type { Vacancy } from '../types/database.js';
 // Simple in-memory storage for demo (will be replaced with SQLite)
 export const jobs = new Map<string, Vacancy>();
 
-// Simple in-memory storage for sessions
-export interface SessionData {
-  status: string;
-  settings: unknown;
-  startedAt: string;
-  progress: number;
-}
-
-export const sessions = new Map<string, SessionData>();
-
 // Helper functions for storage operations
 export const storage = {
   // Jobs operations
@@ -41,38 +31,14 @@ export const storage = {
     return jobs.delete(id);
   },
 
-  // Sessions operations
-  saveSession: (sessionId: string, data: SessionData): void => {
-    sessions.set(sessionId, data);
-  },
-
-  getSession: (sessionId: string): SessionData | undefined => {
-    return sessions.get(sessionId);
-  },
-
-  updateSession: (sessionId: string, updates: Partial<SessionData>): boolean => {
-    const session = sessions.get(sessionId);
-    if (!session) return false;
-
-    const updatedSession = { ...session, ...updates };
-    sessions.set(sessionId, updatedSession);
-    return true;
-  },
-
-  deleteSession: (sessionId: string): boolean => {
-    return sessions.delete(sessionId);
-  },
-
   // Utility functions
   clearAll: (): void => {
     jobs.clear();
-    sessions.clear();
   },
 
   getStats: () => {
     return {
       jobsCount: jobs.size,
-      sessionsCount: sessions.size,
     };
   },
 };
