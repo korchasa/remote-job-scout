@@ -3,34 +3,45 @@
 ## System Architecture
 
 ### Overall Design
-Client-server web application with external API integrations for job search and AI enrichment.
+
+Client-server web application with Node.js/Express.js backend and React frontend for remote job search with AI-powered analysis and filtering.
 
 ### Core Subsystems
+
 - **Settings Management**: User configuration with localStorage persistence
 - **Search Orchestrator**: Multi-stage process coordination (collection → filtering → enrichment)
 - **Data Collection**: Job scraping from Indeed (GraphQL), LinkedIn, OpenAI WebSearch
-- **Preliminary Filtering**: Fast user criteria validation
-- **LLM Processing**: OpenAI-powered data enhancement
+- **Preliminary Filtering**: User criteria validation with blacklist/whitelist support
+- **LLM Processing**: OpenAI-powered data enhancement and company research
 - **Results Management**: Job storage and UI presentation
+- **Modular Backend**: Express.js with middleware, routes, and controllers separation
+- **Dev Container**: Docker-based development environment with VS Code integration
 
 ### Reference Architecture
-Based on JobSpy library principles for scalable job scraping.
+
+Based on JobSpy library principles for scalable job scraping, implemented in Node.js ecosystem.
 
 ## Component Design
 
 ### Frontend (React/TypeScript)
-- **Stack**: React 18, TypeScript strict mode, Vite build tool
+
+- **Stack**: React 19, TypeScript strict mode, Vite build tool
 - **UI**: Shadcn/ui component library with Tailwind CSS
 - **State**: React Query for API management, custom hooks for data
 - **Features**: Dark/light themes, responsive design, WebSocket support
 
-### Backend (Deno/TypeScript)
-- **Framework**: Oak for REST API routing
-- **Architecture**: Service-oriented with clear separation
+### Backend (Node.js/Express.js)
+
+- **Framework**: Express.js for REST API routing with modular middleware
+- **Architecture**: Service-oriented with clear separation of concerns
 - **Storage**: In-memory (production-ready for database migration)
-- **Services**: Modular business logic components
+- **Services**: 6 business logic services with scraper implementations
+- **Middleware**: CORS, logging, security, error handling
+- **WebSocket**: Real-time communication for progress updates
+- **Testing**: Vitest framework with comprehensive test coverage
 
 ### Shared Layer
+
 - **Schemas**: Type-safe TypeScript definitions
 - **Communication**: REST API + WebSocket for real-time updates
 - **Validation**: Zod schema validation
@@ -38,11 +49,13 @@ Based on JobSpy library principles for scalable job scraping.
 ## Data Architecture
 
 ### Entity Model
+
 - **Vacancy**: Core job data with JSON metadata storage
 - **Settings**: User configuration with validation
 - **Search Sessions**: Process tracking with progress states
 
 ### Storage Strategy
+
 - **Client**: localStorage for user settings (privacy-focused)
 - **Server**: In-memory maps (SQLite migration path ready)
 - **Serialization**: YAML for job data, JSON for API communication
@@ -50,17 +63,20 @@ Based on JobSpy library principles for scalable job scraping.
 ## Algorithm Design
 
 ### Search Process
+
 1. **Collection**: Parallel scraping across selected sources
 2. **Filtering**: User criteria validation with blacklists/whitelists
 3. **Enrichment**: OpenAI LLM processing for data enhancement
 
 ### Key Algorithms
+
 - **ETA Calculation**: `(total - processed) / speed × 60`
 - **Retry Logic**: Exponential backoff `delay = base × 2^(attempt - 1)`
 - **Rate Limiting**: Configurable delays between requests
 - **Progress Tracking**: Real-time percentage updates
 
 ### Business Rules
+
 - Blacklist filtering takes highest priority
 - User settings override automatic rules
 - All operations logged for audit trails
@@ -68,36 +84,56 @@ Based on JobSpy library principles for scalable job scraping.
 ## Technology Stack
 
 ### Runtime & Framework
-- **Deno 1.28+**: Modern JavaScript/TypeScript runtime
-- **Oak**: Web framework for API routing
-- **TypeScript**: Strict mode compilation
+
+- **Node.js 18+**: Enterprise JavaScript/TypeScript runtime
+- **Express.js**: Web framework for API routing with middleware architecture
+- **TypeScript**: Strict mode compilation for client and server
+- **ESM Modules**: Modern ES modules with .js extensions
+- **Docker**: Multi-stage containerized development and production
 
 ### Frontend Technologies
-- **React 18**: Component-based UI framework
-- **Vite**: Fast development and build tool
-- **Shadcn/ui**: Professional component library
-- **Tailwind CSS**: Utility-first styling
-- **React Query**: Efficient API state management
+
+- **React 19**: Component-based UI framework with latest features
+- **Vite**: Fast development and build tool with HMR
+- **Shadcn/ui**: Professional component library with 47 components
+- **Tailwind CSS 4.1+**: Utility-first styling with advanced features
+- **React Query**: Efficient API state management and caching
+
+### Backend Technologies
+
+- **Express.js**: REST API with modular middleware (CORS, logging, security)
+- **Node.js fs/promises**: File system operations for storage
+- **YAML**: Structured data serialization for job data
+- **Zod**: Schema validation for type safety
 
 ### External Integrations
-- **OpenAI API**: LLM processing and WebSearch
-- **JobSpy**: Scraping architecture reference
-- **ESM.sh**: Deno-compatible package hosting
+
+- **OpenAI API**: LLM processing and WebSearch capabilities
+- **JobSpy**: Scraping architecture reference (Python library)
+- **NPM Registry**: Node.js package ecosystem
 
 ### Development Tools
-- **Docker**: Containerized development environment
-- **Playwright MCP**: Browser automation (planned)
-- **YAML**: Structured data serialization
+
+- **Docker**: Multi-stage containerized development and production
+- **Dev Containers**: VS Code integration with automated setup
+- **Vitest**: Modern testing framework for unit and integration tests
+- **ESLint/Prettier**: Code quality and formatting tools
+- **TypeScript Compiler**: Strict compilation for client/server
+- **CLI Runner**: Unified `run` script for all development tasks
 
 ## Constraints & Trade-offs
 
-### Simplified Design Decisions
+### Migration Design Decisions
+
+- **Deno to Node.js Migration**: Enterprise runtime adoption for better ecosystem support
 - Client-side settings storage (privacy over server persistence)
 - Single-table job storage (simplicity over normalization)
 - In-memory backend storage (development over production optimization)
 - REST polling over WebSocket (compatibility over real-time performance)
+- Modular Express.js architecture (maintainability over monolithic design)
 
 ### Performance Considerations
+
 - Parallel job processing across sources
 - Lazy loading for large result sets
 - Bundle optimization with code splitting
@@ -105,9 +141,14 @@ Based on JobSpy library principles for scalable job scraping.
 
 ## Future Extensions
 
-### Planned Enhancements
+### Post-Migration Enhancements
+
+- **Completed**: FR-4 (filtering) and FR-5 (LLM enrichment) services implemented
+- **Completed**: ESLint/Prettier configuration and TypeScript strict mode
+- **Completed**: Vitest testing framework with comprehensive coverage
+- **Completed**: Dev containers with VS Code integration
+- **Completed**: WebSocket implementation for real-time updates
 - Database migration (SQLite/PostgreSQL)
-- WebSocket implementation for real-time updates
 - Additional job sources (Glassdoor, Naukri, ZipRecruiter)
 - Advanced analytics and reporting
 - Mobile application development
@@ -115,6 +156,7 @@ Based on JobSpy library principles for scalable job scraping.
 - API for third-party integrations
 
 ### Scalability Considerations
+
 - Service modularization for microservices migration
 - Database indexing strategy
 - CDN integration for static assets
