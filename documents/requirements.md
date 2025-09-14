@@ -2,55 +2,58 @@
 
 ## System Overview
 
-Web application for remote job search with AI-powered analysis and filtering. Built with Node.js runtime, Express.js backend and modular architecture.
+Web app for remote job search with AI-powered analysis & filtering. Built with Node.js runtime, Express.js backend & modular architecture.
 
 ## Functional Requirements
 
-### ✅ FR-1: Search Settings - IMPLEMENTED
+### FR-1: Search Settings
 
 - Local storage persistence for user settings
 - Position lists, blacklists, source selection
 - Language, work time, country filters
 - Single-request transmission on search start
 
-### ✅ FR-2: Multi-Stage Search - IMPLEMENTED
+### FR-2: Multi-Stage Search
 
 - 3-stage process: Collection → Filtering → Enrichment
 - Real-time progress visualization
 - Stop/pause functionality with result preservation
 - Final statistics display
 
-### ✅ FR-3: Job Collection (Stage 1) - IMPLEMENTED
+### FR-3: Job Collection (Stage 1)
 
 - Sources: Indeed (GraphQL), LinkedIn, OpenAI WebSearch
 - Parallel processing by positions
 - Real-time progress tracking
 - Error handling with retry logic
 - YAML data serialization
-- Integration tests for API validation
 
-### ✅ FR-4: Preliminary Filtering (Stage 2) - IMPLEMENTED
+### FR-4: Preliminary Filtering (Stage 2)
 
 - Automatic filtering after collection
-- User settings validation with blacklist/whitelist support
-- Status updates and statistics
-- Comprehensive filtering service with test coverage
+- User settings validation with blacklist/whitelist
+- Status updates & statistics
 
-### ✅ FR-5: LLM Enrichment (Stage 3) - IMPLEMENTED
+### FR-5: LLM Enrichment (Stage 3)
 
 - OpenAI integration for data enhancement
 - Company research via web search
 - Information source tracking
 - Missing data handling
-- Complete enrichment service with test coverage
 
-### ✅ FR-6: Job Management - IMPLEMENTED
+### FR-6: Job Management
 
 - Modern UI with cards, modals, navigation
 - External job link access
 - Blacklist management
 - Responsive design with theme support
 - Optimized client-server communication
+
+### FR-7: Favorites & Job Actions
+
+- Separate Favorites screen to view saved jobs
+- Replace "Snooze job" button with "Add to Favorites"
+- Persist "Hide job" & "Block employer" actions in local user settings
 
 ## Non-Functional Requirements
 
@@ -70,7 +73,7 @@ Web application for remote job search with AI-powered analysis and filtering. Bu
 
 - Input validation at all levels
 - SQL injection protection
-- Secure API key storage
+- OpenAI API key stored client-side only
 
 ### Usability
 
@@ -85,7 +88,7 @@ Web application for remote job search with AI-powered analysis and filtering. Bu
 
 - OpenAI API for LLM processing
 - OpenAI WebSearch API for global search
-- Job site scraping (Indeed GraphQL, LinkedIn, etc.)
+- Job site scraping (Indeed GraphQL, LinkedIn)
 - JobSpy reference architecture
 
 ### Data Formats
@@ -93,47 +96,32 @@ Web application for remote job search with AI-powered analysis and filtering. Bu
 - REST API communication
 - JSON data exchange
 - YAML serialization for jobs
-- Optimized HTTP polling for progress updates
-- Streamlined Express.js middleware architecture
+- HTTP polling for progress updates
+- Express.js middleware architecture
+
+### Session Persistence
+
+- Client session persisted in localStorage
+- Server session persisted to filesystem
 
 ### UI/UX Requirements
 
 - Modern responsive interface
-- Professional component library (Shadcn/ui)
+- Shadcn/ui component library
 - Accessibility compliance
 - Mobile-first design
 - Real-time progress tracking
 
-## Implementation Status
+## Current Implementation
 
-### Completed Features (98%)
-
-- ✅ Node.js runtime with Express.js server & modular architecture
-- ✅ React/TypeScript frontend with Vite
-- ✅ Multi-stage search orchestration
-- ✅ 3 scraper implementations (Indeed, LinkedIn, OpenAI)
-- ✅ Job management UI with Shadcn/ui components
-- ✅ Docker multi-stage build environment
-- ✅ API integration & error handling
-- ✅ TypeScript configuration for client/server
-- ✅ FR-4: Preliminary filtering service implementation
-- ✅ FR-5: LLM enrichment service implementation
-- ✅ Optimized HTTP polling for progress updates
-- ✅ Enhanced testing suite (Vitest)
-- ✅ Code quality tools (ESLint, Prettier)
-- ✅ CLI runner for unified development workflow
-- ✅ Streamlined API endpoints & client optimization
-
-### Remaining Features (2%)
-
-- 🔄 Database integration (SQLite/PostgreSQL)
-- 🔄 Cost tracking & optimization
-
-## Acceptance Criteria
-
-- All functional requirements implemented
-- Non-functional requirements met
-- Modern browser compatibility
-- Load testing successful
-- Documentation complete
-- Code quality standards met
+- Node.js runtime with Express.js server
+- React/TypeScript frontend with Vite
+- 3-stage search: Collection → Filtering → Enrichment
+- 3 scraper implementations: Indeed, LinkedIn, OpenAI WebSearch
+- Job management UI with Shadcn/ui components
+- Docker multi-stage build environment
+- API integration with error handling
+- TypeScript strict mode configuration
+- Comprehensive testing with Vitest
+- Code quality tools (ESLint, Prettier)
+- CLI runner for development workflow

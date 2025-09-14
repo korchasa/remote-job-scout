@@ -3,6 +3,7 @@
 ```
 remote-job-scout/
 ├── .cursor/              # IDE configurations
+├── .env                  # Environment variables
 ├── .dockerignore         # Docker exclusions
 ├── .prettierignore       # Prettier exclusions
 ├── .prettierrc.json      # Prettier configuration
@@ -88,6 +89,8 @@ remote-job-scout/
 │   │   └── scrapers/    # Scrapers
 │   │       ├── indeed.ts
 │   │       ├── linkedin.ts
+│   │       ├── linkedin.test.ts
+│   │       ├── linkedin.integration.test.ts
 │   │       ├── openai-web-search.ts
 │   │       ├── scrapers.test.ts
 │   │       └── scrapers.integration.test.ts
@@ -108,23 +111,23 @@ remote-job-scout/
 ### Separation of Concerns
 
 - **Client**: React/TypeScript frontend with component-based UI
-- **Server**: Node.js/Express.js backend with modular middleware architecture
+- **Server**: Node.js/Express.js backend with modular middleware
 - **Shared**: Type-safe schemas between frontend/backend
 
 ### Key Components
 
 - **Frontend**: 8 core components + 47 Shadcn/ui components + 6 examples
 - **Backend**: Modular Express.js server with middleware, routes, controllers
-- **Services**: 6 business logic services with scraper implementations
-- **Tests**: 8 test files covering all functionality with Vitest
-- **CLI**: Unified `run` script for all development tasks
+- **Services**: 6 business logic services + 3 scrapers
+- **Tests**: 11 test files with Vitest coverage
+- **CLI**: Unified `run` script for development tasks
 
 ### Technologies
 
 - **Runtime**: Node.js 18+ with TypeScript strict mode
-- **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind CSS
-- **Backend**: Express.js, REST API, optimized HTTP polling, modular middleware
-- **Build**: Docker multi-stage build with production optimization
+- **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind CSS 4.1+
+- **Backend**: Express.js, REST API, HTTP polling, JSDOM parsing
+- **Build**: Docker multi-stage build with prod optimization
 - **Development**: Hot reload, TypeScript compilation, ESLint/Prettier
 - **Testing**: Vitest framework with comprehensive coverage
-- **CLI**: Unified development workflow with `run` script
+- **CLI**: Unified development workflow

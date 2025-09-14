@@ -2,7 +2,7 @@
 
 import { parseArgs } from 'node:util';
 import { execSync, spawn } from 'child_process';
-import { existsSync, rmSync, readdirSync, statSync, readFileSync } from 'fs';
+import { readdirSync, statSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 // Unified logging functions
@@ -23,19 +23,19 @@ function logProgress(message: string): void {
 }
 
 // Clean build artifacts function
-function cleanBuildArtifacts(): void {
-  logProgress('Cleaning build artifacts');
-  try {
-    if (existsSync('dist')) {
-      rmSync('dist', { recursive: true, force: true });
-      logSuccess('Clean completed');
-    } else {
-      logInfo('Nothing to clean');
-    }
-  } catch {
-    logInfo('Nothing to clean');
-  }
-}
+// function cleanBuildArtifacts(): void {
+//   logProgress('Cleaning build artifacts');
+//   try {
+//     if (existsSync('dist')) {
+//       rmSync('dist', { recursive: true, force: true });
+//       logSuccess('Clean completed');
+//     } else {
+//       logInfo('Nothing to clean');
+//     }
+//   } catch {
+//     logInfo('Nothing to clean');
+//   }
+// }
 
 // Format code function
 async function formatCode(): Promise<void> {
@@ -200,8 +200,6 @@ async function scanComments(): Promise<void> {
 // Comprehensive project check function
 async function runCheck(): Promise<void> {
   logProgress('Running comprehensive project check');
-  // Clean build artifacts
-  cleanBuildArtifacts();
   // Build project
   await buildProject();
   // Format code
@@ -244,10 +242,14 @@ async function runDev(): Promise<void> {
         '--rm',
         '-p',
         '3000:3000',
-        '-v',
-        `${process.cwd()}/dist:/app/dist:cached`,
         '-e',
         'NODE_ENV=development',
+        '-v',
+        `${process.cwd()}/dist:/app/dist`,
+        '-v',
+        `${process.cwd()}/node_modules:/app/node_modules`,
+        '--env-file',
+        `${process.cwd()}/.env`,
         'remote-job-scout-dev',
       ],
       'Container',

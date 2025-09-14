@@ -107,7 +107,7 @@ export interface MultiStageProgress {
 }
 
 export interface StageProgress {
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'stopped';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'stopped' | 'skipped';
   progress: number; // 0-100%
   itemsProcessed: number;
   itemsTotal: number;

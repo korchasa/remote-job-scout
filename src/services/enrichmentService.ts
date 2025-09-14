@@ -78,9 +78,13 @@ export class EnrichmentService {
       errors: [],
     };
 
+    console.log(`🔍 EnrichmentService: API key configured: ${!!this.openaiApiKey}`);
+    console.log(`🔍 EnrichmentService: API key length: ${this.openaiApiKey?.length ?? 0}`);
+
     if (!this.openaiApiKey) {
       result.success = false;
       result.errors.push('OpenAI API key not configured');
+      console.error('❌ EnrichmentService: No OpenAI API key configured');
       return result;
     }
 
@@ -219,6 +223,11 @@ Focus on accuracy and only include information that can be reasonably inferred f
     prompt: string,
   ): Promise<{ success: boolean; content?: string; error?: string }> {
     try {
+      console.log(
+        `🌐 EnrichmentService: Making OpenAI API call to ${this.baseUrl}/chat/completions`,
+      );
+      console.log(`🌐 EnrichmentService: Using API key: ${this.openaiApiKey?.substring(0, 10)}...`);
+
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -242,6 +251,8 @@ Focus on accuracy and only include information that can be reasonably inferred f
           max_tokens: 1500,
         }),
       });
+
+      console.log(`🌐 EnrichmentService: OpenAI API response status: ${response.status}`);
 
       if (!response.ok) {
         throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);

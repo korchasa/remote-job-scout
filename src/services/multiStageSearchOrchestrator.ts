@@ -120,11 +120,12 @@ export class MultiStageSearchOrchestrator {
         console.warn('⚠️ Filtering stage had errors, continuing with available data');
       }
 
-      // Stage 3: Enrichment (если настроен OpenAI и есть вакансии для обогащения)
-      if (
-        settings.sources.openaiWebSearch?.apiKey &&
-        filteringResult.filteredVacancies.length > 0
-      ) {
+      // Stage 3: Enrichment (обязательная стадия)
+      if (filteringResult.filteredVacancies.length > 0) {
+        if (!settings.sources.openaiWebSearch?.apiKey) {
+          throw new Error('OpenAI API key is required for enrichment stage');
+        }
+
         const enrichmentResult = await this.executeEnrichmentStage(
           filteringResult.filteredVacancies,
           settings,
@@ -136,6 +137,11 @@ export class MultiStageSearchOrchestrator {
         if (!enrichmentResult.success) {
           console.warn('⚠️ Enrichment stage had errors, using filtered data');
         }
+      } else {
+        // Если нет вакансий для обогащения, помечаем стадию как пропущенную
+        progress.stages.enriching.status = 'skipped';
+        progress.stages.enriching.endTime = new Date().toISOString();
+        console.log('⏭️ Enrichment stage skipped (no vacancies to enrich)');
       }
 
       // Завершаем процесс
@@ -330,10 +336,14 @@ export class MultiStageSearchOrchestrator {
     progress.overallProgress = 70; // Переходим к 70%
 
     console.log(`🤖 Starting enrichment stage with ${vacancies.length} vacancies`);
+    console.log(`🔑 OpenAI API key available: ${!!settings.sources.openaiWebSearch?.apiKey}`);
 
     // Настраиваем OpenAI
     if (settings.sources.openaiWebSearch?.apiKey) {
       this.enrichmentService.setOpenAIKey(settings.sources.openaiWebSearch.apiKey);
+      console.log(`🔑 OpenAI API key set in enrichment service`);
+    } else {
+      console.error(`❌ No OpenAI API key provided for enrichment`);
     }
 
     try {

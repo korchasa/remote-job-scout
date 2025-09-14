@@ -119,6 +119,21 @@ export class CollectionController {
         `🔄 Progress updates will be available via polling: GET /api/multi-stage/progress/${request.session_id}`,
       );
 
+      // Set OpenAI API key from environment variables
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (openaiApiKey) {
+        request.settings.sources.openaiWebSearch = {
+          apiKey: openaiApiKey,
+          searchSites: ['OpenAI'],
+          globalSearch: true,
+        };
+        console.log('🔑 OpenAI API key loaded from environment variables');
+      } else {
+        console.warn(
+          '⚠️ OpenAI API key not found in environment variables. Enrichment will be skipped.',
+        );
+      }
+
       // Запускаем процесс в фоне
       void (async () => {
         try {

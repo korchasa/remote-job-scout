@@ -28,6 +28,10 @@ export function useStartSearch() {
           },
           sources: {
             jobSites: config.selectedSources,
+            openaiWebSearch: {
+              apiKey: '', // Will be set from environment variables on server side
+              globalSearch: true,
+            },
           },
           llm: {
             enrichmentInstructions: [],
@@ -124,7 +128,8 @@ export function useSearchProgress(sessionId: string | null) {
       }
     },
     enabled: !!sessionId,
-    refetchInterval: (data: ProgressData | null) => {
+    refetchInterval: (query) => {
+      const data = query.state.data as ProgressData | null;
       if (data?.status && data.status !== 'running') {
         console.log('🛑 [REACT] Stopping polling - status:', data.status);
         return false;

@@ -64,6 +64,8 @@ export function MainDashboard() {
     if (currentSessionId && isCompleted) {
       setIsPaused(false);
       setViewMode('results');
+      // Invalidate jobs cache to refresh the jobs list
+      void queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
     }
   }, [currentSessionId, isCompleted]);
 
@@ -129,6 +131,8 @@ export function MainDashboard() {
         await stopSearchMutation.mutateAsync(currentSessionId);
         setCurrentSessionId(null);
         setIsPaused(false);
+        // Invalidate jobs cache to refresh the jobs list
+        void queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
         toast({
           title: 'Search Stopped',
           description: 'Your job search has been stopped.',
