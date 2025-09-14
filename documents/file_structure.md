@@ -103,6 +103,9 @@ remote-job-scout/
 │   └── utils/           # Utilities
 │       ├── index.ts
 │       └── utils.ts
+├── tests/               # Tests and fixtures
+│   ├── integration/     # Integration tests
+│   └── fixtures/        # Static YAML fixtures for jobs/sessions
 └── dist/                # Build output
     ├── client/          # Built React app
     └── server/          # Built server
@@ -121,7 +124,7 @@ remote-job-scout/
 - **Frontend**: 9 core + 47 Shadcn/ui + 6 examples
 - **Backend**: Express.js server, middleware, routes, controllers
 - **Services**: 6 business + 3 scrapers, parallel processing
-- **Tests**: 13 files, Vitest coverage
+- **Tests**: 13 files, Vitest coverage, fixtures in `tests/fixtures`
 - **CLI**: Unified `run` script
 - **Storage**: YAML serialization, session persistence
 
