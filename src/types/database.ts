@@ -14,6 +14,7 @@ export interface Vacancy {
   enriched_at?: string;
   source: string;
   country?: string;
+  session_id?: string; // Session ID for grouping vacancies
   data?: string; // Additional information in YAML format
 }
 
@@ -91,7 +92,7 @@ export type ProcessingStage =
 export interface MultiStageProgress {
   sessionId: string;
   currentStage: ProcessingStage;
-  status: 'running' | 'completed' | 'stopped' | 'error';
+  status: 'running' | 'completed' | 'stopped' | 'error' | 'paused';
   overallProgress: number; // 0-100%
   stageProgress: number; // 0-100% для текущей стадии
   stages: {
@@ -104,15 +105,23 @@ export interface MultiStageProgress {
   isComplete: boolean;
   canStop: boolean;
   errors: string[];
+  filteringStats?: FilteringStats;
+}
+
+export interface FilteringStats {
+  totalFiltered: number;
+  totalSkipped: number;
+  skipReasons: { [reason: string]: number };
 }
 
 export interface StageProgress {
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'stopped' | 'skipped';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'stopped' | 'skipped' | 'paused';
   progress: number; // 0-100%
   itemsProcessed: number;
   itemsTotal: number;
   startTime?: string;
   endTime?: string;
+  pauseTime?: string;
   errors: string[];
   details?: string;
 }

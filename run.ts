@@ -214,6 +214,62 @@ async function runCheck(): Promise<void> {
   logSuccess('All checks passed!');
 }
 
+// Run unit tests function
+async function runUnitTests(): Promise<void> {
+  logProgress('Running unit tests');
+
+  await scanComments();
+  // Run unit tests
+  await runCommand(['npx', 'vitest', 'run', '--config', 'vitest.config.ts'], 'Unit test execution');
+
+  logSuccess('Unit tests completed!');
+}
+
+// Run single test function
+async function runSingleTest(testPath: string): Promise<void> {
+  logProgress(`Running single test: ${testPath}`);
+
+  await scanComments();
+  // Run single test
+  await runCommand(['npx', 'vitest', 'run', testPath], 'Single test execution');
+
+  logSuccess('Single test completed!');
+}
+
+// Handle test command with parameters
+async function handleTestCommand(args: string[]): Promise<void> {
+  if (args.length === 0) {
+    // ./run test -> run unit tests
+    await runUnitTests();
+  } else if (args[0] === 'unit') {
+    // ./run test unit -> run unit tests
+    await runUnitTests();
+  } else if (args[0] === 'integration') {
+    // ./run test integration -> run integration tests
+    await runIntegrationTests();
+  } else {
+    // ./run test <path> -> run single test
+    await runSingleTest(args[0]);
+  }
+}
+
+// Run integration tests function
+async function runIntegrationTests(): Promise<void> {
+  logProgress('Running integration tests');
+  logInfo('⚠️  Integration tests make real HTTP requests to external APIs');
+  logInfo('   These tests may take several minutes to complete');
+  logInfo('   Make sure you have stable internet connection');
+
+  await scanComments();
+  // Run integration tests
+  await runCommand(
+    ['npx', 'vitest', 'run', '--config', 'vitest.integration.config.ts'],
+    'Integration test execution',
+  );
+
+  logSuccess('Integration tests completed!');
+}
+
 // Development server function
 async function runDev(): Promise<void> {
   logProgress('Starting development server');
@@ -275,7 +331,13 @@ Usage: ./run <command> [args...]
 
 Commands:
   check               Run all checks: cleanup, formatting, linting, analyze, build, test
-  test <test_id>      Run a single test by relative path.
+  integration         Run integration tests (make real HTTP requests to external APIs)
+  test                Run unit tests (default)
+  test unit           Run only unit tests
+  test integration    Run only integration tests (make real HTTP requests to external APIs)
+  test <test_path>    Run a single test by relative path
+  test-unit           Run only unit tests (alias)
+  test-integration    Run only integration tests (alias, make real HTTP requests to external APIs)
   start               Run the project in development mode
   stop                Stop the project in development mode
   help                Show this help
@@ -294,16 +356,23 @@ const { positionals, values } = parseArgs({
 });
 
 const command = positionals[0];
+const commandArgs = positionals.slice(1);
 
 const commands = {
   start: runDev,
   stop: runDevStop,
   check: runCheck,
+  integration: runIntegrationTests,
+  'test-unit': runUnitTests,
+  'test-integration': runIntegrationTests,
   help: runHelp,
 };
 
 if (values.help || values.version) {
   commands.help();
+} else if (command === 'test') {
+  // Handle test command with parameters
+  await handleTestCommand(commandArgs);
 } else if (command && commands[command as keyof typeof commands]) {
   await commands[command as keyof typeof commands]();
 } else {

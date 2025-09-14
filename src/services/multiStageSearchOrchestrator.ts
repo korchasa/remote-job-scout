@@ -10,6 +10,10 @@ import type { FilteringResult } from './filteringService.js';
 import { FilteringService } from './filteringService.js';
 import type { EnrichmentResult } from './enrichmentService.js';
 import { EnrichmentService } from './enrichmentService.js';
+import type { Scraper } from '../types/scrapers.js';
+import { IndeedScraper } from './scrapers/indeed.js';
+import { LinkedInScraper } from './scrapers/linkedin.js';
+import { OpenAIWebSearchScraper } from './scrapers/openai-web-search.js';
 // Using HTTP polling for progress updates
 
 export interface OrchestratorResult {
@@ -116,6 +120,15 @@ export class MultiStageSearchOrchestrator {
       // Update vacancy statuses after filtering
       this.updateVacancyStatuses(filteringResult, session_id);
 
+      // Add filtering statistics to progress
+      if (progress.stages.filtering.status === 'completed') {
+        progress.filteringStats = {
+          totalFiltered: filteringResult.filteredCount,
+          totalSkipped: filteringResult.skippedCount,
+          skipReasons: filteringResult.reasons,
+        };
+      }
+
       if (!filteringResult.success) {
         console.warn('⚠️ Filtering stage had errors, continuing with available data');
       }
@@ -210,6 +223,215 @@ export class MultiStageSearchOrchestrator {
   }
 
   /**
+   * Приостанавливает процесс поиска
+   */
+  pauseProcess(sessionId: string): boolean {
+    const progress = this.activeProcesses.get(sessionId);
+    if (!progress || progress.isComplete || progress.status === 'paused' || !progress.canStop) {
+      return false;
+    }
+
+    // Приостанавливаем текущую стадию
+    const currentStage = progress.currentStage;
+    if (currentStage !== 'completed') {
+      progress.stages[currentStage].status = 'paused';
+      progress.stages[currentStage].pauseTime = new Date().toISOString();
+    }
+    progress.status = 'paused';
+    progress.canStop = false;
+    progress.errors.push(`Process paused at ${currentStage} stage`);
+
+    console.log(`⏸️ Process paused for session ${sessionId} at ${currentStage} stage`);
+    return true;
+  }
+
+  /**
+   * Возобновляет приостановленный процесс поиска
+   */
+  async resumeProcess(sessionId: string, request: SearchRequest): Promise<OrchestratorResult> {
+    const progress = this.activeProcesses.get(sessionId);
+    if (!progress) {
+      return {
+        success: false,
+        sessionId,
+        finalProgress: {} as MultiStageProgress,
+        errors: [`No process found for session ${sessionId}`],
+      };
+    }
+
+    if (progress.status !== 'paused') {
+      return {
+        success: false,
+        sessionId,
+        finalProgress: progress,
+        errors: [`Process ${sessionId} is not paused`],
+      };
+    }
+
+    // Возобновляем процесс
+    progress.status = 'running';
+    progress.canStop = true;
+    const resumeTime = new Date().toISOString();
+
+    // Удаляем сообщение о паузе из ошибок
+    progress.errors = progress.errors.filter((error) => !error.includes('paused'));
+
+    console.log(`▶️ Process resumed for session ${sessionId} at ${progress.currentStage} stage`);
+
+    // Продолжаем выполнение с текущей стадии
+    return this.continueFromStage(request, progress, resumeTime);
+  }
+
+  /**
+   * Продолжает выполнение процесса с указанной стадии
+   */
+  private async continueFromStage(
+    request: SearchRequest,
+    progress: MultiStageProgress,
+    resumeTime: string,
+  ): Promise<OrchestratorResult> {
+    const { session_id, settings } = request;
+    const result: OrchestratorResult = {
+      success: false,
+      sessionId: session_id,
+      finalProgress: progress,
+      errors: [],
+    };
+
+    try {
+      // Определяем, с какой стадии продолжить
+      const currentStage = progress.currentStage;
+
+      if (currentStage === 'collecting' && progress.stages.collecting.status === 'paused') {
+        // Продолжаем сбор данных
+        progress.stages.collecting.status = 'running';
+        progress.stages.collecting.pauseTime = undefined;
+        const collectionResult = await this.executeCollectionStage(request, progress);
+        result.collectionResult = collectionResult;
+
+        if (!collectionResult.success) {
+          throw new Error('Collection stage failed during resume');
+        }
+
+        // Сохраняем вакансии и переходим к следующей стадии
+        this.saveVacancies(collectionResult.vacancies, session_id);
+      }
+
+      // Если сбор завершен, выполняем фильтрацию
+      if (
+        progress.stages.collecting.status === 'completed' &&
+        (progress.stages.filtering.status === 'pending' ||
+          progress.stages.filtering.status === 'paused')
+      ) {
+        // Получаем собранные вакансии (в реальности нужно восстановить из хранилища)
+        const collectedVacancies = this.getCollectedVacancies(session_id);
+        if (collectedVacancies.length === 0) {
+          throw new Error('No collected vacancies found for filtering');
+        }
+
+        const filteringResult = this.executeFilteringStage(
+          collectedVacancies,
+          settings,
+          progress,
+          session_id,
+        );
+        result.filteringResult = filteringResult;
+
+        // Обновляем статусы вакансий
+        this.updateVacancyStatuses(filteringResult, session_id);
+
+        // Add filtering statistics to progress
+        progress.filteringStats = {
+          totalFiltered: filteringResult.filteredCount,
+          totalSkipped: filteringResult.skippedCount,
+          skipReasons: filteringResult.reasons,
+        };
+      }
+
+      // Если фильтрация завершена, выполняем обогащение
+      if (
+        progress.stages.filtering.status === 'completed' &&
+        (progress.stages.enriching.status === 'pending' ||
+          progress.stages.enriching.status === 'paused')
+      ) {
+        const filteredVacancies = this.getFilteredVacancies(session_id);
+        if (filteredVacancies.length > 0 && settings.sources.openaiWebSearch?.apiKey) {
+          const enrichmentResult = await this.executeEnrichmentStage(
+            filteredVacancies,
+            settings,
+            progress,
+            session_id,
+          );
+          result.enrichmentResult = enrichmentResult;
+        } else {
+          progress.stages.enriching.status = 'skipped';
+          progress.stages.enriching.endTime = resumeTime;
+        }
+      }
+
+      // Завершаем процесс
+      progress.currentStage = 'completed';
+      progress.status = 'completed';
+      progress.isComplete = true;
+      progress.canStop = false;
+      progress.overallProgress = 100;
+
+      result.success = true;
+      result.finalProgress = progress;
+
+      console.log(`✅ Resumed process completed for session ${session_id}`);
+      this.logFinalStatistics(result);
+
+      return result;
+    } catch (error) {
+      progress.status = 'error';
+      progress.isComplete = true;
+      progress.canStop = false;
+      progress.errors.push((error as Error).message);
+      result.errors.push((error as Error).message);
+      result.finalProgress = progress;
+
+      console.error(`❌ Resume failed for session ${session_id}:`, error);
+      return result;
+    } finally {
+      // Очищаем активные процессы через некоторое время
+      setTimeout(() => {
+        this.activeProcesses.delete(session_id);
+      }, 300000); // 5 минут
+    }
+  }
+
+  /**
+   * Получает собранные вакансии из хранилища
+   */
+  private getCollectedVacancies(sessionId: string): Vacancy[] {
+    if (!this.jobsStorage) return [];
+
+    const vacancies: Vacancy[] = [];
+    for (const vacancy of this.jobsStorage.values()) {
+      if (vacancy.session_id === sessionId) {
+        vacancies.push(vacancy);
+      }
+    }
+    return vacancies;
+  }
+
+  /**
+   * Получает отфильтрованные вакансии
+   */
+  private getFilteredVacancies(sessionId: string): Vacancy[] {
+    if (!this.jobsStorage) return [];
+
+    const vacancies: Vacancy[] = [];
+    for (const vacancy of this.jobsStorage.values()) {
+      if (vacancy.session_id === sessionId && vacancy.status === 'filtered') {
+        vacancies.push(vacancy);
+      }
+    }
+    return vacancies;
+  }
+
+  /**
    * Выполняет стадию сбора вакансий
    */
   private async executeCollectionStage(
@@ -225,17 +447,18 @@ export class MultiStageSearchOrchestrator {
 
     console.log(`📥 Starting collection stage for session ${session_id}`);
 
-    // Настраиваем OpenAI если нужно
+    // Формируем массив скрейперов на основе настроек
+    const scrapers: Scraper[] = [new IndeedScraper(), new LinkedInScraper()];
+
+    // Если указан ключ OpenAI — добавляем скрейпер OpenAI
     if (settings.sources.openaiWebSearch?.apiKey) {
-      this.collectionService.setOpenAIWebSearch(
-        settings.sources.openaiWebSearch.apiKey,
-        settings.sources.openaiWebSearch.globalSearch,
-      );
+      const { apiKey, globalSearch = true, maxResults = 50 } = settings.sources.openaiWebSearch;
+      scrapers.push(new OpenAIWebSearchScraper(apiKey, 'gpt-4o-mini', globalSearch, maxResults));
     }
 
     try {
       // Запускаем сбор в фоне с отслеживанием прогресса
-      const collectionPromise = this.collectionService.collectJobs(request);
+      const collectionPromise = this.collectionService.collectJobs(scrapers, request);
 
       // Отслеживаем прогресс сбора
       const progressInterval = setInterval(() => {

@@ -6,9 +6,9 @@
  */
 
 import { expect, test } from 'vitest';
-import type { ScraperInput } from '../../types/scrapers.ts';
-import { Country, DescriptionFormat, JobType, Site } from '../../types/scrapers.ts';
-import { IndeedScraper } from './indeed.ts';
+import type { ScraperInput } from '../../../src/types/scrapers.ts';
+import { Country, DescriptionFormat, JobType, Site } from '../../../src/types/scrapers.ts';
+import { IndeedScraper } from '../../../src/services/scrapers/indeed.ts';
 
 /**
  * Тест реального скрейпинга Indeed с базовым поиском

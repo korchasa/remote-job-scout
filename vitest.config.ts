@@ -23,7 +23,14 @@ export default defineConfig({
       shuffle: false,
     },
     include: ['src/**/*.{test,spec}.ts'],
-    exclude: ['node_modules/**', 'dist/**', 'references/**'],
+    exclude: [
+      'node_modules/**',
+      'dist/**',
+      'references/**',
+      // Исключаем интеграционные тесты из основного запуска
+      'src/**/*.integration.{test,spec}.ts',
+      'tests/integration/**/*.{test,spec}.ts',
+    ],
     testTimeout: 10000,
   },
 });

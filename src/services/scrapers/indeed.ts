@@ -28,10 +28,9 @@ import type { Compensation, JobPost, JobResponse, ScraperInput } from '../../typ
 import {
   CompensationInterval,
   DescriptionFormat,
-  getCountryDomain,
   JobType,
   Scraper,
-  Site,
+  getCountryDomain,
 } from '../../types/scrapers.js';
 
 // GraphQL query template based on JobSpy
@@ -256,48 +255,17 @@ export class IndeedScraper extends Scraper {
   private base_url = '';
   private api_url = 'https://apis.indeed.com/graphql';
 
-  constructor(proxies?: string[] | string, ca_cert?: string, user_agent?: string) {
-    super(Site.INDEED, proxies, ca_cert, user_agent);
+  // Transport and TLS settings - defined by scraper itself
+  private userAgent =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Indeed App 193.1';
+  private timeout = 10000; // 10 seconds
+
+  constructor() {
+    super();
   }
 
-  override async checkAvailability(): Promise<boolean> {
-    console.log('🔍 Checking Indeed API availability', {
-      apiUrl: this.api_url,
-      headers: API_HEADERS,
-      timestamp: new Date().toISOString(),
-    });
-
-    try {
-      // Проверяем доступность API с простым запросом
-      const testPayload = {
-        query: '{ jobSearch { pageInfo { nextCursor } } }',
-      };
-      const response = await fetch(this.api_url, {
-        method: 'POST',
-        headers: API_HEADERS,
-        body: JSON.stringify(testPayload),
-      });
-
-      const isAvailable = response.status === 200 || response.status === 400; // 400 тоже означает, что API работает, просто запрос некорректный
-
-      console.log('📊 Indeed availability check result:', {
-        apiUrl: this.api_url,
-        responseStatus: response.status,
-        responseStatusText: response.statusText,
-        isAvailable,
-        timestamp: new Date().toISOString(),
-      });
-
-      return isAvailable;
-    } catch (error) {
-      console.error('❌ Indeed availability check failed:', {
-        error: error,
-        errorMessage: (error as Error).message,
-        apiUrl: this.api_url,
-        timestamp: new Date().toISOString(),
-      });
-      return false;
-    }
+  getName(): string {
+    return 'indeed';
   }
 
   async scrape(scraper_input: ScraperInput): Promise<JobResponse> {
@@ -414,8 +382,12 @@ export class IndeedScraper extends Scraper {
     try {
       const response = await fetch(this.api_url, {
         method: 'POST',
-        headers: this.headers ?? API_HEADERS,
+        headers: {
+          ...(this.headers ?? API_HEADERS),
+          'User-Agent': this.userAgent,
+        },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(this.timeout),
       });
 
       // Логируем ответ от Indeed API
@@ -562,8 +534,12 @@ export class IndeedScraper extends Scraper {
     try {
       const response = await fetch(this.api_url, {
         method: 'POST',
-        headers: this.headers ?? API_HEADERS,
+        headers: {
+          ...(this.headers ?? API_HEADERS),
+          'User-Agent': this.userAgent,
+        },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(this.timeout),
       });
 
       if (!response.ok) {

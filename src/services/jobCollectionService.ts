@@ -8,9 +8,6 @@ import { randomUUID } from 'node:crypto';
 import type { SearchRequest, Vacancy } from '../types/database.js';
 import type { Country, JobPost, JobResponse, Scraper, ScraperInput } from '../types/scrapers.js';
 import { countryFromString, Site } from '../types/scrapers.js';
-import { IndeedScraper } from './scrapers/indeed.js';
-import { LinkedInScraper } from './scrapers/linkedin.js';
-import { OpenAIWebSearchScraper } from './scrapers/openai-web-search.js';
 
 export interface CollectionResult {
   success: boolean;
@@ -31,45 +28,33 @@ export interface CollectionProgress {
   isComplete: boolean;
 }
 
+export interface CollectionConfig {
+  maxConcurrentSources: number; // Максимум источников одновременно
+  maxConcurrentPositions: number; // Максимум позиций одновременно
+  maxRetries: number; // Максимум повторных попыток
+  baseRetryDelay: number; // Базовая задержка для экспоненциального backoff
+  enableYamlSerialization: boolean; // Включить YAML сериализацию
+}
+
+const defaultConfig: CollectionConfig = {
+  maxConcurrentSources: 2,
+  maxConcurrentPositions: 3,
+  maxRetries: 3,
+  baseRetryDelay: 1000, // 1 секунда
+  enableYamlSerialization: true,
+};
+
 export class JobCollectionService {
-  private scrapers: Map<string, Scraper> = new Map();
-  private openaiScraper?: OpenAIWebSearchScraper;
   private activeSessions: Map<string, CollectionProgress> = new Map();
 
   constructor() {
-    this.initializeScrapers();
-  }
-
-  /**
-   * Инициализация доступных скрапперов
-   */
-  private initializeScrapers(): void {
-    // Indeed - самый надежный
-    this.scrapers.set('indeed', new IndeedScraper());
-
-    // LinkedIn - требует осторожности
-    this.scrapers.set('linkedin', new LinkedInScraper());
-
-    // Остальные скрапперы можно добавить позже
-    // this.scrapers.set("glassdoor", new GlassdoorScraper());
-    // this.scrapers.set("google", new GoogleScraper());
-  }
-
-  /**
-   * Настройка OpenAI WebSearch (опционально)
-   */
-  setOpenAIWebSearch(apiKey: string, globalSearch: boolean = true): void {
-    this.openaiScraper = new OpenAIWebSearchScraper({
-      apiKey,
-      globalSearch,
-      maxResults: 50,
-    });
+    // JobCollectionService больше не хранит скрейперы сам
   }
 
   /**
    * Основной метод сбора вакансий
    */
-  async collectJobs(request: SearchRequest): Promise<CollectionResult> {
+  async collectJobs(scrapers: Scraper[], request: SearchRequest): Promise<CollectionResult> {
     const { session_id, settings } = request;
     const progress: CollectionProgress = {
       sessionId: session_id,
@@ -91,54 +76,44 @@ export class JobCollectionService {
       });
 
       // Определяем источники для обработки
-      const sourcesToProcess = this.getSourcesToProcess(settings);
+      const sourcesToProcess = this.getSourcesToProcessWith(scrapers, settings);
       progress.totalSources = sourcesToProcess.length;
 
       const allVacancies: Vacancy[] = [];
       const processedSources: string[] = [];
       const errors: string[] = [];
 
-      // Обрабатываем каждый источник
-      for (const source of sourcesToProcess) {
-        progress.currentSource = source;
+      // Параллельная обработка источников с ограничением конкуренции
+      const sourceResults = await this.processSourcesInParallel(
+        sourcesToProcess,
+        settings,
+        session_id,
+        progress,
+        scrapers,
+      );
 
-        try {
-          const sourceVacancies = await this.processSource(source, settings, session_id);
-          allVacancies.push(...sourceVacancies);
-          processedSources.push(source);
+      // Обрабатываем результаты
+      for (const result of sourceResults) {
+        if (result.success) {
+          allVacancies.push(...result.vacancies);
+          processedSources.push(result.source);
           progress.sourcesCompleted++;
           progress.jobsCollected = allVacancies.length;
 
-          console.log(`✅ ${source}: collected ${sourceVacancies.length} jobs`);
-        } catch (error) {
-          const errorMsg = `${source}: ${(error as Error).message}`;
-          errors.push(errorMsg);
-          progress.errors.push(errorMsg);
-          console.error(`❌ ${errorMsg}`);
-        }
-      }
-
-      // Обрабатываем OpenAI WebSearch если настроен
-      if (this.shouldUseOpenAIWebSearch(settings)) {
-        progress.currentSource = 'OpenAI WebSearch';
-
-        try {
-          const openaiVacancies = await this.processOpenAIWebSearch(settings, session_id);
-          allVacancies.push(...openaiVacancies);
-          processedSources.push('openai-websearch');
-          progress.sourcesCompleted++;
-          progress.jobsCollected = allVacancies.length;
-
-          console.log(`✅ OpenAI WebSearch: collected ${openaiVacancies.length} jobs`);
-        } catch (error) {
-          const errorMsg = `OpenAI WebSearch: ${(error as Error).message}`;
-          errors.push(errorMsg);
-          progress.errors.push(errorMsg);
-          console.error(`❌ ${errorMsg}`);
+          console.log(`✅ ${result.source}: collected ${result.vacancies.length} jobs`);
+        } else {
+          errors.push(result.error!);
+          progress.errors.push(result.error!);
+          console.error(`❌ ${result.error}`);
         }
       }
 
       progress.isComplete = true;
+
+      // Сериализуем в YAML если включено
+      if (defaultConfig.enableYamlSerialization && allVacancies.length > 0) {
+        await this.serializeVacanciesToYaml(allVacancies, session_id);
+      }
 
       const result: CollectionResult = {
         success: errors.length === 0,
@@ -190,24 +165,17 @@ export class JobCollectionService {
   }
 
   /**
-   * Определить источники для обработки
+   * Определить источники для обработки на основе переданных скрейперов
    */
-  private getSourcesToProcess(settings: SearchRequest['settings']): string[] {
+  private getSourcesToProcessWith(
+    scrapers: Scraper[],
+    settings: SearchRequest['settings'],
+  ): string[] {
     const requestedSources = settings.sources.jobSites;
+    const available = new Set(scrapers.map((s) => s.getName().toLowerCase()));
 
     // Фильтруем только поддерживаемые источники
-    return requestedSources.filter((source) => this.scrapers.has(source.toLowerCase()));
-  }
-
-  /**
-   * Проверить нужно ли использовать OpenAI WebSearch
-   */
-  private shouldUseOpenAIWebSearch(settings: SearchRequest['settings']): boolean {
-    return !!(
-      this.openaiScraper &&
-      settings.sources.openaiWebSearch?.apiKey &&
-      settings.sources.openaiWebSearch.globalSearch
-    );
+    return requestedSources.map((s) => s.toLowerCase()).filter((source) => available.has(source));
   }
 
   /**
@@ -217,113 +185,123 @@ export class JobCollectionService {
     source: string,
     settings: SearchRequest['settings'],
     sessionId: string,
+    scrapers: Scraper[],
   ): Promise<Vacancy[]> {
-    const scraper = this.scrapers.get(source.toLowerCase());
+    const scraper = scrapers.find((s) => s.getName().toLowerCase() === source.toLowerCase());
     if (!scraper) {
       throw new Error(`Scraper for ${source} not found`);
     }
 
-    // Проверяем доступность источника
-    const isAvailable = await scraper.checkAvailability();
-    if (!isAvailable) {
-      throw new Error(`${source} is not available`);
+    const allVacancies: Vacancy[] = [];
+
+    // Параллельная обработка позиций
+    const positionBatches = this.chunkArray(
+      settings.searchPositions,
+      defaultConfig.maxConcurrentPositions,
+    );
+
+    for (const batch of positionBatches) {
+      const positionPromises = batch.map((position) =>
+        this.processPosition(scraper, source, position, settings, sessionId),
+      );
+
+      const batchResults = await Promise.all(positionPromises);
+      for (const vacancies of batchResults) {
+        allVacancies.push(...vacancies);
+      }
     }
 
+    return allVacancies;
+  }
+
+  /**
+   * Обработать одну позицию для источника
+   */
+  private async processPosition(
+    scraper: Scraper,
+    source: string,
+    position: string,
+    settings: SearchRequest['settings'],
+    sessionId: string,
+  ): Promise<Vacancy[]> {
     const vacancies: Vacancy[] = [];
 
-    // Обрабатываем каждую позицию
-    for (const position of settings.searchPositions) {
-      let country: Country | undefined;
-      try {
-        if (
-          settings.filters?.countries &&
-          Array.isArray(settings.filters.countries) &&
-          settings.filters.countries.length > 0
-        ) {
-          country = countryFromString(settings.filters.countries[0].name);
-        }
-      } catch (error) {
-        console.warn(`⚠️ Failed to parse country "${settings.filters.countries[0].name}":`, error);
-        // Continue without country filter
+    let country: Country | undefined;
+    try {
+      if (
+        settings.filters?.countries &&
+        Array.isArray(settings.filters.countries) &&
+        settings.filters.countries.length > 0
+      ) {
+        country = countryFromString(settings.filters.countries[0].name);
       }
+    } catch (error) {
+      console.warn(`⚠️ Failed to parse country "${settings.filters.countries[0].name}":`, error);
+      // Continue without country filter
+    }
 
-      const input: ScraperInput = {
-        site_type: [Site.INDEED], // Пока только Indeed
-        search_term: position,
-        location:
-          settings.filters?.countries &&
-          Array.isArray(settings.filters.countries) &&
-          settings.filters.countries.length > 0
-            ? settings.filters.countries[0].name
-            : undefined,
-        country: country,
-        is_remote: true, // Фокусируемся на remote вакансиях
-        results_wanted: 25, // Ограничиваем для тестирования
-      };
+    // Определяем site_type на основе источника
+    let siteType: Site;
+    switch (source.toLowerCase()) {
+      case 'indeed':
+        siteType = Site.INDEED;
+        break;
+      case 'linkedin':
+        siteType = Site.LINKEDIN;
+        break;
+      case 'openai':
+        siteType = Site.OPENAI;
+        break;
+      case 'google':
+        siteType = Site.GOOGLE;
+        break;
+      default:
+        siteType = Site.INDEED; // fallback
+    }
 
-      const response: JobResponse = await scraper.scrape(input);
+    const input: ScraperInput = {
+      site_type: [siteType],
+      search_term: position,
+      location:
+        settings.filters?.countries &&
+        Array.isArray(settings.filters.countries) &&
+        settings.filters.countries.length > 0
+          ? settings.filters.countries[0].name
+          : undefined,
+      country: country,
+      is_remote: true, // Фокусируемся на remote вакансиях
+      results_wanted: 25, // Ограничиваем для тестирования
+    };
 
-      if (response.jobs.length === 0) {
-        console.warn(`⚠️ ${source} no jobs found for ${position}`);
+    const response: JobResponse = await scraper.scrape(input);
+
+    if (response.jobs.length === 0) {
+      console.warn(`⚠️ ${source} no jobs found for ${position}`);
+    }
+
+    // Проверяем, что response.jobs является массивом
+    if (!response.jobs || !Array.isArray(response.jobs)) {
+      console.error(`❌ ${source} returned invalid jobs data for ${position}:`, response.jobs);
+      return vacancies;
+    }
+
+    // Конвертируем JobPost в Vacancy
+    for (const job of response.jobs) {
+      if (job && typeof job === 'object') {
+        const vacancy = this.convertJobToVacancy(job, sessionId, source);
+        vacancies.push(vacancy);
+      } else {
+        console.warn(`⚠️ ${source} returned invalid job object for ${position}:`, job);
       }
-
-      // Проверяем, что response.jobs является массивом
-      if (!response.jobs || !Array.isArray(response.jobs)) {
-        console.error(`❌ ${source} returned invalid jobs data for ${position}:`, response.jobs);
-        continue;
-      }
-
-      // Конвертируем JobPost в Vacancy
-      for (const job of response.jobs) {
-        if (job && typeof job === 'object') {
-          const vacancy = this.convertJobToVacancy(job, sessionId);
-          vacancies.push(vacancy);
-        } else {
-          console.warn(`⚠️ ${source} returned invalid job object for ${position}:`, job);
-        }
-      }
-
-      // Небольшая задержка между запросами
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     return vacancies;
   }
 
   /**
-   * Обработать OpenAI WebSearch
-   */
-  private async processOpenAIWebSearch(
-    settings: SearchRequest['settings'],
-    sessionId: string,
-  ): Promise<Vacancy[]> {
-    if (!this.openaiScraper || !settings.sources.openaiWebSearch) {
-      return [];
-    }
-
-    // Комбинируем все позиции в один запрос
-    const combinedQuery = settings.searchPositions.join(' OR ');
-
-    const input: ScraperInput = {
-      site_type: [Site.GOOGLE], // OpenAI web search
-      search_term: combinedQuery,
-      is_remote: true,
-      results_wanted: settings.sources.openaiWebSearch.maxResults ?? 50,
-    };
-
-    const response = await this.openaiScraper.scrape(input);
-
-    if (!response.jobs || response.jobs.length === 0) {
-      throw new Error(`OpenAI WebSearch returned no jobs`);
-    }
-
-    return response.jobs.map((job) => this.convertJobToVacancy(job, sessionId));
-  }
-
-  /**
    * Конвертировать JobPost в Vacancy
    */
-  private convertJobToVacancy(job: JobPost, _sessionId: string): Vacancy {
+  private convertJobToVacancy(job: JobPost, sessionId: string, source?: string): Vacancy {
     return {
       id: randomUUID(),
       title: job.title,
@@ -333,8 +311,9 @@ export class JobCollectionService {
       status: 'collected',
       created_at: new Date().toISOString(),
       collected_at: new Date().toISOString(),
-      source: 'indeed', // Default source
+      source: source ?? 'unknown',
       country: job.location?.country ?? undefined,
+      session_id: sessionId,
       // data будет содержать дополнительную информацию в JSON формате
       data: JSON.stringify({
         company: job.company_name,
@@ -345,5 +324,120 @@ export class JobCollectionService {
         emails: job.emails,
       }),
     };
+  }
+
+  /**
+   * Параллельная обработка источников с ограничением конкуренции
+   */
+  private async processSourcesInParallel(
+    sources: string[],
+    settings: SearchRequest['settings'],
+    sessionId: string,
+    progress: CollectionProgress,
+    scrapers: Scraper[],
+  ): Promise<Array<{ source: string; success: boolean; vacancies: Vacancy[]; error?: string }>> {
+    const results: Array<{
+      source: string;
+      success: boolean;
+      vacancies: Vacancy[];
+      error?: string;
+    }> = [];
+
+    // Разбиваем источники на батчи для параллельной обработки
+    const batches = this.chunkArray(sources, defaultConfig.maxConcurrentSources);
+
+    for (const batch of batches) {
+      const batchPromises = batch.map((source) =>
+        this.processSourceWithRetry(source, settings, sessionId, progress, scrapers),
+      );
+
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+    }
+
+    return results;
+  }
+
+  /**
+   * Обработка источника с retry
+   */
+  private async processSourceWithRetry(
+    source: string,
+    settings: SearchRequest['settings'],
+    sessionId: string,
+    progress: CollectionProgress,
+    scrapers: Scraper[],
+  ): Promise<{ source: string; success: boolean; vacancies: Vacancy[]; error?: string }> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= defaultConfig.maxRetries; attempt++) {
+      try {
+        progress.currentSource = source;
+        const vacancies = await this.processSource(source, settings, sessionId, scrapers);
+        return { source, success: true, vacancies };
+      } catch (error) {
+        lastError = error as Error;
+
+        if (attempt < defaultConfig.maxRetries) {
+          const delay = defaultConfig.baseRetryDelay * Math.pow(2, attempt);
+          console.log(
+            `⏳ Retrying ${source} in ${delay}ms (attempt ${attempt + 1}/${
+              defaultConfig.maxRetries + 1
+            })`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    return {
+      source,
+      success: false,
+      vacancies: [],
+      error: `${source}: ${lastError?.message ?? 'Unknown error'}`,
+    };
+  }
+
+  /**
+   * Разбить массив на чанки
+   */
+  private chunkArray<T>(array: T[], size: number): T[][] {
+    const result: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+      result.push(array.slice(i, i + size));
+    }
+    return result;
+  }
+
+  /**
+   * Сериализация вакансий в YAML
+   */
+  private async serializeVacanciesToYaml(vacancies: Vacancy[], sessionId: string): Promise<void> {
+    try {
+      const { writeFileSync, mkdirSync } = await import('node:fs');
+      const { dirname, resolve } = await import('node:path');
+      const yamlModule = await import('js-yaml');
+      const yaml = yamlModule.default;
+
+      const filePath = resolve('data', 'jobs', `${sessionId}.yml`);
+      mkdirSync(dirname(filePath), { recursive: true });
+
+      const data = {
+        session_id: sessionId,
+        total: vacancies.length,
+        vacancies: vacancies.map((v) => ({
+          id: v.id,
+          title: v.title,
+          company: JSON.parse(v.data ?? '{}').company,
+          url: v.url,
+          published_date: v.published_date ?? null,
+          source: v.source ?? 'unknown',
+        })),
+      };
+
+      writeFileSync(filePath, yaml.dump(data), 'utf8');
+    } catch (error) {
+      console.error('❌ Failed to serialize vacancies to YAML:', error);
+    }
   }
 }

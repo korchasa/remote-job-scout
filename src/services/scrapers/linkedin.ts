@@ -24,7 +24,7 @@
  */
 
 import type { JobPost, JobResponse, ScraperInput } from '../../types/scrapers.js';
-import { Scraper, Site, JobType, DescriptionFormat } from '../../types/scrapers.js';
+import { Scraper, JobType, DescriptionFormat } from '../../types/scrapers.js';
 import { JSDOM } from 'jsdom';
 
 export class LinkedInScraper extends Scraper {
@@ -34,25 +34,19 @@ export class LinkedInScraper extends Scraper {
   private scraperInput: ScraperInput | null = null;
   private country = 'worldwide';
 
-  constructor(proxies?: string[] | string, ca_cert?: string, user_agent?: string) {
-    super(Site.LINKEDIN, proxies, ca_cert, user_agent);
+  // Transport and TLS settings - defined by scraper itself (JobSpy compatible)
+  private userAgent =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+  private timeout = 10000; // 10 seconds
+  private retries = 3;
+  private retryDelay = 5000; // 5 seconds delay for retries
+
+  constructor() {
+    super();
   }
 
-  getSourceName(): string {
-    return 'LinkedIn';
-  }
-
-  override async checkAvailability(): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.baseUrl}/`, {
-        method: 'HEAD',
-        signal: AbortSignal.timeout(5000),
-        headers: this.getHeaders(),
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
+  getName(): string {
+    return 'linkedin';
   }
 
   async scrape(scraperInput: ScraperInput): Promise<JobResponse> {
@@ -120,12 +114,8 @@ export class LinkedInScraper extends Scraper {
       );
 
       try {
-        const response = await fetch(
+        const response = await this.fetchWithRetry(
           `${this.baseUrl}/jobs-guest/jobs/api/seeMoreJobPostings/search?${new URLSearchParams(cleanParams).toString()}`,
-          {
-            headers: this.getHeaders(),
-            signal: AbortSignal.timeout(10000),
-          },
         );
 
         if (!response.ok) {
@@ -190,6 +180,43 @@ export class LinkedInScraper extends Scraper {
     return { jobs: finalJobs };
   }
 
+  private async fetchWithRetry(url: string, options: RequestInit = {}): Promise<Response> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= this.retries; attempt++) {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            ...this.getHeaders(),
+            ...options.headers,
+          },
+          signal: AbortSignal.timeout(this.timeout),
+        });
+
+        if (response?.ok) {
+          return response;
+        }
+
+        // For non-200 responses, throw error to trigger retry
+        const status = response ? response.status : 'unknown';
+        const statusText = response ? response.statusText : 'No response';
+        throw new Error(`HTTP ${status}: ${statusText}`);
+      } catch (error) {
+        lastError = error as Error;
+
+        if (attempt < this.retries) {
+          console.log(
+            `⏳ Retrying LinkedIn request in ${this.retryDelay}ms (attempt ${attempt + 1}/${this.retries + 1})`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
+        }
+      }
+    }
+
+    throw lastError ?? new Error('Unknown error occurred');
+  }
+
   private getHeaders(): Record<string, string> {
     return {
       authority: 'www.linkedin.com',
@@ -198,8 +225,7 @@ export class LinkedInScraper extends Scraper {
       'accept-language': 'en-US,en;q=0.9',
       'cache-control': 'max-age=0',
       'upgrade-insecure-requests': '1',
-      'user-agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'user-agent': this.userAgent,
     };
   }
 
@@ -304,7 +330,7 @@ export class LinkedInScraper extends Scraper {
     try {
       const response = await fetch(`${this.baseUrl}/jobs/view/${jobId}`, {
         headers: this.getHeaders(),
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(this.timeout),
       });
 
       if (!response.ok || response.url.includes('linkedin.com/signup')) {

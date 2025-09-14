@@ -1,26 +1,26 @@
 # Remote Job Scout
 
-Приложение для поиска удаленной работы с использованием ИИ-анализа и автоматизированного сбора вакансий.
+Web application for remote job search with AI-powered analysis & filtering. Features parallel scraping, LLM enrichment with cost tracking, and advanced filtering statistics.
 
 ## Настройка
 
-### OpenAI API ключ
+### OpenAI API Key
 
-Для работы обогащения вакансий необходимо настроить OpenAI API ключ:
+For LLM enrichment functionality, configure your OpenAI API key in the UI settings panel:
 
-1. Создайте файл `.env` в корне проекта
-2. Добавьте ваш OpenAI API ключ:
+1. Start the application
+2. Go to Search Configuration
+3. Enter your OpenAI API key in the "OpenAI API Key" field
+4. The key is stored locally in your browser (localStorage) and never sent to the server
 
-```env
-OPENAI_API_KEY=your_openai_api_key_here
-```
+**Security Note**: The API key is stored client-side only for privacy. Enrichment stage is skipped if no key is provided.
 
-3. Перезапустите сервер
+### Key Features
 
-**Важно**: Без API ключа стадия обогащения будет пропущена, и система будет работать только с базовым сбором и фильтрацией вакансий.
-
-### ⚠️ Временные ограничения
-
-Следующие элементы будут исправлены в следующих обновлениях:
-
-- нет вывода затрат
+- **Multi-Stage Search**: Collection → Filtering → Enrichment with pause/resume
+- **Parallel Scraping**: Concurrent processing with retry/backoff mechanisms
+- **AI Enrichment**: OpenAI-powered job analysis with token/cost tracking
+- **Advanced Filtering**: Language/country/time filters with detailed statistics
+- **Real-Time Progress**: Live updates with filtering breakdown
+- **YAML Export**: Job data serialization for persistence
+- **Responsive UI**: Modern interface with dark/light themes

@@ -57,6 +57,7 @@ export enum Site {
   ZIP_RECRUITER = 'zip_recruiter',
   GLASSDOOR = 'glassdoor',
   GOOGLE = 'google',
+  OPENAI = 'openai',
   BAYT = 'bayt',
   NAUKRI = 'naukri',
   BDJOBS = 'bdjobs',
@@ -116,7 +117,7 @@ export interface JobPost {
 }
 
 export interface ScraperInput {
-  site_type: Site[];
+  site_type?: Site[];
   search_term?: string | null;
   google_search_term?: string | null;
   location?: string | null;
@@ -132,6 +133,11 @@ export interface ScraperInput {
   request_timeout?: number;
   results_wanted?: number;
   hours_old?: number | null;
+  // OpenAI specific fields
+  openai_api_key?: string;
+  openai_model?: string;
+  openai_global_search?: boolean;
+  openai_max_results?: number;
 }
 
 export interface JobResponse {
@@ -140,26 +146,10 @@ export interface JobResponse {
 
 // Scraper base class
 export abstract class Scraper {
-  site: Site;
-  proxies?: string[] | string;
-  ca_cert?: string;
-  user_agent?: string;
-
-  constructor(site: Site, proxies?: string[] | string, ca_cert?: string, user_agent?: string) {
-    this.site = site;
-    this.proxies = proxies;
-    this.ca_cert = ca_cert;
-    this.user_agent = user_agent;
-  }
+  // Имя скрейпера для идентификации источника (вместо Site во внешней логике)
+  abstract getName(): string;
 
   abstract scrape(scraper_input: ScraperInput): JobResponse | Promise<JobResponse>;
-
-  /**
-   * Проверить доступность источника
-   */
-  checkAvailability(): Promise<boolean> {
-    return Promise.resolve(true);
-  }
 }
 
 // Domain mapping for countries - exactly like JobSpy

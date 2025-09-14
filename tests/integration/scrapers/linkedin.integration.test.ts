@@ -6,9 +6,9 @@
  */
 
 import { expect, test } from 'vitest';
-import type { ScraperInput } from '../../types/scrapers.ts';
-import { Country, DescriptionFormat, JobType, Site } from '../../types/scrapers.ts';
-import { LinkedInScraper } from './linkedin.ts';
+import type { ScraperInput } from '../../../src/types/scrapers.ts';
+import { Country, DescriptionFormat, JobType, Site } from '../../../src/types/scrapers.ts';
+import { LinkedInScraper } from '../../../src/services/scrapers/linkedin.ts';
 
 /**
  * Test real LinkedIn scraping with basic search

@@ -5,6 +5,7 @@ import { Badge } from './ui/badge.tsx';
 import { Separator } from './ui/separator.tsx';
 import { SearchConfigPanel } from './SearchConfigPanel.tsx';
 import { ProgressDashboard } from './ProgressDashboard.tsx';
+import { FilteringStatsDashboard } from './FilteringStatsDashboard.tsx';
 import { JobListView } from './JobListView.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { useJobs } from '../hooks/useJobs.ts';
@@ -352,6 +353,14 @@ export function MainDashboard() {
                 onPauseResume={handlePauseResume}
                 onStop={handleStopSearch}
               />
+
+              {/* Filtering Statistics - show when filtering stage is completed or in progress */}
+              {(normalizedProgress.currentStage >= 2 || normalizedProgress.filteringStats) && (
+                <FilteringStatsDashboard
+                  filteringStats={normalizedProgress.filteringStats}
+                  isVisible={normalizedProgress.processedJobs > 0}
+                />
+              )}
             </div>
             <div className="space-y-6">
               {/* Live Updates */}

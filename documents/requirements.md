@@ -10,36 +10,38 @@ Web app for remote job search with AI-powered analysis & filtering. Built with N
 
 - Local storage persistence for user settings
 - Position lists, blacklists, source selection
-- Language, work time, country filters
+- Language/country/time filters with advanced options
 - Single-request transmission on search start
 
 ### FR-2: Multi-Stage Search
 
 - 3-stage process: Collection → Filtering → Enrichment
-- Real-time progress visualization
+- Real-time progress visualization with pause/resume
 - Stop/pause functionality with result preservation
-- Final statistics display
+- Final statistics display with filtering breakdown
 
 ### FR-3: Job Collection (Stage 1)
 
 - Sources: Indeed (GraphQL), LinkedIn, OpenAI WebSearch
-- Parallel processing by positions
+- Parallel processing with concurrency control
 - Real-time progress tracking
-- Error handling with retry logic
-- YAML data serialization
+- Error handling with exponential backoff retry
+- YAML data serialization to filesystem
 
 ### FR-4: Preliminary Filtering (Stage 2)
 
 - Automatic filtering after collection
 - User settings validation with blacklist/whitelist
-- Status updates & statistics
+- Status updates & detailed filtering statistics
+- Visual breakdown of skip reasons
 
 ### FR-5: LLM Enrichment (Stage 3)
 
 - OpenAI integration for data enhancement
 - Company research via web search
+- Token usage & cost tracking per vacancy
 - Information source tracking
-- Missing data handling
+- Missing data handling with graceful degradation
 
 ### FR-6: Job Management
 
@@ -116,12 +118,13 @@ Web app for remote job search with AI-powered analysis & filtering. Built with N
 
 - Node.js runtime with Express.js server
 - React/TypeScript frontend with Vite
-- 3-stage search: Collection → Filtering → Enrichment
-- 3 scraper implementations: Indeed, LinkedIn, OpenAI WebSearch
-- Job management UI with Shadcn/ui components
+- 3-stage search: Collection → Filtering → Enrichment with pause/resume
+- 3 scraper implementations: Indeed, LinkedIn, OpenAI WebSearch with retry/backoff
+- Job management UI with Shadcn/ui components & filtering stats
 - Docker multi-stage build environment
-- API integration with error handling
+- API integration with token/cost tracking
 - TypeScript strict mode configuration
 - Comprehensive testing with Vitest
 - Code quality tools (ESLint, Prettier)
 - CLI runner for development workflow
+- YAML serialization & session persistence

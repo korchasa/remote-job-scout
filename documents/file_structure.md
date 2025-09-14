@@ -30,6 +30,8 @@ remote-job-scout/
 │   ├── client/          # React frontend
 │   │   ├── src/
 │   │   │   ├── components/ # UI components
+│   │   │   │   ├── FilteringStatsDashboard.test.tsx
+│   │   │   │   ├── FilteringStatsDashboard.tsx
 │   │   │   │   ├── JobCard.tsx
 │   │   │   │   ├── JobDetailsModal.tsx
 │   │   │   │   ├── JobListView.tsx
@@ -116,18 +118,20 @@ remote-job-scout/
 
 ### Key Components
 
-- **Frontend**: 8 core components + 47 Shadcn/ui components + 6 examples
+- **Frontend**: 9 core components + 47 Shadcn/ui components + 6 examples
 - **Backend**: Modular Express.js server with middleware, routes, controllers
-- **Services**: 6 business logic services + 3 scrapers
-- **Tests**: 11 test files with Vitest coverage
+- **Services**: 6 business logic services + 3 scrapers with parallel processing
+- **Tests**: 13 test files with Vitest coverage
 - **CLI**: Unified `run` script for development tasks
+- **Storage**: YAML serialization & session persistence
 
 ### Technologies
 
 - **Runtime**: Node.js 18+ with TypeScript strict mode
 - **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind CSS 4.1+
-- **Backend**: Express.js, REST API, HTTP polling, JSDOM parsing
+- **Backend**: Express.js, REST API, HTTP polling, JSDOM parsing, YAML serialization
 - **Build**: Docker multi-stage build with prod optimization
 - **Development**: Hot reload, TypeScript compilation, ESLint/Prettier
 - **Testing**: Vitest framework with comprehensive coverage
 - **CLI**: Unified development workflow
+- **Processing**: Parallel scraping with retry/backoff, token/cost tracking

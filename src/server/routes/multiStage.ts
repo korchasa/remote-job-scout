@@ -56,4 +56,38 @@ router.post('/stop/:sessionId', (req: Request, res: Response) => {
   res.json(result);
 });
 
+// POST /api/multi-stage/pause/:sessionId - Pause multi-stage search
+router.post('/pause/:sessionId', (req: Request, res: Response) => {
+  const sessionId = req.params.sessionId;
+  const result = collectionController.pauseMultiStageSearch(sessionId);
+  res.json(result);
+});
+
+// POST /api/multi-stage/resume/:sessionId - Resume multi-stage search
+router.post('/resume/:sessionId', (req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const sessionId = req.params.sessionId;
+      const searchRequest: SearchRequest = req.body;
+
+      console.log('▶️ Resume multi-stage search request:', {
+        sessionId: searchRequest.session_id,
+        positions: searchRequest.settings.searchPositions,
+        sources: searchRequest.settings.sources.jobSites,
+      });
+
+      const response = await collectionController.resumeMultiStageSearch(sessionId, searchRequest);
+
+      res.json(response);
+      logPerformance(req.method, req.path, performance.now() - performance.now(), 200);
+    } catch (error) {
+      console.error('❌ Multi-stage resume API error:', error);
+      res.status(400).json({
+        success: false,
+        message: 'Invalid resume request',
+      });
+    }
+  })();
+});
+
 export default router;

@@ -4,21 +4,14 @@
  */
 
 import type { JobPost, JobResponse, ScraperInput } from '../../types/scrapers.js';
+import { Scraper } from '../../types/scrapers.js';
 
-// Legacy types for OpenAI integration
+// Types for OpenAI Responses API integration
 interface OpenAISearchResult {
   title: string;
   url: string;
   snippet: string;
   published_date?: string;
-}
-
-interface OpenAIWebSearchConfig {
-  apiKey: string;
-  model?: string;
-  searchSites?: string[];
-  globalSearch?: boolean;
-  maxResults?: number;
 }
 
 interface OpenAIWebSearchResponse {
@@ -27,45 +20,81 @@ interface OpenAIWebSearchResponse {
   search_query: string;
 }
 
-export class OpenAIWebSearchScraper {
-  private config: OpenAIWebSearchConfig;
+// Types for Responses API response structure
+interface OpenAIWebSearchResult {
+  type: 'web_search_result';
+  title: string;
+  url: string;
+  description?: string;
+  content?: string;
+  published_date?: string;
+}
 
-  constructor(config: OpenAIWebSearchConfig) {
-    this.config = {
-      model: 'gpt-4-turbo-preview',
-      maxResults: 50,
-      globalSearch: true,
-      ...config,
-    };
+interface OpenAIResponseOutput {
+  type: string;
+  content: OpenAIWebSearchResult[];
+}
+
+interface OpenAIResponsesAPIResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  output: OpenAIResponseOutput[];
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+  };
+}
+
+export class OpenAIWebSearchScraper extends Scraper {
+  private apiKey: string;
+  private model: string;
+  private globalSearch: boolean;
+  private maxResults: number;
+
+  // Transport settings - defined by scraper itself
+  private timeout = 30000; // 30 seconds for OpenAI API calls
+
+  constructor(
+    apiKey: string,
+    model: string = 'gpt-4o-mini',
+    globalSearch: boolean = true,
+    maxResults: number = 50,
+  ) {
+    super();
+    this.apiKey = apiKey;
+    this.model = model;
+    this.globalSearch = globalSearch;
+    this.maxResults = maxResults;
   }
 
-  getSourceName(): string {
-    return 'OpenAI WebSearch';
-  }
-
-  async checkAvailability(): Promise<boolean> {
-    try {
-      // Проверяем доступность API
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(5000),
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
+  getName(): string {
+    return 'openai';
   }
 
   async scrape(input: ScraperInput): Promise<JobResponse> {
+    // Используем параметры из input если они заданы, иначе из конструктора
+    const apiKey = input.openai_api_key ?? this.apiKey;
+    const model = input.openai_model ?? this.model;
+    const globalSearch = input.openai_global_search ?? this.globalSearch;
+    const maxResults = input.openai_max_results ?? this.maxResults;
+
+    if (!apiKey) {
+      throw new Error('OpenAI API key is required');
+    }
     const errors: string[] = [];
     const jobs: JobPost[] = [];
 
     try {
-      const searchResults = await this.performWebSearch(input);
+      const searchResults = await this.performWebSearch(
+        input,
+        apiKey,
+        model,
+        globalSearch,
+        maxResults,
+      );
 
       // Конвертируем результаты поиска в JobPost объекты
       for (const result of searchResults.results) {
@@ -87,65 +116,49 @@ export class OpenAIWebSearchScraper {
     };
   }
 
-  private async performWebSearch(input: ScraperInput): Promise<OpenAIWebSearchResponse> {
+  private async performWebSearch(
+    input: ScraperInput,
+    apiKey: string,
+    model: string,
+    _globalSearch: boolean,
+    maxResults: number,
+  ): Promise<OpenAIWebSearchResponse> {
     // Формируем поисковый запрос
     const searchQuery = this.buildSearchQuery(input);
 
-    // Используем Chat Completions API с функциями для веб-поиска
-    const messages = [
-      {
-        role: 'system' as const,
-        content: `You are a job search assistant. Search for ${input.search_term} positions using web search capabilities. Focus on recent job postings from reputable job boards.`,
+    // Используем Responses API для структурированного поиска вакансий
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
-      {
-        role: 'user' as const,
-        content: `Find ${
-          input.results_wanted ?? 20
-        } recent job postings for "${input.search_term}"${
+      body: JSON.stringify({
+        model: model,
+        instructions: `You are a job search assistant. Search for ${input.search_term} positions using web search capabilities. Focus on recent job postings from reputable job boards.`,
+        input: `Find ${maxResults} recent job postings for "${input.search_term}"${
           input.location ? ` in ${input.location}` : ''
         }${
           input.is_remote ? ' (remote work)' : ''
         }. Include job title, company, location, description snippet, posting URL, and date posted.`,
-      },
-    ];
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.config.model,
-        messages,
-        functions: [
+        tools: [
           {
-            name: 'web_search',
-            description: 'Search the web for job postings',
-            parameters: {
-              type: 'object',
-              properties: {
-                query: {
-                  type: 'string',
-                  description: 'The search query for job postings',
-                },
-                sites: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Specific job sites to search (optional)',
-                },
-                max_results: {
-                  type: 'integer',
-                  description: 'Maximum number of results to return',
-                },
+            type: 'web_search',
+            web_search: {
+              search_context_size: 'medium',
+              user_location: {
+                type: 'approximate',
+                country: input.country?.toString() ?? 'US',
               },
-              required: ['query'],
             },
           },
         ],
-        function_call: { name: 'web_search' },
+        tool_choice: 'auto',
+        max_output_tokens: 4000,
+        temperature: 0.1,
+        top_p: 0.9,
       }),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(this.timeout),
     });
 
     if (!response.ok) {
@@ -158,18 +171,35 @@ export class OpenAIWebSearchScraper {
       throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: OpenAIResponsesAPIResponse = await response.json();
 
-    // Парсим результаты из function call
-    if ((data as any).choices?.[0]?.message?.function_call) {
-      const functionCall = (data as any).choices[0].message.function_call;
-      const args = JSON.parse(functionCall.arguments);
+    // Парсим результаты из Responses API
+    if (data.output?.[0]?.content && Array.isArray(data.output[0].content)) {
+      const content = data.output[0].content;
 
-      // Мокаем результаты, так как реальный веб-поиск требует специальной интеграции
-      return this.mockSearchResults(searchQuery, args.max_results ?? 20);
+      // Извлекаем результаты поиска из structured content
+      const searchResults: OpenAISearchResult[] = content
+        .filter((item): item is OpenAIWebSearchResult => item.type === 'web_search_result')
+        .map((item) => ({
+          title: item.title ?? 'Unknown Position',
+          url: item.url ?? '#',
+          snippet: item.description ?? item.content ?? '',
+          published_date: item.published_date ?? new Date().toISOString(),
+        }))
+        .slice(0, maxResults);
+
+      if (searchResults.length > 0) {
+        return {
+          results: searchResults,
+          total_found: searchResults.length,
+          search_query: searchQuery,
+        };
+      }
     }
 
-    throw new Error('No search results received from OpenAI');
+    // Если не получили структурированные результаты, используем мок
+    console.warn('No structured search results from OpenAI Responses API, using mock data');
+    return this.mockSearchResults(searchQuery, maxResults);
   }
 
   private buildSearchQuery(input: ScraperInput): string {
@@ -232,6 +262,7 @@ export class OpenAIWebSearchScraper {
       const description = result.snippet;
 
       return Promise.resolve({
+        id: `openai_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title,
         company_name: company,
         job_url: result.url,

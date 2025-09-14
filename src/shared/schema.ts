@@ -54,6 +54,15 @@ export interface SearchSession {
   config?: Record<string, unknown>;
 }
 
+// Available job sources
+export const AVAILABLE_SOURCES = [
+  { id: 'indeed', name: 'Indeed', description: 'Most comprehensive job board' },
+  { id: 'linkedin', name: 'LinkedIn', description: 'Professional networking platform' },
+  { id: 'openai', name: 'OpenAI WebSearch', description: 'AI-powered web search' },
+] as const;
+
+export type JobSource = (typeof AVAILABLE_SOURCES)[number]['id'];
+
 // Search configuration
 export interface SearchConfig {
   positions: string[];
@@ -64,6 +73,9 @@ export interface SearchConfig {
     locations: string[];
     employmentTypes: string[];
     remoteTypes: string[];
+    languages: LanguageRequirement[];
+    countries: CountryFilter[];
+    workTime: WorkTimeWindow;
   };
 }
 
@@ -78,6 +90,13 @@ export interface ProgressData {
   totalCost: number;
   estimatedTimeRemaining: number;
   processingSpeed: number;
+  filteringStats?: FilteringStats;
+}
+
+export interface FilteringStats {
+  totalFiltered: number;
+  totalSkipped: number;
+  skipReasons: { [reason: string]: number };
 }
 
 // Job status types
@@ -154,6 +173,14 @@ export interface LanguageRequirement {
 export interface CountryFilter {
   country: string;
   regions?: string[];
+  type: 'whitelist' | 'blacklist';
+}
+
+export interface WorkTimeWindow {
+  timezone: string;
+  startHour: number; // 0-23
+  endHour: number; // 0-23
+  daysOfWeek: number[]; // 0-6, Sunday = 0
 }
 
 // Database vacancy interface (from our existing database.ts)

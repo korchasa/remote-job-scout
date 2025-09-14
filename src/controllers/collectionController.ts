@@ -12,6 +12,10 @@ import type {
 import type { CollectionProgress } from '../services/jobCollectionService.js';
 import { JobCollectionService } from '../services/jobCollectionService.js';
 import { MultiStageSearchOrchestrator } from '../services/multiStageSearchOrchestrator.js';
+import type { Scraper } from '../types/scrapers.js';
+import { IndeedScraper } from '../services/scrapers/indeed.js';
+import { LinkedInScraper } from '../services/scrapers/linkedin.js';
+import { OpenAIWebSearchScraper } from '../services/scrapers/openai-web-search.js';
 // Using HTTP polling for progress updates
 
 export class CollectionController {
@@ -30,18 +34,23 @@ export class CollectionController {
     try {
       console.log('🚀 Starting job collection process');
 
-      // Настраиваем OpenAI WebSearch если указан API ключ
+      // Формируем массив скрейперов на основе настроек
+      const scrapers: Scraper[] = [new IndeedScraper(), new LinkedInScraper()];
+
+      // Если указан ключ OpenAI — добавляем скрейпер OpenAI
       if (request.settings.sources.openaiWebSearch?.apiKey) {
-        this.collectionService.setOpenAIWebSearch(
-          request.settings.sources.openaiWebSearch.apiKey,
-          request.settings.sources.openaiWebSearch.globalSearch,
-        );
+        const {
+          apiKey,
+          globalSearch = true,
+          maxResults = 50,
+        } = request.settings.sources.openaiWebSearch;
+        scrapers.push(new OpenAIWebSearchScraper(apiKey, 'gpt-4o-mini', globalSearch, maxResults));
       }
 
       // Запускаем сбор в фоне (асинхронно, без блокировки)
       void (async () => {
         try {
-          const result = await this.collectionService.collectJobs(request);
+          const result = await this.collectionService.collectJobs(scrapers, request);
           console.log(
             `✅ Collection completed for session ${request.session_id}: ${result.totalCollected} jobs`,
           );
@@ -78,18 +87,10 @@ export class CollectionController {
    */
   stopCollection(sessionId: string): { success: boolean; message: string } {
     const stopped = this.collectionService.stopCollection(sessionId);
-
-    if (stopped) {
-      return {
-        success: true,
-        message: `Collection stopped for session ${sessionId}`,
-      };
-    } else {
-      return {
-        success: false,
-        message: `No active collection found for session ${sessionId}`,
-      };
-    }
+    return {
+      success: stopped,
+      message: stopped ? 'Collection stopped' : 'No active collection for this session',
+    };
   }
 
   /**
@@ -185,6 +186,58 @@ export class CollectionController {
       return {
         success: false,
         message: `No active multi-stage search found for session ${sessionId}`,
+      };
+    }
+  }
+
+  /**
+   * Приостановить многоэтапный поиск
+   */
+  pauseMultiStageSearch(sessionId: string): { success: boolean; message: string } {
+    const paused = this.multiStageOrchestrator.pauseProcess(sessionId);
+
+    if (paused) {
+      return {
+        success: true,
+        message: `Multi-stage search paused for session ${sessionId}`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `Cannot pause multi-stage search for session ${sessionId}`,
+      };
+    }
+  }
+
+  /**
+   * Возобновить многоэтапный поиск
+   */
+  async resumeMultiStageSearch(
+    sessionId: string,
+    request: SearchRequest,
+  ): Promise<{ success: boolean; message: string; sessionId: string }> {
+    try {
+      const result = await this.multiStageOrchestrator.resumeProcess(sessionId, request);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: `Multi-stage search resumed for session ${sessionId}`,
+          sessionId,
+        };
+      } else {
+        return {
+          success: false,
+          message: `Failed to resume multi-stage search: ${result.errors.join(', ')}`,
+          sessionId,
+        };
+      }
+    } catch (error) {
+      console.error(`❌ Failed to resume multi-stage search for session ${sessionId}:`, error);
+      return {
+        success: false,
+        message: `Failed to resume multi-stage search: ${(error as Error).message}`,
+        sessionId,
       };
     }
   }
