@@ -54,28 +54,29 @@ export interface SearchSession {
   config?: Record<string, unknown>;
 }
 
-// Available job sources
-export const AVAILABLE_SOURCES = [
-  { id: 'indeed', name: 'Indeed', description: 'Most comprehensive job board' },
-  { id: 'linkedin', name: 'LinkedIn', description: 'Professional networking platform' },
-  { id: 'openai', name: 'OpenAI WebSearch', description: 'AI-powered web search' },
-] as const;
-
-export type JobSource = (typeof AVAILABLE_SOURCES)[number]['id'];
+// Job source type definition (moved from AVAILABLE_SOURCES for client-side safety)
+export type JobSource = 'indeed' | 'linkedin' | 'openai';
 
 // Search configuration
 export interface SearchConfig {
   positions: string[];
   blacklistedWords: string[];
   blacklistedCompanies: string[];
-  selectedSources: string[];
+  selectedSources: string[]; // For backward compatibility
+  sources: {
+    [sourceName: string]: {
+      enabled: boolean;
+    };
+  };
+  llm: {
+    apiKey: string;
+  };
   filters: {
     locations: string[];
     employmentTypes: string[];
     remoteTypes: string[];
     languages: LanguageRequirement[];
-    countries: CountryFilter[];
-    workTime: WorkTimeWindow;
+    countries: string[]; // Whitelist of allowed countries
   };
 }
 
@@ -91,6 +92,11 @@ export interface ProgressData {
   estimatedTimeRemaining: number;
   processingSpeed: number;
   filteringStats?: FilteringStats;
+  enrichmentStats?: {
+    tokensUsed: number;
+    costUsd: number;
+    sourcesCount: number;
+  };
 }
 
 export interface FilteringStats {
@@ -160,27 +166,13 @@ export interface UserSettings {
     employmentTypes: string[];
     remoteTypes: string[];
     languages: LanguageRequirement[];
-    countries: CountryFilter[];
-    workTime: string[];
+    countries: string[]; // Whitelist of allowed countries
   };
 }
 
 export interface LanguageRequirement {
   language: string;
   level: 'basic' | 'intermediate' | 'advanced' | 'native';
-}
-
-export interface CountryFilter {
-  country: string;
-  regions?: string[];
-  type: 'whitelist' | 'blacklist';
-}
-
-export interface WorkTimeWindow {
-  timezone: string;
-  startHour: number; // 0-23
-  endHour: number; // 0-23
-  daysOfWeek: number[]; // 0-6, Sunday = 0
 }
 
 // Database vacancy interface (from our existing database.ts)

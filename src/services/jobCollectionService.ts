@@ -171,11 +171,13 @@ export class JobCollectionService {
     scrapers: Scraper[],
     settings: SearchRequest['settings'],
   ): string[] {
-    const requestedSources = settings.sources.jobSites;
+    const requestedSources = Object.keys(settings.sources).filter(
+      (sourceName) => settings.sources[sourceName].enabled,
+    );
     const available = new Set(scrapers.map((s) => s.getName().toLowerCase()));
 
     // Фильтруем только поддерживаемые источники
-    return requestedSources.map((s) => s.toLowerCase()).filter((source) => available.has(source));
+    return requestedSources.filter((source) => available.has(source.toLowerCase()));
   }
 
   /**
@@ -233,10 +235,10 @@ export class JobCollectionService {
         Array.isArray(settings.filters.countries) &&
         settings.filters.countries.length > 0
       ) {
-        country = countryFromString(settings.filters.countries[0].name);
+        country = countryFromString(settings.filters.countries[0]);
       }
     } catch (error) {
-      console.warn(`⚠️ Failed to parse country "${settings.filters.countries[0].name}":`, error);
+      console.warn(`⚠️ Failed to parse country "${settings.filters.countries[0]}":`, error);
       // Continue without country filter
     }
 
@@ -266,7 +268,7 @@ export class JobCollectionService {
         settings.filters?.countries &&
         Array.isArray(settings.filters.countries) &&
         settings.filters.countries.length > 0
-          ? settings.filters.countries[0].name
+          ? settings.filters.countries[0]
           : undefined,
       country: country,
       is_remote: true, // Фокусируемся на remote вакансиях

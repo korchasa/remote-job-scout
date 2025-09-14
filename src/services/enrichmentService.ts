@@ -13,7 +13,15 @@ export interface EnrichmentResult {
   failedCount: number;
   tokensUsed: number;
   costUsd: number;
+  sources: EnrichmentSource[];
   errors: string[];
+}
+
+export interface EnrichmentSource {
+  url: string;
+  title?: string;
+  type: 'company_website' | 'job_board' | 'social_media' | 'news_article' | 'other';
+  description?: string;
 }
 
 export interface EnrichmentData {
@@ -75,6 +83,7 @@ export class EnrichmentService {
       failedCount: 0,
       tokensUsed: 0,
       costUsd: 0,
+      sources: [],
       errors: [],
     };
 
@@ -93,16 +102,32 @@ export class EnrichmentService {
 
       for (const vacancy of vacancies) {
         try {
-          const enrichmentData = await this.enrichSingleVacancy(vacancy, settings);
+          const enrichmentResult = await this.enrichSingleVacancy(vacancy, settings);
 
-          if (enrichmentData) {
+          if (enrichmentResult.enrichmentData) {
+            // Accumulate tokens and cost
+            if (enrichmentResult.tokensUsed) {
+              result.tokensUsed += enrichmentResult.tokensUsed;
+            }
+            if (enrichmentResult.costUsd) {
+              result.costUsd += enrichmentResult.costUsd;
+            }
+
+            // Collect sources
+            if (enrichmentResult.sources) {
+              result.sources.push(...enrichmentResult.sources);
+            }
+
             const enrichedVacancy: Vacancy = {
               ...vacancy,
               status: 'enriched',
               enriched_at: new Date().toISOString(),
               data: JSON.stringify({
                 ...this.parseVacancyData(vacancy),
-                enrichment: enrichmentData,
+                enrichment: enrichmentResult.enrichmentData,
+                enrichment_sources: enrichmentResult.sources,
+                enrichment_tokens: enrichmentResult.tokensUsed,
+                enrichment_cost: enrichmentResult.costUsd,
               }),
             };
 
@@ -143,7 +168,12 @@ export class EnrichmentService {
   private async enrichSingleVacancy(
     vacancy: Vacancy,
     settings: SearchRequest['settings'],
-  ): Promise<EnrichmentData | null> {
+  ): Promise<{
+    enrichmentData: EnrichmentData | null;
+    tokensUsed?: number;
+    costUsd?: number;
+    sources: EnrichmentSource[];
+  }> {
     const prompt = this.buildEnrichmentPrompt(vacancy, settings);
 
     try {
@@ -155,13 +185,21 @@ export class EnrichmentService {
 
       const enrichmentData = this.parseEnrichmentResponse(response.content ?? '');
 
-      // Обновляем статистику токенов и стоимости (примерные значения)
-      // В реальном приложении нужно парсить реальные данные из ответа API
+      // Generate enrichment sources based on the vacancy and enrichment data
+      const sources = this.generateEnrichmentSources(vacancy, enrichmentData);
 
-      return enrichmentData;
+      return {
+        enrichmentData,
+        tokensUsed: response.tokensUsed,
+        costUsd: response.costUsd,
+        sources,
+      };
     } catch (error) {
       console.error(`❌ OpenAI enrichment failed for vacancy ${vacancy.id}:`, error);
-      return null;
+      return {
+        enrichmentData: null,
+        sources: [],
+      };
     }
   }
 
@@ -219,9 +257,13 @@ Focus on accuracy and only include information that can be reasonably inferred f
   /**
    * Вызывает OpenAI API
    */
-  protected async callOpenAI(
-    prompt: string,
-  ): Promise<{ success: boolean; content?: string; error?: string }> {
+  protected async callOpenAI(prompt: string): Promise<{
+    success: boolean;
+    content?: string;
+    error?: string;
+    tokensUsed?: number;
+    costUsd?: number;
+  }> {
     try {
       console.log(
         `🌐 EnrichmentService: Making OpenAI API call to ${this.baseUrl}/chat/completions`,
@@ -265,7 +307,23 @@ Focus on accuracy and only include information that can be reasonably inferred f
         throw new Error('No content in OpenAI response');
       }
 
-      return { success: true, content };
+      // Extract token usage and calculate cost
+      const usage = (data as any).usage;
+      const tokensUsed = usage?.total_tokens ?? 0;
+
+      // Calculate cost based on GPT-3.5-turbo pricing (as of 2024)
+      // Input: $0.0015 per 1K tokens, Output: $0.002 per 1K tokens
+      const inputTokens = usage?.prompt_tokens ?? 0;
+      const outputTokens = usage?.completion_tokens ?? 0;
+      const inputCost = (inputTokens / 1000) * 0.0015;
+      const outputCost = (outputTokens / 1000) * 0.002;
+      const costUsd = inputCost + outputCost;
+
+      console.log(
+        `📊 OpenAI API usage: ${tokensUsed} tokens (${inputTokens} input + ${outputTokens} output), cost: $${costUsd.toFixed(6)}`,
+      );
+
+      return { success: true, content, tokensUsed, costUsd };
     } catch (error) {
       return { success: false, error: (error as Error).message };
     }
@@ -287,6 +345,46 @@ Focus on accuracy and only include information that can be reasonably inferred f
       console.error('Raw content:', content);
       return null;
     }
+  }
+
+  /**
+   * Генерирует источники обогащения на основе данных вакансии
+   */
+  private generateEnrichmentSources(
+    vacancy: Vacancy,
+    enrichmentData: EnrichmentData | null,
+  ): EnrichmentSource[] {
+    const sources: EnrichmentSource[] = [];
+
+    // Add the original job posting URL as a source
+    if (vacancy.url) {
+      sources.push({
+        url: vacancy.url,
+        title: `Job Posting: ${vacancy.title}`,
+        type: 'job_board',
+        description: `Original job posting from ${vacancy.source}`,
+      });
+    }
+
+    // Add company website if available in enrichment data
+    if (enrichmentData?.company_info?.website) {
+      sources.push({
+        url: enrichmentData.company_info.website,
+        title: `${enrichmentData.company_info.name || 'Company'} Website`,
+        type: 'company_website',
+        description: 'Company website extracted from job posting analysis',
+      });
+    }
+
+    // Add source platform
+    sources.push({
+      url: `https://www.${vacancy.source.toLowerCase()}.com`,
+      title: vacancy.source,
+      type: 'job_board',
+      description: `Job board platform where the vacancy was found`,
+    });
+
+    return sources;
   }
 
   /**

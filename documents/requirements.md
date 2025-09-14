@@ -2,67 +2,67 @@
 
 ## System Overview
 
-Web app for remote job search with AI-powered analysis & filtering. Built with Node.js runtime, Express.js backend & modular architecture.
+Web app for remote job search with AI analysis. Node.js runtime, Express.js backend, modular architecture.
 
 ## Functional Requirements
 
-### FR-1: Search Settings
+### FR-1: Settings
 
-- Local storage persistence for user settings
-- Position lists, blacklists, source selection
-- Language/country/time filters with advanced options
-- Single-request transmission on search start
+- localStorage persistence
+- Position lists, blacklists, sources
+- Language/country filters
+- Single-request transmission
 
 ### FR-2: Multi-Stage Search
 
-- 3-stage process: Collection → Filtering → Enrichment
-- Real-time progress visualization with pause/resume
-- Stop/pause functionality with result preservation
-- Final statistics display with filtering breakdown
+- 3-stage: Collection → Filtering → Enrichment
+- Real-time progress, pause/resume
+- Stop/pause with result preservation
+- Statistics with filtering breakdown
 
-### FR-3: Job Collection (Stage 1)
+### FR-3: Collection (Stage 1)
 
-- Sources: Indeed (GraphQL), LinkedIn, OpenAI WebSearch
-- Parallel processing with concurrency control
+- Sources: Indeed GraphQL, LinkedIn, OpenAI WebSearch
+- Parallel processing, concurrency control
 - Real-time progress tracking
-- Error handling with exponential backoff retry
-- YAML data serialization to filesystem
+- Error handling, exponential backoff retry
+- YAML serialization
 
-### FR-4: Preliminary Filtering (Stage 2)
+### FR-4: Filtering (Stage 2)
 
-- Automatic filtering after collection
-- User settings validation with blacklist/whitelist
-- Status updates & detailed filtering statistics
-- Visual breakdown of skip reasons
+- Auto-filtering post-collection
+- User settings validation, blacklist/whitelist
+- Status updates, detailed statistics
+- Skip reasons breakdown
 
 ### FR-5: LLM Enrichment (Stage 3)
 
-- OpenAI integration for data enhancement
+- OpenAI integration
 - Company research via web search
-- Token usage & cost tracking per vacancy
-- Information source tracking
-- Missing data handling with graceful degradation
+- Token/cost tracking per vacancy
+- Source tracking
+- Graceful missing data handling
 
 ### FR-6: Job Management
 
-- Modern UI with cards, modals, navigation
-- External job link access
+- UI: cards, modals, navigation
+- External job links
 - Blacklist management
-- Responsive design with theme support
-- Optimized client-server communication
+- Responsive design, themes
+- Optimized client-server comm
 
-### FR-7: Favorites & Job Actions
+### FR-7: Favorites
 
-- Separate Favorites screen to view saved jobs
-- Replace "Snooze job" button with "Add to Favorites"
-- Persist "Hide job" & "Block employer" actions in local user settings
+- Separate Favorites screen
+- Replace "Snooze" with "Add to Favorites"
+- Persist "Hide" & "Block" in localStorage
 
 ## Non-Functional Requirements
 
 ### Performance
 
-- Interface response < 1s
-- Process 100 jobs < 10min
+- UI response < 1s
+- 100 jobs < 10min processing
 - Parallel request processing
 
 ### Reliability
@@ -73,15 +73,15 @@ Web app for remote job search with AI-powered analysis & filtering. Built with N
 
 ### Security
 
-- Input validation at all levels
+- Input validation all levels
 - SQL injection protection
-- OpenAI API key stored client-side only
+- OpenAI API key client-side only
 
 ### Usability
 
-- Intuitive web interface
+- Intuitive interface
 - Responsive design
-- Dark/light theme support
+- Dark/light themes
 - Keyboard navigation
 
 ## Technical Specifications
@@ -89,42 +89,42 @@ Web app for remote job search with AI-powered analysis & filtering. Built with N
 ### APIs & Integrations
 
 - OpenAI API for LLM processing
-- OpenAI WebSearch API for global search
-- Job site scraping (Indeed GraphQL, LinkedIn)
+- OpenAI WebSearch for global search
+- Job scraping: Indeed GraphQL, LinkedIn
 - JobSpy reference architecture
 
 ### Data Formats
 
 - REST API communication
 - JSON data exchange
-- YAML serialization for jobs
-- HTTP polling for progress updates
-- Express.js middleware architecture
+- YAML job serialization
+- HTTP polling for progress
+- Express.js middleware
 
 ### Session Persistence
 
-- Client session persisted in localStorage
-- Server session persisted to filesystem
+- Client: localStorage
+- Server: filesystem
 
-### UI/UX Requirements
+### UI/UX
 
 - Modern responsive interface
-- Shadcn/ui component library
+- Shadcn/ui components
 - Accessibility compliance
 - Mobile-first design
 - Real-time progress tracking
 
 ## Current Implementation
 
-- Node.js runtime with Express.js server
-- React/TypeScript frontend with Vite
-- 3-stage search: Collection → Filtering → Enrichment with pause/resume
-- 3 scraper implementations: Indeed, LinkedIn, OpenAI WebSearch with retry/backoff
-- Job management UI with Shadcn/ui components & filtering stats
-- Docker multi-stage build environment
-- API integration with token/cost tracking
-- TypeScript strict mode configuration
-- Comprehensive testing with Vitest
-- Code quality tools (ESLint, Prettier)
-- CLI runner for development workflow
-- YAML serialization & session persistence
+- Node.js + Express.js server
+- React/TypeScript + Vite frontend
+- 3-stage search pipeline with pause/resume
+- 3 scrapers: Indeed, LinkedIn, OpenAI with retry/backoff
+- Job UI with Shadcn/ui, filtering stats
+- Docker multi-stage build
+- API integration, token/cost tracking
+- TypeScript strict mode
+- Vitest testing
+- ESLint/Prettier code quality
+- CLI runner workflow
+- YAML serialization, session persistence

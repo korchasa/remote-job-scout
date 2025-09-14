@@ -106,12 +106,21 @@ export interface MultiStageProgress {
   canStop: boolean;
   errors: string[];
   filteringStats?: FilteringStats;
+  enrichmentStats?: EnrichmentStats;
 }
 
 export interface FilteringStats {
   totalFiltered: number;
   totalSkipped: number;
   skipReasons: { [reason: string]: number };
+}
+
+export interface EnrichmentStats {
+  totalEnriched: number;
+  totalFailed: number;
+  tokensUsed: number;
+  costUsd: number;
+  sourcesCount: number;
 }
 
 export interface StageProgress {
@@ -133,22 +142,16 @@ export interface SearchRequest {
       blacklistedCompanies: string[];
       blacklistedWordsTitle: string[];
       blacklistedWordsDescription: string[];
-      countries: Array<{ name: string; type: 'blacklist' | 'whitelist' }>;
+      countries: string[]; // Whitelist of allowed countries
       languages: Array<{ language: string; level: string }>;
-      workTime?: { start: string; end: string; timezone: string };
     };
     sources: {
-      jobSites: string[];
-      openaiWebSearch?: {
-        apiKey: string;
-        searchSites: string[];
-        globalSearch: boolean;
-        maxResults?: number;
+      [sourceName: string]: {
+        enabled: boolean;
       };
     };
     llm: {
-      enrichmentInstructions: string[];
-      processingRules: Array<{ name: string; prompt: string }>;
+      apiKey: string;
     };
   };
   session_id: string;

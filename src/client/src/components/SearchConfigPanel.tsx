@@ -6,50 +6,8 @@ import { Label } from './ui/label.tsx';
 import { Checkbox } from './ui/checkbox.tsx';
 import { Badge } from './ui/badge.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.tsx';
-import { Play, Plus, Settings, X, Globe, Clock, Languages } from 'lucide-react';
-import type {
-  SearchConfig,
-  LanguageRequirement,
-  CountryFilter,
-  AVAILABLE_SOURCES,
-} from '../shared/schema.ts';
-
-const defaultConfig: SearchConfig = {
-  positions: ['Senior React Developer', 'Frontend Engineer'],
-  blacklistedWords: ['unpaid', 'internship', 'commission'],
-  blacklistedCompanies: [],
-  selectedSources: ['indeed', 'linkedin', 'openai'],
-  filters: {
-    locations: ['Remote', 'United States', 'Europe'],
-    employmentTypes: ['Full-time'],
-    remoteTypes: ['Fully Remote', 'Hybrid'],
-    languages: [{ language: 'English', level: 'advanced' }],
-    countries: [{ country: 'United States', type: 'whitelist' }],
-    workTime: {
-      timezone: 'America/New_York',
-      startHour: 9,
-      endHour: 17,
-      daysOfWeek: [1, 2, 3, 4, 5], // Monday to Friday
-    },
-  },
-};
-
-const availableSources = AVAILABLE_SOURCES;
-
-const availableLanguages = [
-  'English',
-  'Spanish',
-  'French',
-  'German',
-  'Italian',
-  'Portuguese',
-  'Russian',
-  'Chinese',
-  'Japanese',
-  'Korean',
-  'Arabic',
-  'Hindi',
-];
+import { Play, Plus, Settings, X, Globe, Languages } from 'lucide-react';
+import type { SearchConfig, LanguageRequirement } from '@shared/schema.ts';
 
 const availableCountries = [
   'United States',
@@ -69,17 +27,47 @@ const availableCountries = [
   'Colombia',
 ];
 
-const timezones = [
-  'America/New_York',
-  'America/Los_Angeles',
-  'America/Chicago',
-  'Europe/London',
-  'Europe/Paris',
-  'Europe/Berlin',
-  'Asia/Tokyo',
-  'Asia/Shanghai',
-  'Australia/Sydney',
-  'UTC',
+const defaultConfig: SearchConfig = {
+  positions: ['Senior React Developer', 'Frontend Engineer'],
+  blacklistedWords: ['unpaid', 'internship', 'commission'],
+  blacklistedCompanies: ['Tyrell Corporation'],
+  selectedSources: ['indeed', 'linkedin', 'openai'],
+  sources: {
+    indeed: { enabled: true },
+    linkedin: { enabled: true },
+    openai: { enabled: true },
+  },
+  llm: {
+    apiKey: '',
+  },
+  filters: {
+    locations: ['Remote', 'United States', 'Europe'],
+    employmentTypes: ['Full-time'],
+    remoteTypes: ['Fully Remote', 'Hybrid'],
+    languages: [{ language: 'English', level: 'advanced' }],
+    countries: availableCountries, // All countries as whitelist by default
+  },
+};
+
+const availableSources = [
+  { id: 'indeed', name: 'Indeed', description: 'Most comprehensive job board' },
+  { id: 'linkedin', name: 'LinkedIn', description: 'Professional networking platform' },
+  { id: 'openai', name: 'OpenAI WebSearch', description: 'AI-powered web search' },
+] as const;
+
+const availableLanguages = [
+  'English',
+  'Spanish',
+  'French',
+  'German',
+  'Italian',
+  'Portuguese',
+  'Russian',
+  'Chinese',
+  'Japanese',
+  'Korean',
+  'Arabic',
+  'Hindi',
 ];
 
 const languageLevels = ['basic', 'intermediate', 'advanced', 'native'] as const;
@@ -97,8 +85,7 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
   const [newLanguage, setNewLanguage] = useState('');
   const [newLanguageLevel, setNewLanguageLevel] =
     useState<(typeof languageLevels)[number]>('intermediate');
-  const [newCountry, setNewCountry] = useState('');
-  const [newCountryType, setNewCountryType] = useState<'whitelist' | 'blacklist'>('whitelist');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -124,6 +111,10 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
         positions: [...prev.positions, newPosition.trim()],
       }));
       setNewPosition('');
+      // Clear positions error when adding a position
+      if (validationErrors.positions) {
+        setValidationErrors((prev) => ({ ...prev, positions: '' }));
+      }
     }
   };
 
@@ -174,10 +165,22 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
   const toggleSource = (source: string) => {
     setConfig((prev) => ({
       ...prev,
+      sources: {
+        ...prev.sources,
+        [source]: {
+          enabled: !(prev.sources[source]?.enabled ?? false),
+        },
+      },
+      // Also update selectedSources for backward compatibility
       selectedSources: prev.selectedSources.includes(source)
         ? prev.selectedSources.filter((s) => s !== source)
         : [...prev.selectedSources, source],
     }));
+
+    // Clear sources error when enabling a source
+    if (validationErrors.sources) {
+      setValidationErrors((prev) => ({ ...prev, sources: '' }));
+    }
   };
 
   const addLanguage = () => {
@@ -198,6 +201,11 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
       }));
       setNewLanguage('');
       setNewLanguageLevel('intermediate');
+
+      // Clear languages error when adding a language
+      if (validationErrors.languages) {
+        setValidationErrors((prev) => ({ ...prev, languages: '' }));
+      }
     }
   };
 
@@ -211,66 +219,69 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
     }));
   };
 
-  const addCountry = () => {
-    if (
-      newCountry.trim() &&
-      !config.filters.countries.some((c) => c.country === newCountry.trim())
-    ) {
-      const countryFilter: CountryFilter = {
-        country: newCountry.trim(),
-        type: newCountryType,
-      };
-      setConfig((prev) => ({
-        ...prev,
-        filters: {
-          ...prev.filters,
-          countries: [...prev.filters.countries, countryFilter],
-        },
-      }));
-      setNewCountry('');
-      setNewCountryType('whitelist');
+  const toggleCountry = (country: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        countries: prev.filters.countries.includes(country)
+          ? prev.filters.countries.filter((c) => c !== country)
+          : [...prev.filters.countries, country],
+      },
+    }));
+
+    // Clear countries error when selecting a country
+    if (validationErrors.countries) {
+      setValidationErrors((prev) => ({ ...prev, countries: '' }));
     }
   };
 
-  const removeCountry = (country: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      filters: {
-        ...prev.filters,
-        countries: prev.filters.countries.filter((c) => c.country !== country),
-      },
-    }));
-  };
+  const validateConfig = (config: SearchConfig): Record<string, string> => {
+    const errors: Record<string, string> = {};
 
-  const updateWorkTime = (field: keyof typeof config.filters.workTime, value: any) => {
-    setConfig((prev) => ({
-      ...prev,
-      filters: {
-        ...prev.filters,
-        workTime: {
-          ...prev.filters.workTime,
-          [field]: value,
-        },
-      },
-    }));
-  };
+    // Check if at least one source is enabled
+    const enabledSources = Object.values(config.sources).filter((s) => s.enabled);
+    if (enabledSources.length === 0) {
+      errors.sources = 'Select at least one job source';
+    }
 
-  const toggleWorkDay = (day: number) => {
-    setConfig((prev) => ({
-      ...prev,
-      filters: {
-        ...prev.filters,
-        workTime: {
-          ...prev.filters.workTime,
-          daysOfWeek: prev.filters.workTime.daysOfWeek.includes(day)
-            ? prev.filters.workTime.daysOfWeek.filter((d) => d !== day)
-            : [...prev.filters.workTime.daysOfWeek, day].sort(),
-        },
-      },
-    }));
+    // Check if at least one position is specified
+    if (!config.positions || config.positions.length === 0) {
+      errors.positions = 'Add at least one search position';
+    }
+
+    // Check if at least one country is selected
+    if (!config.filters.countries || config.filters.countries.length === 0) {
+      errors.countries = 'Select at least one country';
+    }
+
+    // Check if at least one language is specified
+    if (!config.filters.languages || config.filters.languages.length === 0) {
+      errors.languages = 'Add at least one language requirement';
+    }
+
+    // Check OpenAI API key if OpenAI source is enabled
+    if (config.sources.openai?.enabled && !config.llm?.apiKey?.trim()) {
+      errors.apiKey = 'OpenAI API key is required when OpenAI source is enabled';
+    }
+
+    return errors;
   };
 
   const handleStartSearch = () => {
+    const errors = validateConfig(config);
+    setValidationErrors(errors);
+
+    // Check if there are any validation errors
+    const hasErrors = Object.keys(errors).some((key) => errors[key]);
+
+    if (hasErrors) {
+      // Show validation errors but don't start search
+      console.log('Validation errors found, not starting search:', errors);
+      return;
+    }
+
+    // No errors, proceed with search
     console.log('Starting search with config:', config);
     onStartSearch(config).catch(console.error);
   };
@@ -286,7 +297,12 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
       <CardContent className="space-y-6">
         {/* Job Positions */}
         <div className="space-y-2">
-          <Label htmlFor="positions">Target Positions</Label>
+          <Label
+            htmlFor="positions"
+            className={validationErrors.positions ? 'text-destructive' : ''}
+          >
+            Target Positions
+          </Label>
           <div className="flex gap-2">
             <Input
               id="positions"
@@ -294,12 +310,16 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
               value={newPosition}
               onChange={(e) => setNewPosition(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPosition()}
+              className={validationErrors.positions ? 'border-destructive' : ''}
               data-testid="input-new-position"
             />
             <Button size="sm" onClick={addPosition} data-testid="button-add-position">
               <Plus className="h-3 w-3" />
             </Button>
           </div>
+          {validationErrors.positions && (
+            <p className="text-sm text-destructive">{validationErrors.positions}</p>
+          )}
           <div className="flex flex-wrap gap-1">
             {config.positions.map((position) => (
               <Badge key={position} variant="secondary" className="text-xs">
@@ -318,15 +338,61 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
           </div>
         </div>
 
+        {/* API Keys */}
+        <div className="space-y-2">
+          <Label>API Keys</Label>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label
+                htmlFor="openai-key"
+                className={`text-sm font-medium ${validationErrors.apiKey ? 'text-destructive' : ''}`}
+              >
+                OpenAI API Key
+              </Label>
+              <Input
+                id="openai-key"
+                type="password"
+                placeholder="sk-..."
+                value={config.llm?.apiKey ?? ''}
+                onChange={(e) => {
+                  const apiKey = e.target.value;
+                  setConfig((prev) => ({
+                    ...prev,
+                    llm: {
+                      ...prev.llm,
+                      apiKey,
+                    },
+                  }));
+
+                  // Clear API key error when typing
+                  if (validationErrors.apiKey) {
+                    setValidationErrors((prev) => ({ ...prev, apiKey: '' }));
+                  }
+                }}
+                className={validationErrors.apiKey ? 'border-destructive' : ''}
+                data-testid="input-openai-api-key"
+              />
+              {validationErrors.apiKey && (
+                <p className="text-sm text-destructive">{validationErrors.apiKey}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Required for LLM enrichment. Stored locally, sent securely to server during search.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Job Sources */}
         <div className="space-y-2">
-          <Label>Job Sources</Label>
-          <div className="grid grid-cols-2 gap-2">
+          <Label className={validationErrors.sources ? 'text-destructive' : ''}>Job Sources</Label>
+          <div
+            className={`grid grid-cols-2 gap-2 ${validationErrors.sources ? 'border border-destructive rounded-md p-3' : ''}`}
+          >
             {availableSources.map((source) => (
               <div key={source.id} className="flex items-center space-x-2">
                 <Checkbox
                   id={source.id}
-                  checked={config.selectedSources.includes(source.id)}
+                  checked={config.sources[source.id]?.enabled ?? false}
                   onCheckedChange={() => toggleSource(source.id)}
                   data-testid={`checkbox-source-${source.id}`}
                 />
@@ -336,6 +402,9 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
               </div>
             ))}
           </div>
+          {validationErrors.sources && (
+            <p className="text-sm text-destructive">{validationErrors.sources}</p>
+          )}
         </div>
 
         {/* Blacklisted Words */}
@@ -416,7 +485,9 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
 
         {/* Language Requirements */}
         <div className="space-y-2">
-          <Label className="flex items-center gap-2">
+          <Label
+            className={`flex items-center gap-2 ${validationErrors.languages ? 'text-destructive' : ''}`}
+          >
             <Languages className="h-4 w-4" />
             Language Requirements
           </Label>
@@ -452,6 +523,9 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
               <Plus className="h-3 w-3" />
             </Button>
           </div>
+          {validationErrors.languages && (
+            <p className="text-sm text-destructive">{validationErrors.languages}</p>
+          )}
           <div className="flex flex-wrap gap-1">
             {config.filters.languages.map((langReq) => (
               <Badge key={langReq.language} variant="secondary" className="text-xs">
@@ -471,129 +545,67 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
 
         {/* Country Filters */}
         <div className="space-y-2">
-          <Label className="flex items-center gap-2">
+          <Label
+            className={`flex items-center gap-2 ${validationErrors.countries ? 'text-destructive' : ''}`}
+          >
             <Globe className="h-4 w-4" />
-            Country Filters
+            Allowed Countries ({config.filters.countries.length} selected)
           </Label>
-          <div className="flex gap-2">
-            <Select value={newCountry} onValueChange={setNewCountry}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableCountries.map((country) => (
-                  <SelectItem key={country} value={country}>
-                    {country}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={newCountryType}
-              onValueChange={(value: 'whitelist' | 'blacklist') => setNewCountryType(value)}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="whitelist">Whitelist</SelectItem>
-                <SelectItem value="blacklist">Blacklist</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="sm" onClick={addCountry}>
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {config.filters.countries.map((countryFilter) => (
-              <Badge
-                key={countryFilter.country}
-                variant={countryFilter.type === 'whitelist' ? 'default' : 'destructive'}
-                className="text-xs"
-              >
-                {countryFilter.country} ({countryFilter.type})
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-3 w-3 p-0 ml-1"
-                  onClick={() => removeCountry(countryFilter.country)}
-                >
-                  <X className="h-2 w-2" />
-                </Button>
-              </Badge>
+          <div
+            className={`grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3 ${validationErrors.countries ? 'border-destructive' : ''}`}
+          >
+            {availableCountries.map((country) => (
+              <div key={country} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`country-${country}`}
+                  checked={config.filters.countries.includes(country)}
+                  onCheckedChange={() => toggleCountry(country)}
+                />
+                <Label htmlFor={`country-${country}`} className="text-sm">
+                  {country}
+                </Label>
+              </div>
             ))}
           </div>
-        </div>
+          {validationErrors.countries && (
+            <p className="text-sm text-destructive">{validationErrors.countries}</p>
+          )}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setConfig((prev) => ({
+                  ...prev,
+                  filters: {
+                    ...prev.filters,
+                    countries: availableCountries,
+                  },
+                }));
 
-        {/* Work Time Window */}
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Work Time Window
-          </Label>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="timezone" className="text-sm">
-                Timezone
-              </Label>
-              <Select
-                value={config.filters.workTime.timezone}
-                onValueChange={(value) => updateWorkTime('timezone', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {timezones.map((tz) => (
-                    <SelectItem key={tz} value={tz}>
-                      {tz}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm">Working Hours</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  max="23"
-                  placeholder="Start"
-                  value={config.filters.workTime.startHour}
-                  onChange={(e) => updateWorkTime('startHour', parseInt(e.target.value) || 9)}
-                  className="w-20"
-                />
-                <span className="text-sm text-muted-foreground">-</span>
-                <Input
-                  type="number"
-                  min="0"
-                  max="23"
-                  placeholder="End"
-                  value={config.filters.workTime.endHour}
-                  onChange={(e) => updateWorkTime('endHour', parseInt(e.target.value) || 17)}
-                  className="w-20"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm">Working Days</Label>
-            <div className="flex gap-1">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-                <Button
-                  key={day}
-                  variant={
-                    config.filters.workTime.daysOfWeek.includes(index) ? 'default' : 'outline'
-                  }
-                  size="sm"
-                  className="h-8 w-10 text-xs"
-                  onClick={() => toggleWorkDay(index)}
-                >
-                  {day}
-                </Button>
-              ))}
-            </div>
+                // Clear countries error when selecting all
+                if (validationErrors.countries) {
+                  setValidationErrors((prev) => ({ ...prev, countries: '' }));
+                }
+              }}
+            >
+              Select All
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                setConfig((prev) => ({
+                  ...prev,
+                  filters: {
+                    ...prev.filters,
+                    countries: [],
+                  },
+                }))
+              }
+            >
+              Clear All
+            </Button>
           </div>
         </div>
 
@@ -601,9 +613,7 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
         <Button
           onClick={handleStartSearch}
           className="w-full"
-          disabled={
-            isSearching || config.positions.length === 0 || config.selectedSources.length === 0
-          }
+          disabled={isSearching}
           data-testid="button-start-search"
         >
           <Play className="h-4 w-4 mr-2" />

@@ -35,16 +35,25 @@ export class CollectionController {
       console.log('🚀 Starting job collection process');
 
       // Формируем массив скрейперов на основе настроек
-      const scrapers: Scraper[] = [new IndeedScraper(), new LinkedInScraper()];
+      const scrapers: Scraper[] = [];
 
-      // Если указан ключ OpenAI — добавляем скрейпер OpenAI
-      if (request.settings.sources.openaiWebSearch?.apiKey) {
-        const {
-          apiKey,
-          globalSearch = true,
-          maxResults = 50,
-        } = request.settings.sources.openaiWebSearch;
-        scrapers.push(new OpenAIWebSearchScraper(apiKey, 'gpt-4o-mini', globalSearch, maxResults));
+      for (const [sourceName, sourceConfig] of Object.entries(request.settings.sources)) {
+        if (sourceConfig.enabled) {
+          switch (sourceName) {
+            case 'indeed':
+              scrapers.push(new IndeedScraper());
+              break;
+            case 'linkedin':
+              scrapers.push(new LinkedInScraper());
+              break;
+            case 'openai':
+              // OpenAI requires API key
+              if (request.settings.llm?.apiKey) {
+                scrapers.push(new OpenAIWebSearchScraper(request.settings.llm.apiKey));
+              }
+              break;
+          }
+        }
       }
 
       // Запускаем сбор в фоне (асинхронно, без блокировки)
@@ -120,20 +129,8 @@ export class CollectionController {
         `🔄 Progress updates will be available via polling: GET /api/multi-stage/progress/${request.session_id}`,
       );
 
-      // Set OpenAI API key from environment variables
-      const openaiApiKey = process.env.OPENAI_API_KEY;
-      if (openaiApiKey) {
-        request.settings.sources.openaiWebSearch = {
-          apiKey: openaiApiKey,
-          searchSites: ['OpenAI'],
-          globalSearch: true,
-        };
-        console.log('🔑 OpenAI API key loaded from environment variables');
-      } else {
-        console.warn(
-          '⚠️ OpenAI API key not found in environment variables. Enrichment will be skipped.',
-        );
-      }
+      // Note: OpenAI API key is now provided by the client in request.settings.llm.apiKey
+      // No need to load from environment variables
 
       // Запускаем процесс в фоне
       void (async () => {

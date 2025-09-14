@@ -153,21 +153,8 @@ export class SettingsService {
         validated.filters.countries = [];
       } else {
         validated.filters.countries = validated.filters.countries
-          .filter((item: unknown) => {
-            const country = item as Record<string, unknown>;
-            return (
-              country &&
-              typeof country === 'object' &&
-              typeof country.name === 'string' &&
-              country.name.trim().length > 0 &&
-              typeof country.type === 'string' &&
-              ['blacklist', 'whitelist'].includes(country.type as string)
-            );
-          })
-          .map((item) => {
-            const country = item as { name: string; type: 'blacklist' | 'whitelist' };
-            return { name: country.name.trim(), type: country.type };
-          });
+          .filter((item: unknown) => typeof item === 'string' && item.trim().length > 0)
+          .map((item: unknown) => (item as string).trim());
       }
 
       if (!Array.isArray(validated.filters.languages)) {

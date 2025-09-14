@@ -21,7 +21,7 @@ class MockScraper implements Scraper {
     return this.name;
   }
 
-  async scrape(): Promise<JobResponse> {
+  async scrape(_input?: any): Promise<JobResponse> {
     return {
       jobs: this.mockJobs,
     };
@@ -82,11 +82,10 @@ test('JobCollectionService - mock collection request', async () => {
           languages: [],
         },
         sources: {
-          jobSites: ['indeed'], // Only test with Indeed for simplicity
+          indeed: { enabled: true },
         },
         llm: {
-          enrichmentInstructions: [],
-          processingRules: [],
+          apiKey: '',
         },
       },
     };
@@ -127,11 +126,11 @@ test('JobCollectionService - parallel source processing', async () => {
         languages: [],
       },
       sources: {
-        jobSites: ['indeed', 'linkedin'], // Multiple sources
+        indeed: { enabled: true },
+        linkedin: { enabled: true },
       },
       llm: {
-        enrichmentInstructions: [],
-        processingRules: [],
+        apiKey: '',
       },
     },
   };
@@ -287,7 +286,11 @@ test('JobCollectionService - retry with exponential backoff', async () => {
           languages: [],
         },
         sources: {
-          jobSites: ['indeed', 'openai'],
+          indeed: { enabled: true },
+          openai: { enabled: true },
+        },
+        llm: {
+          apiKey: 'test-api-key',
         },
       },
     };
@@ -299,7 +302,7 @@ test('JobCollectionService - retry with exponential backoff', async () => {
         super('openai', []);
       }
 
-      async scrape(): Promise<JobResponse> {
+      async scrape(_input?: any): Promise<JobResponse> {
         openaiCallCount++;
         if (openaiCallCount <= 2) {
           throw new Error('OpenAI API error - simulated failure');
@@ -346,11 +349,10 @@ test('JobCollectionService - YAML serialization', async () => {
         languages: [],
       },
       sources: {
-        jobSites: ['indeed'],
+        indeed: { enabled: true },
       },
       llm: {
-        enrichmentInstructions: [],
-        processingRules: [],
+        apiKey: '',
       },
     },
   };

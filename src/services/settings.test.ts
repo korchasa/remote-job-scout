@@ -180,20 +180,17 @@ test('SettingsService - should handle country filters validation', () => {
     ...DEFAULT_USER_SETTINGS,
     filters: {
       ...DEFAULT_USER_SETTINGS.filters,
-      countries: [
-        { name: 'United States', type: 'whitelist' },
-        { name: '', type: 'blacklist' },
-        { name: 'Canada', type: 'whitelist' },
-      ],
+      countries: ['United States', 'Canada', 'Germany'],
     },
   };
 
   SettingsService.saveSettings(settingsWithCountries);
   const loaded = SettingsService.loadSettings();
 
-  expect(loaded.filters.countries.length, 2);
-  expect(loaded.filters.countries[0].name, 'United States');
-  expect(loaded.filters.countries[1].name, 'Canada');
+  expect(loaded.filters.countries.length, 3);
+  expect(loaded.filters.countries[0], 'United States');
+  expect(loaded.filters.countries[1], 'Canada');
+  expect(loaded.filters.countries[2], 'Germany');
 });
 
 test('SettingsService - should handle language requirements validation', () => {
@@ -220,29 +217,7 @@ test('SettingsService - should handle language requirements validation', () => {
   expect(loaded.filters.languages[1].language, 'Spanish');
 });
 
-test('SettingsService - should handle work time filter', () => {
-  // Clear localStorage
-  localStorage.removeItem('remoteJobScout_settings');
-
-  const settingsWithWorkTime: UserSettings = {
-    ...DEFAULT_USER_SETTINGS,
-    filters: {
-      ...DEFAULT_USER_SETTINGS.filters,
-      workTime: {
-        start: '08:00',
-        end: '17:00',
-        timezone: 'America/New_York',
-      },
-    },
-  };
-
-  SettingsService.saveSettings(settingsWithWorkTime);
-  const loaded = SettingsService.loadSettings();
-
-  expect(loaded.filters.workTime?.start, '08:00');
-  expect(loaded.filters.workTime?.end, '17:00');
-  expect(loaded.filters.workTime?.timezone, 'America/New_York');
-});
+// Work time filter removed - no longer needed
 
 // Восстановить оригинальный localStorage после всех тестов
 test('cleanup - restore original localStorage', () => {

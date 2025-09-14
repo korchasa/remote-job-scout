@@ -135,7 +135,7 @@ export class MultiStageSearchOrchestrator {
 
       // Stage 3: Enrichment (обязательная стадия)
       if (filteringResult.filteredVacancies.length > 0) {
-        if (!settings.sources.openaiWebSearch?.apiKey) {
+        if (!settings.llm?.apiKey) {
           throw new Error('OpenAI API key is required for enrichment stage');
         }
 
@@ -355,7 +355,7 @@ export class MultiStageSearchOrchestrator {
           progress.stages.enriching.status === 'paused')
       ) {
         const filteredVacancies = this.getFilteredVacancies(session_id);
-        if (filteredVacancies.length > 0 && settings.sources.openaiWebSearch?.apiKey) {
+        if (filteredVacancies.length > 0 && settings.llm?.apiKey) {
           const enrichmentResult = await this.executeEnrichmentStage(
             filteredVacancies,
             settings,
@@ -448,12 +448,25 @@ export class MultiStageSearchOrchestrator {
     console.log(`📥 Starting collection stage for session ${session_id}`);
 
     // Формируем массив скрейперов на основе настроек
-    const scrapers: Scraper[] = [new IndeedScraper(), new LinkedInScraper()];
+    const scrapers: Scraper[] = [];
 
-    // Если указан ключ OpenAI — добавляем скрейпер OpenAI
-    if (settings.sources.openaiWebSearch?.apiKey) {
-      const { apiKey, globalSearch = true, maxResults = 50 } = settings.sources.openaiWebSearch;
-      scrapers.push(new OpenAIWebSearchScraper(apiKey, 'gpt-4o-mini', globalSearch, maxResults));
+    for (const [sourceName, sourceConfig] of Object.entries(settings.sources)) {
+      if (sourceConfig.enabled) {
+        switch (sourceName) {
+          case 'indeed':
+            scrapers.push(new IndeedScraper());
+            break;
+          case 'linkedin':
+            scrapers.push(new LinkedInScraper());
+            break;
+          case 'openai':
+            // OpenAI requires API key
+            if (settings.llm?.apiKey) {
+              scrapers.push(new OpenAIWebSearchScraper(settings.llm.apiKey));
+            }
+            break;
+        }
+      }
     }
 
     try {
@@ -559,11 +572,11 @@ export class MultiStageSearchOrchestrator {
     progress.overallProgress = 70; // Переходим к 70%
 
     console.log(`🤖 Starting enrichment stage with ${vacancies.length} vacancies`);
-    console.log(`🔑 OpenAI API key available: ${!!settings.sources.openaiWebSearch?.apiKey}`);
+    console.log(`🔑 OpenAI API key available: ${!!settings.llm?.apiKey}`);
 
     // Настраиваем OpenAI
-    if (settings.sources.openaiWebSearch?.apiKey) {
-      this.enrichmentService.setOpenAIKey(settings.sources.openaiWebSearch.apiKey);
+    if (settings.llm?.apiKey) {
+      this.enrichmentService.setOpenAIKey(settings.llm.apiKey);
       console.log(`🔑 OpenAI API key set in enrichment service`);
     } else {
       console.error(`❌ No OpenAI API key provided for enrichment`);
@@ -579,6 +592,15 @@ export class MultiStageSearchOrchestrator {
       progress.stages.enriching.errors = result.errors;
       progress.stageProgress = 100;
       progress.overallProgress = 100; // 100% после обогащения
+
+      // Update enrichment stats
+      progress.enrichmentStats = {
+        totalEnriched: result.enrichedCount,
+        totalFailed: result.failedCount,
+        tokensUsed: result.tokensUsed,
+        costUsd: result.costUsd,
+        sourcesCount: result.sources.length,
+      };
 
       console.log(
         `🤖 Enrichment stage completed: ${result.enrichedCount} enriched, ${result.failedCount} failed`,

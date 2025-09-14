@@ -54,7 +54,7 @@ test('FilteringService - filters vacancies correctly', () => {
       blacklistedCompanies: [],
       blacklistedWordsTitle: ['senior'],
       blacklistedWordsDescription: ['agile', 'scrum'],
-      countries: [{ name: 'Canada', type: 'blacklist' }],
+      countries: ['United States', 'Canada', 'Germany', 'France', 'UK'], // Whitelist - only allow these countries
       languages: [{ language: 'English', level: 'Intermediate' }],
     },
     sources: {
@@ -71,16 +71,16 @@ test('FilteringService - filters vacancies correctly', () => {
   // Assertions
   expect(result.success).toBe(true); // 'Filtering should succeed');
   expect(result.totalProcessed).toBe(3); // 'Should process all vacancies');
-  expect(result.filteredCount).toBe(1); // 'Should filter out senior and Canadian jobs');
+  expect(result.filteredCount).toBe(1); // 'Should filter out senior job and jobs without English requirement');
   expect(result.skippedCount).toBe(2); // 'Should skip 2 jobs');
 
   // Check that job with "senior" in title was skipped
   expect(result.reasons.title_blacklisted_words !== undefined).toBe(true); // 'Should have title blacklist reason'
   expect(result.reasons.title_blacklisted_words).toBe(1); // 'Should skip 1 job due to title blacklist'
 
-  // Check that Canadian job was skipped
-  expect(result.reasons.country_filter !== undefined).toBe(true); // 'Should have country filter reason');
-  expect(result.reasons.country_filter).toBe(1); // 'Should skip 1 job due to country filter');
+  // Check that job without English requirement was skipped
+  expect(result.reasons.language_requirements !== undefined).toBe(true); // 'Should have language requirements reason');
+  expect(result.reasons.language_requirements).toBe(1); // 'Should skip 1 job due to language requirements');
 });
 
 test('FilteringService - handles empty vacancies', () => {

@@ -196,6 +196,22 @@ export function ProgressDashboard({ progress, onPauseResume, onStop }: ProgressD
                 {progress.processingSpeed.toFixed(1)} jobs/min
               </span>
             </div>
+            {progress.enrichmentStats && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Tokens Used</span>
+                <span className="font-mono text-sm" data-testid="text-tokens-used">
+                  {progress.enrichmentStats.tokensUsed.toLocaleString()}
+                </span>
+              </div>
+            )}
+            {progress.enrichmentStats && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Sources Count</span>
+                <span className="font-mono text-sm" data-testid="text-sources-count">
+                  {progress.enrichmentStats.sourcesCount}
+                </span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

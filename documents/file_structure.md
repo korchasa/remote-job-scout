@@ -2,31 +2,31 @@
 
 ```
 remote-job-scout/
-├── .cursor/              # IDE configurations
-├── .env                  # Environment variables
+├── .cursor/              # IDE configs
+├── .env                  # Environment vars
 ├── .dockerignore         # Docker exclusions
 ├── .prettierignore       # Prettier exclusions
-├── .prettierrc.json      # Prettier configuration
-├── eslint.config.js      # ESLint configuration
-├── package.json          # Node.js dependencies
-├── package-lock.json     # Dependency lock
-├── Dockerfile           # Multi-stage container config
+├── .prettierrc.json      # Prettier config
+├── eslint.config.js      # ESLint config
+├── package.json          # Dependencies
+├── package-lock.json     # Lock file
+├── Dockerfile           # Multi-stage container
 ├── run                  # CLI launcher
 ├── run.ts               # CLI implementation
-├── tsconfig.json        # TypeScript config (client)
-├── tsconfig.server.json # TypeScript config (server)
-├── tsconfig.tests.json  # TypeScript config (tests)
-├── tsconfig.eslint.json # TypeScript config (ESLint)
-├── documents/           # Documentation
+├── tsconfig.json        # TS config (client)
+├── tsconfig.server.json # TS config (server)
+├── tsconfig.tests.json  # TS config (tests)
+├── tsconfig.eslint.json # TS config (ESLint)
+├── documents/           # Docs
 │   ├── design.md        # Design spec
-│   ├── file_structure.md # This file
-│   └── requirements.md  # Requirements spec
+│   ├── file_structure.md # Structure
+│   └── requirements.md  # Requirements
 ├── references/          # External resources
-│   ├── JobSpy/          # Scraping reference library
-│   ├── JobSpy-review.md # Library analysis
+│   ├── JobSpy/          # Scraping library
+│   ├── JobSpy-review.md # Analysis
 │   ├── my-spy.py        # Custom scraper
 │   └── processing-prompt.md # LLM prompts
-├── src/                 # Application code
+├── src/                 # Source code
 │   ├── client/          # React frontend
 │   │   ├── src/
 │   │   │   ├── components/ # UI components
@@ -40,15 +40,15 @@ remote-job-scout/
 │   │   │   │   ├── SearchConfigPanel.tsx
 │   │   │   │   ├── ThemeProvider.tsx
 │   │   │   │   ├── ThemeToggle.tsx
-│   │   │   │   ├── examples/ (6 example components)
-│   │   │   │   └── ui/ (47 Shadcn/ui files)
+│   │   │   │   ├── examples/ (6 examples)
+│   │   │   │   └── ui/ (47 Shadcn/ui)
 │   │   │   ├── hooks/    # React hooks
 │   │   │   │   ├── useJobs.ts
 │   │   │   │   ├── useSearchSessions.ts
 │   │   │   │   ├── useUserConfig.ts
 │   │   │   │   ├── use-mobile.tsx
 │   │   │   │   └── use-toast.ts
-│   │   │   ├── lib/      # Utilities
+│   │   │   ├── lib/      # Utils
 │   │   │   │   ├── queryClient.ts
 │   │   │   │   └── utils.ts
 │   │   │   ├── pages/    # Route pages
@@ -58,9 +58,9 @@ remote-job-scout/
 │   │   │   └── main.tsx
 │   │   ├── index.html
 │   │   └── vite.config.ts
-│   ├── server/          # Express.js backend
-│   │   ├── index.ts     # Server entry with polling
-│   │   ├── middleware/  # Express middleware
+│   ├── server/          # Express backend
+│   │   ├── index.ts     # Server entry
+│   │   ├── middleware/  # Middleware
 │   │   │   ├── cors.ts
 │   │   │   ├── logging.ts
 │   │   │   ├── security.ts
@@ -69,15 +69,15 @@ remote-job-scout/
 │   │   │   ├── jobs.ts
 │   │   │   ├── search.ts
 │   │   │   └── multiStage.ts
-│   │   ├── controllers/ # Request controllers
+│   │   ├── controllers/ # Controllers
 │   │   └── storage.ts   # In-memory storage
 │   ├── shared/          # Shared schemas
 │   │   └── schema.ts
 │   ├── controllers/     # Legacy controllers
 │   │   ├── collectionController.ts
 │   │   └── collectionController.test.ts
-│   ├── database/        # Future database integration
-│   ├── services/        # Business logic services
+│   ├── database/        # Future DB
+│   ├── services/        # Business services
 │   │   ├── jobCollectionService.ts
 │   │   ├── jobCollectionService.test.ts
 │   │   ├── multiStageSearchOrchestrator.ts
@@ -89,14 +89,14 @@ remote-job-scout/
 │   │   ├── settingsService.ts
 │   │   ├── settings.test.ts
 │   │   └── scrapers/    # Scrapers
-│   │       ├── indeed.ts
-│   │       ├── linkedin.ts
-│   │       ├── linkedin.test.ts
-│   │       ├── linkedin.integration.test.ts
-│   │       ├── openai-web-search.ts
-│   │       ├── scrapers.test.ts
-│   │       └── scrapers.integration.test.ts
-│   ├── types/           # TypeScript definitions
+│       ├── indeed.ts
+│       ├── linkedin.ts
+│       ├── linkedin.test.ts
+│       ├── linkedin.integration.test.ts
+│       ├── openai-web-search.ts
+│       ├── scrapers.test.ts
+│       └── scrapers.integration.test.ts
+│   ├── types/           # Type definitions
 │   │   ├── database.ts
 │   │   ├── scrapers.ts
 │   │   └── settings.ts
@@ -108,30 +108,30 @@ remote-job-scout/
     └── server/          # Built server
 ```
 
-## Architecture Overview
+## Architecture
 
-### Separation of Concerns
+### Separation
 
-- **Client**: React/TypeScript frontend with component-based UI
-- **Server**: Node.js/Express.js backend with modular middleware
-- **Shared**: Type-safe schemas between frontend/backend
+- **Client**: React/TypeScript, component UI
+- **Server**: Node.js/Express.js, modular middleware
+- **Shared**: Type-safe schemas
 
-### Key Components
+### Components
 
-- **Frontend**: 9 core components + 47 Shadcn/ui components + 6 examples
-- **Backend**: Modular Express.js server with middleware, routes, controllers
-- **Services**: 6 business logic services + 3 scrapers with parallel processing
-- **Tests**: 13 test files with Vitest coverage
-- **CLI**: Unified `run` script for development tasks
-- **Storage**: YAML serialization & session persistence
+- **Frontend**: 9 core + 47 Shadcn/ui + 6 examples
+- **Backend**: Express.js server, middleware, routes, controllers
+- **Services**: 6 business + 3 scrapers, parallel processing
+- **Tests**: 13 files, Vitest coverage
+- **CLI**: Unified `run` script
+- **Storage**: YAML serialization, session persistence
 
 ### Technologies
 
-- **Runtime**: Node.js 18+ with TypeScript strict mode
-- **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind CSS 4.1+
-- **Backend**: Express.js, REST API, HTTP polling, JSDOM parsing, YAML serialization
-- **Build**: Docker multi-stage build with prod optimization
-- **Development**: Hot reload, TypeScript compilation, ESLint/Prettier
-- **Testing**: Vitest framework with comprehensive coverage
-- **CLI**: Unified development workflow
-- **Processing**: Parallel scraping with retry/backoff, token/cost tracking
+- **Runtime**: Node.js 18+, TypeScript strict
+- **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind 4.1+
+- **Backend**: Express.js, REST API, HTTP polling, JSDOM, YAML
+- **Build**: Docker multi-stage, prod optimization
+- **Dev**: Hot reload, TS compilation, ESLint/Prettier
+- **Testing**: Vitest framework, comprehensive coverage
+- **CLI**: Unified workflow
+- **Processing**: Parallel scraping, retry/backoff, token/cost tracking

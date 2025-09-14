@@ -23,19 +23,12 @@ export function useStartSearch() {
             blacklistedCompanies: config.blacklistedCompanies,
             blacklistedWordsTitle: config.blacklistedWords,
             blacklistedWordsDescription: config.blacklistedWords,
-            countries: [], // Empty for now
+            countries: config.filters?.countries ?? [],
             languages: [], // Empty for now
           },
-          sources: {
-            jobSites: config.selectedSources,
-            openaiWebSearch: {
-              apiKey: '', // Will be set from environment variables on server side
-              globalSearch: true,
-            },
-          },
+          sources: config.sources,
           llm: {
-            enrichmentInstructions: [],
-            processingRules: [],
+            apiKey: config.llm?.apiKey ?? '',
           },
         },
       };
@@ -116,9 +109,16 @@ export function useSearchProgress(sessionId: string | null) {
           processedJobs: Number(raw?.stages?.collecting?.itemsProcessed ?? 0),
           filteredJobs: Number(raw?.stages?.filtering?.itemsProcessed ?? 0),
           enrichedJobs: Number(raw?.stages?.enriching?.itemsProcessed ?? 0),
-          totalCost: Number(raw?.totalCost ?? 0),
+          totalCost: Number(raw?.enrichmentStats?.costUsd ?? 0),
           estimatedTimeRemaining: Number(raw?.eta_seconds ?? 0),
           processingSpeed: Number(raw?.processing_speed_per_minute ?? 0),
+          enrichmentStats: raw?.enrichmentStats
+            ? {
+                tokensUsed: Number(raw.enrichmentStats.tokensUsed ?? 0),
+                costUsd: Number(raw.enrichmentStats.costUsd ?? 0),
+                sourcesCount: Number(raw.enrichmentStats.sourcesCount ?? 0),
+              }
+            : undefined,
         };
 
         return progress;

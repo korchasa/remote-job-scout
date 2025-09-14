@@ -2,157 +2,157 @@
 
 ## System Architecture
 
-### Overall Design
+### Core Design
 
-Client-server web app with Node.js/Express.js backend & React frontend for remote job search with AI-powered analysis & filtering.
+Client-server web app for remote job search with AI analysis.
 
-### Core Subsystems
+### Subsystems
 
-- **Settings Management**: User config with localStorage persistence, including language/country/time filters
-- **Search Orchestrator**: 3-stage process (collection → filtering → enrichment) with pause/resume support
-- **Data Collection**: Parallel job scraping from Indeed (GraphQL), LinkedIn, OpenAI WebSearch with retry/backoff
-- **Preliminary Filtering**: User criteria validation with blacklist/whitelist, advanced filtering stats
-- **LLM Processing**: OpenAI-powered data enhancement with token/cost tracking & company research
-- **Results Management**: Job storage with YAML serialization & UI presentation
-- **Modular Backend**: Express.js with middleware, routes, controllers
-- **Optimized API**: Streamlined endpoints with HTTP polling
+- **Settings**: localStorage persistence, language/country filters
+- **Search**: 3-stage pipeline (collect → filter → enrich) with pause/resume
+- **Collection**: Parallel scraping (Indeed GraphQL, LinkedIn, OpenAI WebSearch) with retry
+- **Filtering**: User criteria validation, blacklist/whitelist, stats tracking
+- **Enrichment**: OpenAI LLM processing, token/cost tracking, company research
+- **Storage**: YAML serialization, UI presentation
+- **Backend**: Express.js middleware, routes, controllers
+- **API**: HTTP polling endpoints
 
-### Reference Architecture
+### Reference
 
-Based on JobSpy library principles for scalable job scraping, implemented in Node.js ecosystem.
+JobSpy library principles adapted to Node.js ecosystem.
 
 ## Component Design
 
-### Frontend (React/TypeScript)
+### Frontend
 
-- **Stack**: React 19, TypeScript strict mode, Vite build tool
-- **UI**: Shadcn/ui (47 components) with Tailwind CSS 4.1+
-- **State**: React Query for API management, custom hooks
-- **Features**: Dark/light themes, responsive design, progress polling, filtering stats dashboard
+- **Tech**: React 19, TypeScript strict, Vite
+- **UI**: Shadcn/ui (47 components), Tailwind CSS 4.1+
+- **State**: React Query, custom hooks
+- **Features**: Themes, responsive, progress polling, filtering dashboard
 
-### Backend (Node.js/Express.js)
+### Backend
 
-- **Framework**: Express.js for REST API with modular middleware
-- **Architecture**: Service-oriented with separation of concerns
-- **Storage**: In-memory job storage with YAML serialization
-- **Services**: 6 business logic services + 3 scrapers with parallel processing
+- **Tech**: Express.js REST API, modular middleware
+- **Arch**: Service-oriented, separation of concerns
+- **Storage**: In-memory with YAML serialization
+- **Services**: 6 business logic + 3 scrapers, parallel processing
 - **Middleware**: CORS, logging, security, error handling
-- **API**: Streamlined endpoints with HTTP polling & pause/resume
-- **Testing**: Vitest with comprehensive coverage
+- **API**: HTTP polling, pause/resume
+- **Testing**: Vitest coverage
 
-### Shared Layer
+### Shared
 
-- **Schemas**: Type-safe TypeScript definitions
-- **Communication**: REST API with HTTP polling
-- **Validation**: Zod schema validation
+- **Schemas**: Type-safe TypeScript
+- **Comm**: REST API, HTTP polling
+- **Validation**: Zod schemas
 
 ## Data Architecture
 
 ### Entity Model
 
-- **Vacancy**: Core job data with JSON metadata & enrichment tracking
-- **Settings**: Extended user config with language/country/time filters
-- **Search Progress**: Real-time tracking with 6-stage states (pending, running, completed, failed, stopped, paused, skipped)
+- **Vacancy**: Job data with JSON metadata, enrichment tracking
+- **Settings**: User config with language/country filters
+- **Progress**: Real-time tracking, 6 states (pending, running, completed, failed, stopped, paused, skipped)
 
 ### Storage Strategy
 
-- **Client**: localStorage for settings (privacy-focused)
-- **Server**: In-memory storage with YAML serialization
-- **Serialization**: YAML for jobs, JSON for API
-- **Progress**: Real-time tracking with session persistence
+- **Client**: localStorage (privacy-focused)
+- **Server**: In-memory with YAML serialization
+- **Format**: YAML for jobs, JSON for API
+- **Progress**: Real-time tracking, session persistence
 
 ## Algorithm Design
 
-### Search Process
+### Search Pipeline
 
-1. **Collection**: Parallel scraping with concurrency control & retry/backoff
-2. **Filtering**: Advanced criteria validation with stats tracking
-3. **Enrichment**: OpenAI LLM processing with token/cost accounting
+1. **Collect**: Parallel scraping, concurrency control, retry/backoff
+2. **Filter**: Criteria validation, stats tracking
+3. **Enrich**: OpenAI LLM processing, token/cost accounting
 
 ### Key Algorithms
 
 - **ETA**: `(total - processed) / speed × 60`
 - **Retry**: Exponential backoff `delay = base × 2^(attempt - 1)`
-- **Concurrency**: Max sources/positions with queue management
-- **Progress Tracking**: Real-time % updates with pause/resume
-- **Cost Tracking**: Token usage × model rate per vacancy
+- **Concurrency**: Max sources/positions, queue management
+- **Progress**: Real-time % updates, pause/resume
+- **Cost**: Token usage × model rate per vacancy
 
-### Business Rules
+### Rules
 
-- Blacklist filtering has highest priority
+- Blacklist filtering priority
 - User settings override auto rules
-- Operations logged for audit trails
-- API key stored client-side only
+- Operations logged for audit
+- API key client-side only
 
 ## Technology Stack
 
-### Runtime & Framework
+### Runtime
 
-- **Node.js 18+**: Enterprise JavaScript/TypeScript runtime
-- **Express.js**: Web framework with middleware architecture
-- **TypeScript**: Strict mode compilation for client/server
-- **ESM Modules**: Modern ES modules with .js extensions
-- **Docker**: Multi-stage containerized dev/prod
+- **Node.js 18+**: JS/TS runtime
+- **Express.js**: Web framework, middleware
+- **TypeScript**: Strict compilation
+- **ESM**: Modern modules (.js extensions)
+- **Docker**: Multi-stage containers
 
-### Frontend Technologies
+### Frontend
 
-- **React 19**: Component-based UI framework
-- **Vite**: Fast dev/build tool with HMR
-- **Shadcn/ui**: Professional component library (47 components)
-- **Tailwind CSS 4.1+**: Utility-first styling
-- **React Query**: Efficient API state & caching
+- **React 19**: Component UI framework
+- **Vite**: Fast build tool, HMR
+- **Shadcn/ui**: 47 components
+- **Tailwind CSS 4.1+**: Utility styling
+- **React Query**: API state, caching
 
-### Backend Technologies
+### Backend
 
-- **Express.js**: REST API with modular middleware (CORS, logging, security)
-- **Node.js fs/promises**: File system operations
-- **YAML**: Structured data serialization
-- **Zod**: Schema validation for type safety
-- **JSDOM**: HTML parsing for scraping
+- **Express.js**: REST API, middleware (CORS, logging, security)
+- **fs/promises**: File operations
+- **YAML**: Data serialization
+- **Zod**: Schema validation
+- **JSDOM**: HTML parsing
 
-### External Integrations
+### Integrations
 
-- **OpenAI API**: LLM processing & WebSearch
-- **JobSpy**: Scraping architecture reference
-- **NPM Registry**: Node.js package ecosystem
+- **OpenAI API**: LLM processing, WebSearch
+- **JobSpy**: Scraping reference
+- **NPM**: Package ecosystem
 
-### Development Tools
+### Development
 
-- **Docker**: Multi-stage containerized dev/prod
-- **Vitest**: Modern testing framework
-- **ESLint/Prettier**: Code quality & formatting
-- **TypeScript Compiler**: Strict compilation
-- **CLI Runner**: Unified `run` script
+- **Docker**: Containerization
+- **Vitest**: Testing framework
+- **ESLint/Prettier**: Code quality
+- **TypeScript**: Compilation
+- **CLI**: Unified runner
 
-## Constraints & Trade-offs
+## Constraints
 
 ### Design Decisions
 
-- **Node.js Runtime**: Enterprise JS/TS runtime with extensive ecosystem
-- Client-side settings storage (privacy over server persistence)
-- In-memory backend storage (dev over prod optimization)
-- Optimized HTTP polling (efficiency over real-time performance)
-- Modular Express.js architecture (maintainability over monolithic)
-- Streamlined API endpoints (simplicity over feature completeness)
+- **Node.js**: Enterprise runtime, extensive ecosystem
+- Client-side storage (privacy over server persistence)
+- In-memory storage (dev over prod optimization)
+- HTTP polling (efficiency over real-time)
+- Modular architecture (maintainability over monolithic)
+- Streamlined API (simplicity over completeness)
 
-### Performance Considerations
+### Performance
 
-- Parallel job processing across sources
-- Lazy loading for large result sets
-- Bundle optimization with code splitting
-- API response caching & error recovery
+- Parallel processing across sources
+- Lazy loading for large datasets
+- Bundle optimization, code splitting
+- API caching, error recovery
 
-## Future Extensions
+## Extensions
 
 ### Roadmap
 
-- Database migration from in-memory storage
-- Enhanced filtering capabilities
-- Additional job sources integration
+- Database migration from in-memory
+- Enhanced filtering
+- Additional sources
 - Performance optimization
 
-### Scalability Considerations
+### Scalability
 
-- Service modularization for microservices
-- Database indexing strategy
-- Distributed processing for large-scale scraping
+- Service modularization
+- Database indexing
+- Distributed processing

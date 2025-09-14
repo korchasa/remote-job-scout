@@ -7,9 +7,8 @@ export interface UserSettings {
     blacklistedCompanies: string[];
     blacklistedWordsTitle: string[];
     blacklistedWordsDescription: string[];
-    countries: CountryFilter[];
+    countries: string[]; // Whitelist of allowed countries
     languages: LanguageRequirement[];
-    workTime?: WorkTimeFilter;
   };
 
   // Источники поиска
@@ -25,20 +24,9 @@ export interface UserSettings {
   };
 }
 
-export interface CountryFilter {
-  name: string;
-  type: 'blacklist' | 'whitelist';
-}
-
 export interface LanguageRequirement {
   language: string;
   level: string;
-}
-
-export interface WorkTimeFilter {
-  start: string;
-  end: string;
-  timezone: string;
 }
 
 export interface OpenAIWebSearchConfig {
@@ -58,7 +46,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
     blacklistedCompanies: [],
     blacklistedWordsTitle: ['senior', 'lead'],
     blacklistedWordsDescription: ['agile', 'scrum'],
-    countries: [],
+    countries: [], // Empty means allow all countries
     languages: [{ language: 'English', level: 'Intermediate' }],
   },
   sources: {

@@ -1,26 +1,65 @@
 # Remote Job Scout
 
-Web application for remote job search with AI-powered analysis & filtering. Features parallel scraping, LLM enrichment with cost tracking, and advanced filtering statistics.
+Web app for remote job search with AI analysis. Node.js runtime, Express.js backend, React frontend.
 
-## Настройка
+## Setup
 
 ### OpenAI API Key
 
-For LLM enrichment functionality, configure your OpenAI API key in the UI settings panel:
+Configure OpenAI API key in UI settings:
 
-1. Start the application
+1. Start application
 2. Go to Search Configuration
-3. Enter your OpenAI API key in the "OpenAI API Key" field
-4. The key is stored locally in your browser (localStorage) and never sent to the server
+3. Enter OpenAI API key
+4. Key stored locally in browser (localStorage)
 
-**Security Note**: The API key is stored client-side only for privacy. Enrichment stage is skipped if no key is provided.
+**Security**: Client-side storage only. Enrichment skipped without key.
 
-### Key Features
+## Features
 
 - **Multi-Stage Search**: Collection → Filtering → Enrichment with pause/resume
-- **Parallel Scraping**: Concurrent processing with retry/backoff mechanisms
-- **AI Enrichment**: OpenAI-powered job analysis with token/cost tracking
-- **Advanced Filtering**: Language/country/time filters with detailed statistics
-- **Real-Time Progress**: Live updates with filtering breakdown
-- **YAML Export**: Job data serialization for persistence
-- **Responsive UI**: Modern interface with dark/light themes
+- **Parallel Scraping**: Concurrent processing, retry/backoff
+- **AI Enrichment**: OpenAI analysis, token/cost tracking
+- **Advanced Filtering**: Language/country filters, statistics
+- **Real-Time Progress**: Live updates, filtering breakdown
+- **YAML Export**: Job data serialization
+- **Responsive UI**: Modern interface, themes
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+
+- Docker
+
+### Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Development server
+./run start
+
+# Run checks
+./run check
+
+# Run tests
+./run test
+```
+
+### CLI Commands
+
+- `./run check`: Full validation
+- `./run test`: Unit tests
+- `./run test integration`: Integration tests
+- `./run start`: Development server
+- `./run stop`: Stop server
+
+## Architecture
+
+- **Backend**: Express.js, REST API, HTTP polling
+- **Frontend**: React 19, TypeScript, Vite
+- **Processing**: Parallel scraping, LLM enrichment
+- **Storage**: YAML serialization, session persistence
+- **Testing**: Vitest, comprehensive coverage

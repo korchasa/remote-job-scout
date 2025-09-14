@@ -50,24 +50,18 @@ interface OpenAIResponsesAPIResponse {
 
 export class OpenAIWebSearchScraper extends Scraper {
   private apiKey: string;
-  private model: string;
-  private globalSearch: boolean;
-  private maxResults: number;
+
+  // Internal settings defined by scraper itself
+  private model = 'gpt-4o-mini';
+  private globalSearch = true;
+  private maxResults = 50;
 
   // Transport settings - defined by scraper itself
   private timeout = 30000; // 30 seconds for OpenAI API calls
 
-  constructor(
-    apiKey: string,
-    model: string = 'gpt-4o-mini',
-    globalSearch: boolean = true,
-    maxResults: number = 50,
-  ) {
+  constructor(apiKey: string) {
     super();
     this.apiKey = apiKey;
-    this.model = model;
-    this.globalSearch = globalSearch;
-    this.maxResults = maxResults;
   }
 
   getName(): string {
@@ -75,11 +69,11 @@ export class OpenAIWebSearchScraper extends Scraper {
   }
 
   async scrape(input: ScraperInput): Promise<JobResponse> {
-    // Используем параметры из input если они заданы, иначе из конструктора
-    const apiKey = input.openai_api_key ?? this.apiKey;
-    const model = input.openai_model ?? this.model;
-    const globalSearch = input.openai_global_search ?? this.globalSearch;
-    const maxResults = input.openai_max_results ?? this.maxResults;
+    // Use internal settings, API key is already set in constructor
+    const apiKey = this.apiKey;
+    const model = this.model;
+    const globalSearch = this.globalSearch;
+    const maxResults = this.maxResults;
 
     if (!apiKey) {
       throw new Error('OpenAI API key is required');

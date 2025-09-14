@@ -304,6 +304,8 @@ async function runDev(): Promise<void> {
         `${process.cwd()}/dist:/app/dist`,
         '-v',
         `${process.cwd()}/node_modules:/app/node_modules`,
+        '-v',
+        `${process.cwd()}/var:/app/var`,
         '--env-file',
         `${process.cwd()}/.env`,
         'remote-job-scout-dev',

@@ -105,7 +105,7 @@ export class FilteringService {
     }
 
     // 4. Проверка фильтров по странам
-    if (!this.matchesCountryFilter(vacancy, settings.filters.countries)) {
+    if (!this.matchesCountryFilter(vacancy, settings.filters.countries || [])) {
       return { include: false, reason: 'country_filter' };
     }
 
@@ -147,31 +147,19 @@ export class FilteringService {
   }
 
   /**
-   * Проверяет соответствие фильтрам по странам
+   * Проверяет соответствие фильтрам по странам (whitelist)
    */
-  private matchesCountryFilter(
-    vacancy: Vacancy,
-    countryFilters: Array<{ name: string; type: 'blacklist' | 'whitelist' }>,
-  ): boolean {
-    if (!countryFilters || countryFilters.length === 0) {
-      return true;
+  private matchesCountryFilter(vacancy: Vacancy, allowedCountries: string[]): boolean {
+    if (!allowedCountries || allowedCountries.length === 0) {
+      return true; // If no countries specified, allow all
     }
 
     const vacancyCountry = vacancy.country?.toLowerCase() ?? '';
 
-    for (const filter of countryFilters) {
-      const filterCountry = filter.name.toLowerCase();
-
-      if (filter.type === 'blacklist' && vacancyCountry.includes(filterCountry)) {
-        return false;
-      }
-
-      if (filter.type === 'whitelist' && !vacancyCountry.includes(filterCountry)) {
-        return false;
-      }
-    }
-
-    return true;
+    // Check if vacancy country is in the whitelist
+    return allowedCountries.some((allowedCountry) =>
+      vacancyCountry.includes(allowedCountry.toLowerCase()),
+    );
   }
 
   /**
