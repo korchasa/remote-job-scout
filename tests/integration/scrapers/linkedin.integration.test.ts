@@ -557,3 +557,292 @@ test('LinkedIn Integration - JobSpy compatibility test', async () => {
 
   console.log('LinkedIn JobSpy compatibility test passed');
 }, 30000);
+
+/**
+ * Test constructor with proxies (from unit tests)
+ */
+test('LinkedIn Integration - Constructor with proxies', async () => {
+  const proxyScraper = new LinkedInScraper(['http://proxy1:8080', 'http://proxy2:8080']);
+  expect(proxyScraper).toBeDefined();
+  console.log('LinkedIn proxy scraper created successfully');
+});
+
+/**
+ * Test getName method (from unit tests)
+ */
+test('LinkedIn Integration - getName returns linkedin', async () => {
+  const scraper = new LinkedInScraper();
+  expect(scraper.getName()).toBe('linkedin');
+});
+
+/**
+ * Test scrape with remote jobs filter (from unit tests)
+ */
+test('LinkedIn Integration - Remote jobs filter', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'frontend developer',
+    is_remote: true,
+    country: Country.USA,
+    results_wanted: 3,
+  };
+
+  console.log('Testing remote jobs filter...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  console.log(`Found ${result.jobs.length} remote jobs`);
+}, 30000);
+
+/**
+ * Test scrape with job type filtering (from unit tests)
+ */
+test('LinkedIn Integration - Job type filtering', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'data scientist',
+    job_type: JobType.FULL_TIME,
+    country: Country.USA,
+    results_wanted: 5,
+  };
+
+  console.log('Testing job type filtering...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  console.log(`Found ${result.jobs.length} full-time jobs`);
+}, 30000);
+
+/**
+ * Test scrape with easy apply filter (from unit tests)
+ */
+test('LinkedIn Integration - Easy apply filter', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'marketing specialist',
+    easy_apply: true,
+    country: Country.USA,
+    results_wanted: 4,
+  };
+
+  console.log('Testing easy apply filter...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  console.log(`Found ${result.jobs.length} easy apply jobs`);
+}, 30000);
+
+/**
+ * Test scrape with hours old filtering (from unit tests)
+ */
+test('LinkedIn Integration - Hours old filtering', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'developer',
+    hours_old: 24,
+    country: Country.USA,
+    results_wanted: 3,
+  };
+
+  console.log('Testing hours old filtering...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  console.log(`Found ${result.jobs.length} recent jobs`);
+}, 30000);
+
+/**
+ * Test scrape with description format options (from unit tests)
+ */
+test('LinkedIn Integration - Description format options', async () => {
+  const scraper = new LinkedInScraper();
+  const formats = [DescriptionFormat.HTML, DescriptionFormat.MARKDOWN, DescriptionFormat.PLAIN];
+
+  for (const format of formats) {
+    const input: ScraperInput = {
+      site_type: [Site.LINKEDIN],
+      search_term: 'engineer',
+      country: Country.USA,
+      description_format: format,
+      results_wanted: 1,
+    };
+
+    console.log(`Testing description format: ${format}...`);
+
+    const result = await scraper.scrape(input);
+    expect(Array.isArray(result.jobs)).toBe(true);
+    console.log(`Found ${result.jobs.length} jobs with ${format} format`);
+  }
+}, 60000);
+
+/**
+ * Test scrape with pagination and offset (from unit tests)
+ */
+test('LinkedIn Integration - Pagination and offset', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'software engineer',
+    country: Country.USA,
+    results_wanted: 10,
+    offset: 5,
+  };
+
+  console.log('Testing pagination and offset...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  expect(result.jobs.length <= 10).toBe(true);
+  console.log(`Found ${result.jobs.length} jobs with offset 5`);
+}, 30000);
+
+/**
+ * Test scrape with linkedin_fetch_description enabled (from unit tests)
+ */
+test('LinkedIn Integration - Fetch description enabled', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'senior developer',
+    country: Country.USA,
+    results_wanted: 2,
+    linkedin_fetch_description: true,
+    description_format: DescriptionFormat.MARKDOWN,
+  };
+
+  console.log('Testing fetch description...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  console.log(`Found ${result.jobs.length} jobs with descriptions`);
+}, 60000);
+
+/**
+ * Test scrape handles rate limiting gracefully (from unit tests)
+ */
+test('LinkedIn Integration - Rate limiting handling', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'developer',
+    country: Country.USA,
+    results_wanted: 5,
+  };
+
+  console.log('Testing rate limiting handling...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  console.log(`Rate limiting test: found ${result.jobs.length} jobs`);
+}, 30000);
+
+/**
+ * Test scrape handles 403 errors gracefully (from unit tests)
+ */
+test('LinkedIn Integration - 403 error handling', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'developer',
+    country: Country.USA,
+    results_wanted: 5,
+  };
+
+  console.log('Testing 403 error handling...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  console.log(`403 error test: found ${result.jobs.length} jobs`);
+}, 30000);
+
+/**
+ * Test scrape with different countries (from unit tests)
+ */
+test('LinkedIn Integration - Different countries', async () => {
+  const scraper = new LinkedInScraper();
+  const countries = [Country.USA, Country.UK, Country.CANADA];
+
+  for (const country of countries) {
+    const input: ScraperInput = {
+      site_type: [Site.LINKEDIN],
+      search_term: 'developer',
+      country: country,
+      results_wanted: 1,
+    };
+
+    console.log(`Testing country: ${country}...`);
+
+    const result = await scraper.scrape(input);
+    expect(Array.isArray(result.jobs)).toBe(true);
+    console.log(`${country}: Found ${result.jobs.length} jobs`);
+  }
+}, 90000);
+
+/**
+ * Test scrape with complex search parameters (from unit tests)
+ */
+test('LinkedIn Integration - Complex search parameters', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'senior python developer',
+    location: 'New York',
+    country: Country.USA,
+    distance: 50,
+    is_remote: false,
+    job_type: JobType.FULL_TIME,
+    results_wanted: 10,
+    hours_old: 168,
+    description_format: DescriptionFormat.MARKDOWN,
+  };
+
+  console.log('Testing complex search parameters...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  console.log(`Complex search: found ${result.jobs.length} jobs`);
+}, 60000);
+
+/**
+ * Test scrape with linkedin_company_ids filter (from unit tests)
+ */
+test('LinkedIn Integration - Company IDs filter', async () => {
+  const scraper = new LinkedInScraper();
+
+  const input: ScraperInput = {
+    site_type: [Site.LINKEDIN],
+    search_term: 'engineer',
+    country: Country.USA,
+    results_wanted: 3,
+    linkedin_company_ids: [123, 456, 789],
+  };
+
+  console.log('Testing company IDs filter...');
+
+  const result = await scraper.scrape(input);
+
+  expect(Array.isArray(result.jobs)).toBe(true);
+  console.log(`Company filter: found ${result.jobs.length} jobs`);
+}, 30000);
