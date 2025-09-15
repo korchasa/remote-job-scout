@@ -1,0 +1,12 @@
+---
+alwaysApply: false
+---
+# INSTRUCTIONS (until STOP section)
+
+Create a To-Do with the following steps:
+1. Read existing documentation in `./documents`.
+2. Implement the task in given Feature Request(FR) in a TDD manner and Autonomous Mode, updating the progress in `./documents/whiteboard.md` throughout the process.
+3. Add/Update comments on file, function and code levels. File - responsibility of the file, relationship to other files, function - what it does, code - why it's done this way.
+4. Run `./run check` and fix all founded issues, until `./run check` shows the absence of errors, warnings, and linting problems.
+5. Follow @task-update-docs.mdc rules to update the documentation.
+6. STOP

@@ -171,9 +171,8 @@ export class JobCollectionService {
     scrapers: Scraper[],
     settings: SearchRequest['settings'],
   ): string[] {
-    const requestedSources = Object.keys(settings.sources).filter(
-      (sourceName) => settings.sources[sourceName].enabled,
-    );
+    // Получаем список запрошенных источников из jobSites
+    const requestedSources = settings.sources.jobSites.map((source) => source.toLowerCase());
     const available = new Set(scrapers.map((s) => s.getName().toLowerCase()));
 
     // Фильтруем только поддерживаемые источники

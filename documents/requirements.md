@@ -39,15 +39,15 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
   - ✅ Collected vacancies serialized to YAML during processing
   - ✅ LLM sources track tokens/costs, aggregates shown in progress panel
 
-### FR-4: Filtering (Stage 2)
+### FR-4: Filtering (Stage 2) ✅ COMPLETED
 
 - **Purpose**: Auto-filter collected vacancies by user rules (blacklist/whitelist) with detailed skip reason statistics
 - **Usage**: Post-collection, system auto-triggers filtering within session, validates vacancies against settings (company blacklist, keywords, language, country whitelist), generates passed/rejected counters with skip reason breakdown
 - **Acceptance**:
-  - Filtering auto-starts after collection completion for current session
-  - Applies current user settings: blacklist, title/language rules, country whitelist (string array)
-  - Generates stage statuses, aggregated statistics
-  - Skip reasons available: e.g., title_blacklisted_words, language_requirements, country_filter, company_blacklisted
+  - ✅ Filtering auto-starts after collection completion for current session
+  - ✅ Applies current user settings: blacklist, title/language rules, country whitelist (string array)
+  - ✅ Generates stage statuses, aggregated statistics
+  - ✅ Skip reasons available: title_blacklisted_words, language_requirements, country_filter, company_blacklisted
 
 ### FR-5: Обогащение с помощью LLM (этап 3)
 

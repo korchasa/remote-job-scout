@@ -146,12 +146,16 @@ export interface SearchRequest {
       languages: Array<{ language: string; level: string }>;
     };
     sources: {
-      [sourceName: string]: {
-        enabled: boolean;
+      jobSites: string[];
+      openaiWebSearch?: {
+        apiKey: string;
+        searchSites: string[];
+        globalSearch: boolean;
       };
     };
     llm: {
-      apiKey: string;
+      enrichmentInstructions: string[];
+      processingRules: Array<{ name: string; prompt: string }>;
     };
   };
   session_id: string;

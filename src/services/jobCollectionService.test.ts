@@ -126,11 +126,11 @@ test('JobCollectionService - parallel source processing', async () => {
         languages: [],
       },
       sources: {
-        indeed: { enabled: true },
-        linkedin: { enabled: true },
+        jobSites: ['indeed', 'linkedin'],
       },
       llm: {
-        apiKey: '',
+        enrichmentInstructions: [],
+        processingRules: [],
       },
     },
   };
@@ -286,11 +286,16 @@ test('JobCollectionService - retry with exponential backoff', async () => {
           languages: [],
         },
         sources: {
-          indeed: { enabled: true },
-          openai: { enabled: true },
+          jobSites: ['indeed', 'openai'],
+          openaiWebSearch: {
+            apiKey: 'test-api-key',
+            searchSites: ['linkedin.com'],
+            globalSearch: false,
+          },
         },
         llm: {
-          apiKey: 'test-api-key',
+          enrichmentInstructions: [],
+          processingRules: [],
         },
       },
     };
@@ -349,10 +354,11 @@ test('JobCollectionService - YAML serialization', async () => {
         languages: [],
       },
       sources: {
-        indeed: { enabled: true },
+        jobSites: ['indeed'],
       },
       llm: {
-        apiKey: '',
+        enrichmentInstructions: [],
+        processingRules: [],
       },
     },
   };

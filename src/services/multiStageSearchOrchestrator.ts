@@ -136,7 +136,7 @@ export class MultiStageSearchOrchestrator {
 
       // Stage 3: Enrichment (обязательная стадия)
       if (filteringResult.filteredVacancies.length > 0) {
-        if (!settings.llm?.apiKey) {
+        if (!settings.sources.openaiWebSearch?.apiKey) {
           throw new Error('OpenAI API key is required for enrichment stage');
         }
 
@@ -356,7 +356,7 @@ export class MultiStageSearchOrchestrator {
           progress.stages.enriching.status === 'paused')
       ) {
         const filteredVacancies = this.getFilteredVacancies(session_id);
-        if (filteredVacancies.length > 0 && settings.llm?.apiKey) {
+        if (filteredVacancies.length > 0 && settings.sources.openaiWebSearch?.apiKey) {
           const enrichmentResult = await this.executeEnrichmentStage(
             filteredVacancies,
             settings,
@@ -451,26 +451,24 @@ export class MultiStageSearchOrchestrator {
     // Формируем массив скрейперов на основе настроек
     const scrapers: Scraper[] = [];
 
-    for (const [sourceName, sourceConfig] of Object.entries(settings.sources)) {
-      if (sourceConfig.enabled) {
-        switch (sourceName) {
-          case 'indeed':
-            scrapers.push(new IndeedScraper());
-            break;
-          case 'linkedin':
-            scrapers.push(new LinkedInScraper());
-            break;
-          case 'glassdoor':
-            scrapers.push(new GlassdoorScraper());
-            break;
-          case 'openai':
-            // OpenAI requires API key
-            if (settings.llm?.apiKey) {
-              scrapers.push(new OpenAIWebSearchScraper(settings.llm.apiKey));
-            }
-            break;
-        }
+    // Добавляем скрейперы для выбранных источников
+    for (const sourceName of settings.sources.jobSites) {
+      switch (sourceName) {
+        case 'indeed':
+          scrapers.push(new IndeedScraper());
+          break;
+        case 'linkedin':
+          scrapers.push(new LinkedInScraper());
+          break;
+        case 'glassdoor':
+          scrapers.push(new GlassdoorScraper());
+          break;
       }
+    }
+
+    // Добавляем OpenAI WebSearch если настроен
+    if (settings.sources.openaiWebSearch?.apiKey) {
+      scrapers.push(new OpenAIWebSearchScraper(settings.sources.openaiWebSearch.apiKey));
     }
 
     try {
@@ -576,11 +574,11 @@ export class MultiStageSearchOrchestrator {
     progress.overallProgress = 70; // Переходим к 70%
 
     console.log(`🤖 Starting enrichment stage with ${vacancies.length} vacancies`);
-    console.log(`🔑 OpenAI API key available: ${!!settings.llm?.apiKey}`);
+    console.log(`🔑 OpenAI API key available: ${!!settings.sources.openaiWebSearch?.apiKey}`);
 
     // Настраиваем OpenAI
-    if (settings.llm?.apiKey) {
-      this.enrichmentService.setOpenAIKey(settings.llm.apiKey);
+    if (settings.sources.openaiWebSearch?.apiKey) {
+      this.enrichmentService.setOpenAIKey(settings.sources.openaiWebSearch.apiKey);
       console.log(`🔑 OpenAI API key set in enrichment service`);
     } else {
       console.error(`❌ No OpenAI API key provided for enrichment`);

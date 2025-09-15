@@ -22,7 +22,7 @@ Client-server web app for remote job search with AI analysis. **FR-3 Enhanced Co
 - **✅ Settings**: localStorage persistence, language/country filters
 - **✅ Search**: 3-stage pipeline (collect → filter → enrich) with pause/resume ✅ COMPLETED
 - **✅ Collection**: Parallel scraping (Indeed GraphQL, LinkedIn, Glassdoor GraphQL, OpenAI WebSearch) with retry/backoff
-- **✅ Filtering**: User criteria validation, blacklist/whitelist, stats tracking
+- **✅ Filtering**: User criteria validation, blacklist/whitelist, stats tracking (FR-4 COMPLETED)
 - **✅ Enrichment**: OpenAI LLM processing, token/cost tracking, company research
 - **✅ Storage**: YAML serialization, filesystem session persistence, UI presentation
 - **✅ Backend**: Express.js middleware, routes, controllers, Zod validation
@@ -77,7 +77,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 ### Search Pipeline
 
 1. **✅ Collect**: Parallel scraping, concurrency control, retry/backoff ✅ IMPLEMENTED
-2. **✅ Filter**: Criteria validation, stats tracking ✅ IMPLEMENTED
+2. **✅ Filter**: Criteria validation, stats tracking ✅ IMPLEMENTED (FR-4 COMPLETED)
 3. **✅ Enrich**: OpenAI LLM processing, token/cost accounting ✅ IMPLEMENTED
 
 ### Key Algorithms
@@ -169,7 +169,8 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ### Roadmap
 
-- **FR-4/5**: Advanced filtering options, AI-powered job matching
+- **FR-4**: Filtering (Stage 2) ✅ COMPLETED - Advanced filtering with detailed skip reasons
+- **FR-5**: Enrichment with LLM (Stage 3)
 - **FR-6**: Enhanced job management UI, favorites, bookmarks
 - **Database Migration**: From in-memory to persistent database (PostgreSQL/MongoDB)
 - **Performance**: Caching strategies, CDN integration, query optimization

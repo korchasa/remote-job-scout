@@ -13,6 +13,7 @@ import type { CollectionProgress } from '../services/jobCollectionService.js';
 import { JobCollectionService } from '../services/jobCollectionService.js';
 import { MultiStageSearchOrchestrator } from '../services/multiStageSearchOrchestrator.js';
 import type { Scraper } from '../types/scrapers.js';
+import { GlassdoorScraper } from '../services/scrapers/glassdoor.js';
 import { IndeedScraper } from '../services/scrapers/indeed.js';
 import { LinkedInScraper } from '../services/scrapers/linkedin.js';
 import { OpenAIWebSearchScraper } from '../services/scrapers/openai-web-search.js';
@@ -37,23 +38,24 @@ export class CollectionController {
       // Формируем массив скрейперов на основе настроек
       const scrapers: Scraper[] = [];
 
-      for (const [sourceName, sourceConfig] of Object.entries(request.settings.sources)) {
-        if (sourceConfig.enabled) {
-          switch (sourceName) {
-            case 'indeed':
-              scrapers.push(new IndeedScraper());
-              break;
-            case 'linkedin':
-              scrapers.push(new LinkedInScraper());
-              break;
-            case 'openai':
-              // OpenAI requires API key
-              if (request.settings.llm?.apiKey) {
-                scrapers.push(new OpenAIWebSearchScraper(request.settings.llm.apiKey));
-              }
-              break;
-          }
+      // Добавляем скрейперы для выбранных источников
+      for (const sourceName of request.settings.sources.jobSites) {
+        switch (sourceName) {
+          case 'indeed':
+            scrapers.push(new IndeedScraper());
+            break;
+          case 'linkedin':
+            scrapers.push(new LinkedInScraper());
+            break;
+          case 'glassdoor':
+            scrapers.push(new GlassdoorScraper());
+            break;
         }
+      }
+
+      // Добавляем OpenAI WebSearch если настроен
+      if (request.settings.sources.openaiWebSearch?.apiKey) {
+        scrapers.push(new OpenAIWebSearchScraper(request.settings.sources.openaiWebSearch.apiKey));
       }
 
       // Запускаем сбор в фоне (асинхронно, без блокировки)

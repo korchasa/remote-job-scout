@@ -187,7 +187,7 @@ export class GlassdoorScraper extends Scraper {
     this.scraperInput.results_wanted = Math.min(900, scraperInput.results_wanted ?? 25);
 
     // Определяем базовый URL на основе страны
-    this.baseUrl = this.getCountryUrl(scraperInput.country || null);
+    this.baseUrl = this.getCountryUrl(scraperInput.country ?? null);
 
     console.log('🚀 Starting Glassdoor scrape', {
       scraperInput: {
@@ -203,12 +203,12 @@ export class GlassdoorScraper extends Scraper {
 
     // Получаем CSRF токен
     const csrfToken = await this.getCsrfToken();
-    this.sessionHeaders['gd-csrf-token'] = csrfToken || FALLBACK_TOKEN;
+    this.sessionHeaders['gd-csrf-token'] = csrfToken ?? FALLBACK_TOKEN;
 
     // Получаем location ID
     const locationResult = await this.getLocation(
-      scraperInput.location || null,
-      scraperInput.is_remote || null,
+      scraperInput.location ?? null,
+      scraperInput.is_remote ?? null,
     );
     if (!locationResult) {
       console.error('❌ Glassdoor: location not found');
@@ -219,8 +219,8 @@ export class GlassdoorScraper extends Scraper {
     const jobList: JobPost[] = [];
     let cursor: string | null = null;
 
-    const resultsWanted = scraperInput.results_wanted || 25;
-    const rangeStart = 1 + (scraperInput.offset || 0) / this.jobsPerPage;
+    const resultsWanted = scraperInput.results_wanted ?? 25;
+    const rangeStart = 1 + (scraperInput.offset ?? 0) / this.jobsPerPage;
     const totalPages = Math.ceil(resultsWanted / this.jobsPerPage) + 2;
     const rangeEnd = Math.min(totalPages, this.maxPages + 1);
 
@@ -455,8 +455,8 @@ export class GlassdoorScraper extends Scraper {
 
       const emails = description ? this.extractEmails(description) : null;
       const companyUrl = companyId ? `${this.baseUrl}/Overview/W-EI_IE${companyId}.htm` : null;
-      const companyLogo = job.overview?.squareLogoUrl || null;
-      const listingType = job.header.adOrderSponsorshipLevel?.toLowerCase() || '';
+      const companyLogo = job.overview?.squareLogoUrl ?? null;
+      const listingType = job.header.adOrderSponsorshipLevel?.toLowerCase() ?? '';
 
       return {
         id: `gd-${jobId}`,
@@ -515,7 +515,7 @@ export class GlassdoorScraper extends Scraper {
       const data = await response.json();
       const desc = data[0]?.data?.jobview?.job?.description;
 
-      return desc || null;
+      return desc ?? null;
     } catch (error) {
       console.warn(`⚠️ Failed to fetch job description for ${jobId}:`, error);
       return null;
@@ -525,7 +525,7 @@ export class GlassdoorScraper extends Scraper {
   private parseCompensation(data: any): Compensation | null {
     const payPeriod = data.payPeriod;
     const adjustedPay = data.payPeriodAdjustedPay;
-    const currency = data.payCurrency || 'USD';
+    const currency = data.payCurrency ?? 'USD';
 
     if (!payPeriod || !adjustedPay) return null;
 
@@ -537,8 +537,8 @@ export class GlassdoorScraper extends Scraper {
       interval = CompensationInterval.YEARLY; // fallback
     }
 
-    const minAmount = Math.floor(adjustedPay.p10 || 0);
-    const maxAmount = Math.floor(adjustedPay.p90 || 0);
+    const minAmount = Math.floor(adjustedPay.p10 ?? 0);
+    const maxAmount = Math.floor(adjustedPay.p90 ?? 0);
 
     return {
       interval,
@@ -587,6 +587,6 @@ export class GlassdoorScraper extends Scraper {
 
   private extractEmails(text: string): string[] {
     const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-    return text.match(emailRegex) || [];
+    return text.match(emailRegex) ?? [];
   }
 }
