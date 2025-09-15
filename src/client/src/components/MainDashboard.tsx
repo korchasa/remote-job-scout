@@ -7,6 +7,7 @@ import { SearchConfigPanel } from './SearchConfigPanel.tsx';
 import { ProgressDashboard } from './ProgressDashboard.tsx';
 import { FilteringStatsDashboard } from './FilteringStatsDashboard.tsx';
 import { JobListView } from './JobListView.tsx';
+import { FavoritesView } from './FavoritesView.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { useJobs } from '../hooks/useJobs.ts';
 import {
@@ -15,15 +16,16 @@ import {
   usePauseSearch,
   useSearchProgress,
 } from '../hooks/useSearchSessions.ts';
+import { useSaveUserConfig } from '../hooks/useUserConfig.ts';
 // Using HTTP polling for progress updates
 import { useToast } from '../hooks/use-toast.ts';
 import { queryClient } from '../lib/queryClient.ts';
-import { BarChart3, Briefcase, Search, Settings, TrendingUp, Zap } from 'lucide-react';
+import { BarChart3, Briefcase, Heart, Search, Settings, TrendingUp, Zap } from 'lucide-react';
 import type { JobPost, ProgressData, SearchConfig } from '../../../shared/schema.ts';
 
 // Real data is now fetched from API hooks above
 
-type ViewMode = 'config' | 'progress' | 'results';
+type ViewMode = 'config' | 'progress' | 'results' | 'favorites';
 
 export function MainDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>('config');
@@ -39,6 +41,7 @@ export function MainDashboard() {
   const stopSearchMutation = useStopSearch();
   const pauseSearchMutation = usePauseSearch();
   const { data: progressData, isLoading: progressLoading } = useSearchProgress(currentSessionId);
+  const saveUserConfigMutation = useSaveUserConfig();
   // Using HTTP polling for progress updates
 
   const jobs = jobsResponse?.jobs ?? [];
@@ -162,12 +165,30 @@ export function MainDashboard() {
           statusReason: action,
         }),
       });
+
+      // If blacklisting, also add the company to blacklist and update search config
+      if (action === 'blacklist' && job.company) {
+        try {
+          await saveUserConfigMutation.mutateAsync({
+            blacklistedCompanies: [job.company], // This will be merged with existing blacklist
+          });
+          console.log(`Added ${job.company} to blacklist`);
+        } catch (configError) {
+          console.error('Failed to update blacklist config:', configError);
+        }
+      }
+
       // Refresh jobs list
       void queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
 
+      const actionMessage =
+        action === 'blacklist'
+          ? `Job blacklisted and ${job.company} added to company blacklist.`
+          : `Job has been ${action === 'skip' ? 'skipped' : 'deferred'}.`;
+
       toast({
         title: 'Job Updated',
-        description: `Job has been ${action === 'blacklist' ? 'blacklisted' : action === 'skip' ? 'skipped' : 'deferred'}.`,
+        description: actionMessage,
       });
     } catch (error) {
       console.error(`Failed to ${action} job:`, error);
@@ -263,6 +284,16 @@ export function MainDashboard() {
             >
               <Briefcase className="h-4 w-4 mr-2" />
               Results ({jobs.length})
+            </Button>
+            <Button
+              variant={viewMode === 'favorites' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('favorites')}
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+              data-testid="button-nav-favorites"
+            >
+              <Heart className="h-4 w-4 mr-2" />
+              Favorites
             </Button>
           </div>
         </div>
@@ -418,6 +449,7 @@ export function MainDashboard() {
         )}
 
         {viewMode === 'results' && <JobListView jobs={jobs} onJobAction={handleJobAction} />}
+        {viewMode === 'favorites' && <FavoritesView />}
       </main>
     </div>
   );

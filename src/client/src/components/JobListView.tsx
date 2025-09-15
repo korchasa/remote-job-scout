@@ -7,6 +7,7 @@ import { Badge } from './ui/badge.tsx';
 import { Filter, Grid, List, Search } from 'lucide-react';
 import { JobCard } from './JobCard.tsx';
 import { JobDetailsModal } from './JobDetailsModal.tsx';
+import { useFavorites } from '../hooks/useFavorites.ts';
 import type { JobPost, JobStatus } from '../../../shared/schema.ts';
 
 interface JobListViewProps {
@@ -21,6 +22,9 @@ export function JobListView({ jobs, onJobAction }: JobListViewProps) {
   const [statusFilter, setStatusFilter] = useState<JobStatus | 'all'>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Favorites management
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   // Filter jobs based on search and filters
   const filteredJobs = jobs.filter((job) => {
@@ -183,6 +187,8 @@ export function JobListView({ jobs, onJobAction }: JobListViewProps) {
               onSkip={(job) => handleJobAction(job, 'skip')}
               onDefer={(job) => handleJobAction(job, 'defer')}
               onBlacklist={(job) => handleJobAction(job, 'blacklist')}
+              onToggleFavorite={toggleFavorite}
+              isFavorite={isFavorite(job.id)}
             />
           ))}
         </div>
@@ -196,6 +202,8 @@ export function JobListView({ jobs, onJobAction }: JobListViewProps) {
         onSkip={(job) => handleJobAction(job, 'skip')}
         onDefer={(job) => handleJobAction(job, 'defer')}
         onBlacklist={(job) => handleJobAction(job, 'blacklist')}
+        onToggleFavorite={toggleFavorite}
+        isFavorite={selectedJob ? isFavorite(selectedJob.id) : false}
       />
     </div>
   );

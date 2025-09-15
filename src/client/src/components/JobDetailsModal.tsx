@@ -20,6 +20,7 @@ import {
   DollarSign,
   ExternalLink,
   Globe,
+  Heart,
   MapPin,
   Tag,
   Users,
@@ -34,6 +35,8 @@ interface JobDetailsModalProps {
   onSkip: (job: JobPost) => Promise<void>;
   onDefer: (job: JobPost) => Promise<void>;
   onBlacklist: (job: JobPost) => Promise<void>;
+  onToggleFavorite: (job: JobPost) => void;
+  isFavorite: boolean;
 }
 
 export function JobDetailsModal({
@@ -43,6 +46,8 @@ export function JobDetailsModal({
   onSkip,
   onDefer,
   onBlacklist,
+  onToggleFavorite,
+  isFavorite,
 }: JobDetailsModalProps) {
   if (!job) return null;
 
@@ -258,6 +263,15 @@ export function JobDetailsModal({
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-4 border-t">
+          <Button
+            variant={isFavorite ? 'default' : 'outline'}
+            onClick={() => onToggleFavorite(job)}
+            data-testid="button-modal-favorite"
+            className={isFavorite ? 'text-red-600 hover:text-red-700' : ''}
+          >
+            <Heart className={`h-4 w-4 mr-2 ${isFavorite ? 'fill-current' : ''}`} />
+            {isFavorite ? 'Remove Favorite' : 'Add Favorite'}
+          </Button>
           <Button
             onClick={handleOpenOriginal}
             className="flex-1"

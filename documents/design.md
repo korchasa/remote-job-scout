@@ -10,6 +10,7 @@
 - ✅ Parallel scraping with retry/backoff and concurrency control
 - ✅ LLM enrichment with token/cost tracking
 - ✅ Session persistence and recovery
+- ✅ **FR-7 Favorites Feature**: Complete favorites system with localStorage persistence
 
 ## System Architecture
 
@@ -39,7 +40,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **Tech**: React 19, TypeScript strict, Vite, jsdom testing
 - **UI**: Shadcn/ui (47 components), Tailwind CSS 4.1+, responsive design
 - **State**: React Query, custom hooks, localStorage persistence
-- **Features**: ✅ Multi-stage search UI, progress dashboard, filtering stats, themes, responsive, real-time polling, session management
+- **Features**: ✅ Multi-stage search UI, progress dashboard, filtering stats, themes, responsive, real-time polling, session management, favorites system
 
 ### Backend
 
@@ -67,7 +68,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ### Storage Strategy
 
-- **✅ Client**: localStorage (privacy-focused, user settings/config persistence)
+- **✅ Client**: localStorage (privacy-focused, user settings/config persistence, favorites storage)
 - **✅ Server**: YAML serialization, filesystem session snapshots, session recovery
 - **✅ Format**: YAML for jobs, JSON for API, fixtures for testing
 - **✅ Progress**: Real-time tracking, session persistence, pause/resume support
@@ -172,6 +173,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **FR-4**: Filtering (Stage 2) ✅ COMPLETED - Advanced filtering with detailed skip reasons
 - **FR-5**: Enrichment with LLM (Stage 3) ✅ COMPLETED - LLM enrichment with token/cost tracking
 - **FR-6**: Enhanced job management UI ✅ COMPLETED - Modern responsive job management with cards, details, external links, blacklist management, and themes
+- **FR-7**: Favorites Feature ✅ COMPLETED - Complete favorites system with localStorage persistence, employer blocking, and dedicated UI
 - **Database Migration**: From in-memory to persistent database (PostgreSQL/MongoDB)
 - **Performance**: Caching strategies, CDN integration, query optimization
 - **Authentication**: User accounts, personalized dashboards, API rate limiting

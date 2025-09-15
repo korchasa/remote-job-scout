@@ -17,6 +17,7 @@ import {
   DollarSign,
   ExternalLink,
   Eye,
+  Heart,
   MapPin,
   X,
 } from 'lucide-react';
@@ -28,9 +29,19 @@ interface JobCardProps {
   onSkip: (job: JobPost) => Promise<void>;
   onDefer: (job: JobPost) => Promise<void>;
   onBlacklist: (job: JobPost) => Promise<void>;
+  onToggleFavorite: (job: JobPost) => void;
+  isFavorite: boolean;
 }
 
-export function JobCard({ job, onViewDetails, onSkip, onDefer, onBlacklist }: JobCardProps) {
+export function JobCard({
+  job,
+  onViewDetails,
+  onSkip,
+  onDefer,
+  onBlacklist,
+  onToggleFavorite,
+  isFavorite,
+}: JobCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -175,6 +186,15 @@ export function JobCard({ job, onViewDetails, onSkip, onDefer, onBlacklist }: Jo
           >
             <Eye className="h-3 w-3 mr-1" />
             View
+          </Button>
+          <Button
+            size="sm"
+            variant={isFavorite ? 'default' : 'outline'}
+            onClick={handleAction(() => onToggleFavorite(job))}
+            data-testid={`button-favorite-job-${job.id}`}
+            className={isFavorite ? 'text-red-600 hover:text-red-700' : ''}
+          >
+            <Heart className={`h-3 w-3 ${isFavorite ? 'fill-current' : ''}`} />
           </Button>
           <Button
             size="sm"

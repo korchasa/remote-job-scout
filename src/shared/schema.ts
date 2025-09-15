@@ -197,6 +197,28 @@ export interface Vacancy {
   data: Record<string, unknown>;
 }
 
+// Favorites functionality types
+export interface FavoriteJob {
+  id: string;
+  jobId: string;
+  title: string;
+  company: string;
+  location?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  currency?: string;
+  employmentType?: string;
+  remoteType?: string;
+  addedAt: Date;
+  originalUrl: string;
+  source: string;
+}
+
+export interface FavoritesSettings {
+  favorites: FavoriteJob[];
+  lastUpdated: Date;
+}
+
 // Multi-stage search types
 export interface MultiStageSearchRequest {
   positions: string[];
