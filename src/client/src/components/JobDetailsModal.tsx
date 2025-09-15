@@ -1,3 +1,11 @@
+/**
+ * JobDetailsModal Component
+ *
+ * Responsibility: Displays comprehensive job details in a modal dialog with all job information and actions
+ * Relationships: Used by JobListView component, integrates with job action handlers from MainDashboard
+ * Features: Responsive modal layout, secure external links, comprehensive job data display, action buttons
+ */
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog.tsx';
 import { Badge } from './ui/badge.tsx';
 import { Button } from './ui/button.tsx';
@@ -48,8 +56,15 @@ export function JobDetailsModal({
     return 'Salary not specified';
   };
 
+  // Secure external link handler - creates temporary anchor with security attributes
+  // to prevent potential security vulnerabilities from malicious external sites
   const handleOpenOriginal = () => {
-    globalThis.open(job.originalUrl, '_blank');
+    // Create a temporary anchor element with security attributes
+    const link = document.createElement('a');
+    link.href = job.originalUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.click();
   };
 
   const handleAction = (action: () => Promise<void>) => () => {

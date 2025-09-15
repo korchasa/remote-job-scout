@@ -1,3 +1,11 @@
+/**
+ * JobCard Component
+ *
+ * Responsibility: Renders individual job postings in card format with essential details and actions
+ * Relationships: Used by JobListView component, integrates with ThemeProvider for theming
+ * Features: Responsive design, secure external links, blacklist/skip/defer actions, job status indicators
+ */
+
 import { Card, CardContent, CardHeader } from './ui/card.tsx';
 import { Badge } from './ui/badge.tsx';
 import { Button } from './ui/button.tsx';
@@ -50,9 +58,16 @@ export function JobCard({ job, onViewDetails, onSkip, onDefer, onBlacklist }: Jo
     return 'Salary not specified';
   };
 
+  // Secure external link handler - creates temporary anchor with security attributes
+  // to prevent potential security vulnerabilities from malicious external sites
   const handleOpenOriginal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    globalThis.open(job.originalUrl, '_blank');
+    // Create a temporary anchor element with security attributes
+    const link = document.createElement('a');
+    link.href = job.originalUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.click();
   };
 
   const handleAction = (action: () => Promise<void>) => (e: React.MouseEvent) => {
