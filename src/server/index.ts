@@ -16,6 +16,7 @@ import searchRouter from './routes/search.js';
 import multiStageRouter from './routes/multiStage.js';
 
 // Import storage
+import { jobs } from './storage.js';
 
 // Create Express application
 const app = express();
@@ -255,6 +256,26 @@ if (import.meta.url === `file://${process.argv[1]}` && !isBuildMode) {
     console.log(`📊 Health check available at http://localhost:${PORT}/health`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV ?? 'development'}`);
     console.log(`🔄 Using HTTP polling for progress updates`);
+
+    // Restore sessions from snapshots on startup (async)
+    console.log('🔄 Restoring sessions from snapshots...');
+    import('../controllers/collectionController.js')
+      .then(({ CollectionController }) => {
+        const collectionController = new CollectionController(jobs);
+        collectionController
+          .restoreSessionsFromSnapshots()
+          .then((restoreResult) => {
+            console.log(
+              `✅ Session restoration: ${restoreResult.restored} restored, ${restoreResult.failed} failed`,
+            );
+          })
+          .catch((error) => {
+            console.error('❌ Failed to restore sessions on startup:', error);
+          });
+      })
+      .catch((error) => {
+        console.error('❌ Failed to import collection controller:', error);
+      });
   });
 }
 

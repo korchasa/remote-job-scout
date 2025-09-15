@@ -11,6 +11,7 @@
 - ✅ LLM enrichment with token/cost tracking
 - ✅ Session persistence and recovery
 - ✅ **FR-7 Favorites Feature**: Complete favorites system with localStorage persistence
+- ✅ **FR-8 Session Snapshots**: Server-side persistence and restoration of search sessions
 
 ## System Architecture
 
@@ -40,7 +41,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **Tech**: React 19, TypeScript strict, Vite, jsdom testing
 - **UI**: Shadcn/ui (47 components), Tailwind CSS 4.1+, responsive design
 - **State**: React Query, custom hooks, localStorage persistence
-- **Features**: ✅ Multi-stage search UI, progress dashboard, filtering stats, themes, responsive, real-time polling, session management, favorites system
+- **Features**: ✅ Multi-stage search UI, progress dashboard, filtering stats, themes, responsive, real-time polling, session snapshots/persistence, favorites system
 
 ### Backend
 
@@ -49,7 +50,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **Storage**: ✅ YAML serialization, filesystem session persistence, localStorage client settings
 - **Services**: ✅ 6 business logic + 4 scrapers, parallel processing, token/cost tracking
 - **Middleware**: ✅ CORS, logging, security, error handling
-- **API**: ✅ HTTP polling, pause/resume, schema validation, multi-stage search endpoints
+- **API**: ✅ HTTP polling, pause/resume, schema validation, multi-stage search endpoints, session snapshots
 - **Testing**: ✅ Vitest (85+ tests passed), React component testing, integration fixtures
 
 ### Shared
@@ -68,9 +69,9 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ### Storage Strategy
 
-- **✅ Client**: localStorage (privacy-focused, user settings/config persistence, favorites storage)
+- **✅ Client**: localStorage (privacy-focused, user settings/config persistence, favorites storage, session metadata)
 - **✅ Server**: YAML serialization, filesystem session snapshots, session recovery
-- **✅ Format**: YAML for jobs, JSON for API, fixtures for testing
+- **✅ Format**: YAML for jobs, JSON for API/snapshots, fixtures for testing
 - **✅ Progress**: Real-time tracking, session persistence, pause/resume support
 
 ## Algorithm Design
@@ -174,6 +175,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **FR-5**: Enrichment with LLM (Stage 3) ✅ COMPLETED - LLM enrichment with token/cost tracking
 - **FR-6**: Enhanced job management UI ✅ COMPLETED - Modern responsive job management with cards, details, external links, blacklist management, and themes
 - **FR-7**: Favorites Feature ✅ COMPLETED - Complete favorites system with localStorage persistence, employer blocking, and dedicated UI
+- **FR-8**: Session Snapshots ✅ COMPLETED - Server-side persistence and restoration of search sessions
 - **Database Migration**: From in-memory to persistent database (PostgreSQL/MongoDB)
 - **Performance**: Caching strategies, CDN integration, query optimization
 - **Authentication**: User accounts, personalized dashboards, API rate limiting

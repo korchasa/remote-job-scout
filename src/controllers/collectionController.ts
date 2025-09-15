@@ -240,4 +240,27 @@ export class CollectionController {
       };
     }
   }
+
+  /**
+   * Restore sessions from snapshots on server startup
+   */
+  async restoreSessionsFromSnapshots(): Promise<{ restored: number; failed: number }> {
+    return this.multiStageOrchestrator.restoreSessionsFromSnapshots();
+  }
+
+  /**
+   * Get all available sessions
+   */
+  async getAllSessions(): Promise<
+    Array<{
+      sessionId: string;
+      status: string;
+      currentStage: string;
+      startTime: string;
+      canResume: boolean;
+      hasSnapshot: boolean;
+    }>
+  > {
+    return this.multiStageOrchestrator.getAllSessions();
+  }
 }

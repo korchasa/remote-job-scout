@@ -3,6 +3,8 @@ description: Create a task plan
 alwaysApply: false
 ---
 # WORKFLOW (until STOP section)
+
+Add the following steps to the To-Do:
 1. Read existing documentation in `./documents`.
 2. Analyze the user query and restate the user query.
 4. Analyze of the problem. Collect the ALL related information from all available sources:

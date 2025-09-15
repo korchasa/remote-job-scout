@@ -3,6 +3,8 @@ description: update documentation
 alwaysApply: false
 ---
 # WORKFLOW (until STOP section)
+
+Add the following steps to the To-Do:
 1. Read existing documentation in `./documents`.
 2. Study all changes in the project relative to the last commit. Don't forget to use `| cat` for git operations.
 3. Update the documentation in `./documents`(except `./documents/whiteboard.md`) by the changes in the project:

@@ -46,8 +46,12 @@ remote-job-scout/
 │   │   │   │   ├── examples/ (6 examples)
 │   │   │   │   └── ui/ (47 Shadcn/ui)
 │   │   │   ├── hooks/    # React hooks
+│   │   │   │   ├── useFavorites.test.ts
+│   │   │   │   ├── useFavorites.ts
 │   │   │   │   ├── useJobs.ts
 │   │   │   │   ├── useSearchSessions.ts
+│   │   │   │   ├── useSessions.test.ts
+│   │   │   │   ├── useSessions.ts
 │   │   │   │   ├── useUserConfig.ts
 │   │   │   │   ├── use-mobile.tsx
 │   │   │   │   └── use-toast.ts
@@ -89,6 +93,8 @@ remote-job-scout/
 │   │   ├── filteringService.test.ts
 │   │   ├── enrichmentService.ts
 │   │   ├── enrichmentService.test.ts
+│   │   ├── sessionSnapshotService.ts
+│   │   ├── sessionSnapshotService.test.ts
 │   │   ├── settingsService.ts
 │   │   ├── settings.test.ts
 │   │   └── scrapers/    # Scrapers
@@ -106,6 +112,13 @@ remote-job-scout/
 │   └── utils/           # Utilities
 │       ├── index.ts
 │       └── utils.ts
+├── data/                # Runtime data
+│   ├── jobs/            # Job fixtures
+│   │   ├── parallel-test-session.yml
+│   │   ├── retry-test-session.yml
+│   │   └── yaml-test-session.yml
+│   └── sessions/        # Session snapshots
+│       └── <sessionId>.json
 ├── tests/               # Tests and fixtures
 │   ├── integration/     # Integration tests
 │   └── fixtures/        # Static YAML fixtures for jobs/sessions
@@ -127,10 +140,10 @@ remote-job-scout/
 
 ### Components
 
-- **Frontend**: 10 core + 47 Shadcn/ui + 6 examples + test setup
+- **Frontend**: 11 core + 47 Shadcn/ui + 6 examples + test setup
 - **Backend**: Express.js server, middleware, routes, controllers
-- **Services**: 6 business + 3 scrapers, parallel processing, LLM enrichment
-- **Tests**: 18 files, Vitest coverage (70 passed), fixtures in `tests/fixtures`, React component testing
+- **Services**: 7 business + 3 scrapers, parallel processing, LLM enrichment, session snapshots
+- **Tests**: 22 files, Vitest coverage (90+ passed), fixtures in `tests/fixtures`, React component testing
 - **CLI**: Unified `run` script with full validation pipeline
 - **Storage**: YAML serialization, filesystem session persistence, localStorage client storage
 
@@ -143,4 +156,4 @@ remote-job-scout/
 - **Dev**: Hot reload, TS compilation, ESLint/Prettier, modular architecture
 - **Testing**: Vitest framework, React Testing Library, comprehensive coverage, test fixtures
 - **CLI**: Unified workflow, build/check/test automation
-- **Processing**: Parallel scraping, retry/backoff, token/cost tracking, localStorage persistence
+- **Processing**: Parallel scraping, retry/backoff, token/cost tracking, localStorage persistence, session snapshots, filesystem persistence

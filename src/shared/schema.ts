@@ -239,3 +239,27 @@ export interface MultiStageSearchResponse {
   estimatedCost?: number;
   estimatedTime?: number;
 }
+
+// Client-side session storage types
+export interface ClientSessionInfo {
+  sessionId: string;
+  status: 'running' | 'completed' | 'stopped' | 'error' | 'paused';
+  currentStage: 'collecting' | 'filtering' | 'enriching' | 'completed';
+  startTime: string;
+  lastUpdate: string;
+  settings: {
+    positions: string[];
+    sources: string[];
+    filters: {
+      blacklistedCompanies: string[];
+      countries: string[];
+    };
+  };
+  canResume: boolean;
+  hasResults: boolean;
+}
+
+export interface ClientSessionsStorage {
+  sessions: ClientSessionInfo[];
+  lastUpdated: string;
+}

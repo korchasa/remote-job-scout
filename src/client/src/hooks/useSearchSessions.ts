@@ -58,6 +58,44 @@ export function useStopSearch() {
   });
 }
 
+export function useResumeSearch() {
+  return useMutation({
+    mutationFn: async (config: SearchConfig & { sessionId: string }) => {
+      const { sessionId, ...searchConfig } = config;
+
+      // Convert config to the format expected by our multi-stage resume API
+      const searchRequest = {
+        session_id: sessionId,
+        settings: {
+          searchPositions: searchConfig.positions,
+          filters: {
+            blacklistedCompanies: searchConfig.blacklistedCompanies,
+            blacklistedWordsTitle: searchConfig.blacklistedWords,
+            blacklistedWordsDescription: searchConfig.blacklistedWords,
+            countries: searchConfig.filters.countries,
+            languages: searchConfig.filters.languages.map((lang) => ({
+              language: lang.language,
+              level: lang.level,
+            })),
+          },
+          sources: searchConfig.sources,
+          llm: {
+            apiKey: searchConfig.llm.apiKey,
+          },
+        },
+      };
+
+      const response = await apiRequest(
+        'POST',
+        `/api/multi-stage/resume/${sessionId}`,
+        searchRequest,
+      );
+      const payload = await response.json();
+      return { ...payload, sessionId } as { sessionId: string } & Record<string, unknown>;
+    },
+  });
+}
+
 export function useSearchProgress(sessionId: string | null) {
   console.log('🔄 [REACT] useSearchProgress called with sessionId:', sessionId);
 

@@ -65,7 +65,7 @@ npm install
 ### CLI Commands
 
 - `./run check`: Full validation (build + lint + test)
-- `./run test`: Unit tests (85 passed, 4 skipped)
+- `./run test`: Unit tests (90+ passed, 8 skipped)
 - `./run test integration`: Integration tests
 - `./run start`: Development server (client + server)
 - `./run stop`: Stop server
@@ -76,5 +76,5 @@ npm install
 - **Frontend**: React 19, TypeScript strict, Vite, Shadcn/ui, React Query
 - **Processing**: 3-stage pipeline (Collect → Filter → Enrich), parallel scraping, LLM enrichment
 - **Storage**: YAML serialization, filesystem sessions, localStorage client settings
-- **Testing**: Vitest, React Testing Library, 85+ tests, comprehensive coverage
+- **Testing**: Vitest, React Testing Library, 90+ tests, comprehensive coverage
 - **Scraping**: Indeed GraphQL, LinkedIn, Glassdoor GraphQL, OpenAI WebSearch with retry/backoff

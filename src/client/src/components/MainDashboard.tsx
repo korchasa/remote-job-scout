@@ -14,9 +14,11 @@ import {
   useStartSearch,
   useStopSearch,
   usePauseSearch,
+  useResumeSearch,
   useSearchProgress,
 } from '../hooks/useSearchSessions.ts';
 import { useSaveUserConfig } from '../hooks/useUserConfig.ts';
+import { useSessions } from '../hooks/useSessions.ts';
 // Using HTTP polling for progress updates
 import { useToast } from '../hooks/use-toast.ts';
 import { queryClient } from '../lib/queryClient.ts';
@@ -40,8 +42,14 @@ export function MainDashboard() {
   const startSearchMutation = useStartSearch();
   const stopSearchMutation = useStopSearch();
   const pauseSearchMutation = usePauseSearch();
+  const resumeSearchMutation = useResumeSearch();
   const { data: progressData, isLoading: progressLoading } = useSearchProgress(currentSessionId);
   const saveUserConfigMutation = useSaveUserConfig();
+
+  // Sessions management
+  const { sessions, currentSession, addSession, updateSession, setCurrentSession, syncWithServer } =
+    useSessions();
+
   // Using HTTP polling for progress updates
 
   const jobs = jobsResponse?.jobs ?? [];
@@ -73,6 +81,54 @@ export function MainDashboard() {
     }
   }, [currentSessionId, isCompleted]);
 
+  // Sync sessions with server on mount
+  useEffect(() => {
+    void syncWithServer();
+  }, [syncWithServer]);
+
+  // Update session when currentSessionId changes
+  useEffect(() => {
+    if (currentSessionId) {
+      const session = sessions.find((s) => s.sessionId === currentSessionId);
+      if (session) {
+        setCurrentSession(session.sessionId);
+      }
+    } else {
+      setCurrentSession(null);
+    }
+  }, [currentSessionId, sessions, setCurrentSession]);
+
+  // Update session progress when progress data changes
+  useEffect(() => {
+    if (currentSessionId && progressData) {
+      const status =
+        progressData.status === 'running'
+          ? 'running'
+          : progressData.status === 'completed'
+            ? 'completed'
+            : progressData.status === 'error'
+              ? 'error'
+              : progressData.status === 'stopped'
+                ? 'stopped'
+                : 'paused';
+
+      updateSession(currentSessionId, {
+        status,
+        currentStage:
+          progressData.currentStage === 1
+            ? 'collecting'
+            : progressData.currentStage === 2
+              ? 'filtering'
+              : progressData.currentStage === 3
+                ? 'enriching'
+                : 'completed',
+        lastUpdate: new Date().toISOString(),
+        canResume: status === 'paused' || status === 'stopped',
+        hasResults: progressData.processedJobs > 0,
+      });
+    }
+  }, [currentSessionId, progressData, updateSession]);
+
   // Using HTTP polling for progress updates
 
   // Progress updates handled by HTTP polling via useSearchProgress hook
@@ -82,9 +138,31 @@ export function MainDashboard() {
     try {
       const result = await startSearchMutation.mutateAsync(config);
       console.log('🏠 [REACT] Search started, setting sessionId:', result.sessionId);
+
+      // Add session to local storage
+      const sessionInfo = {
+        sessionId: result.sessionId,
+        status: 'running' as const,
+        currentStage: 'collecting' as const,
+        startTime: new Date().toISOString(),
+        lastUpdate: new Date().toISOString(),
+        settings: {
+          positions: config.positions,
+          sources: config.sources.jobSites || [],
+          filters: {
+            blacklistedCompanies: config.blacklistedCompanies,
+            countries: config.filters.countries,
+          },
+        },
+        canResume: false,
+        hasResults: false,
+      };
+
+      addSession(sessionInfo);
       setCurrentSessionId(result.sessionId);
       setViewMode('progress');
       setIsPaused(false);
+
       toast({
         title: 'Search Started',
         description: 'Your job search has been initiated successfully.',
@@ -99,16 +177,59 @@ export function MainDashboard() {
     }
   };
 
+  const handleResumeSearch = async () => {
+    if (!currentSessionId || !currentSession) return;
+
+    try {
+      // Create config from current session settings
+      const config: SearchConfig & { sessionId: string } = {
+        sessionId: currentSessionId,
+        positions: currentSession.settings.positions,
+        blacklistedCompanies: currentSession.settings.filters.blacklistedCompanies,
+        blacklistedWords: [], // Will be populated from user config
+        sources: {
+          jobSites: currentSession.settings.sources,
+        },
+        llm: {
+          apiKey: '', // Will need to be populated from user config
+        },
+        filters: {
+          locations: [],
+          employmentTypes: [],
+          remoteTypes: [],
+          languages: [],
+          countries: currentSession.settings.filters.countries,
+        },
+      };
+
+      const result = await resumeSearchMutation.mutateAsync(config);
+      console.log('▶️ Search resumed, sessionId:', result.sessionId);
+
+      setCurrentSessionId(result.sessionId);
+      setViewMode('progress');
+      setIsPaused(false);
+
+      toast({
+        title: 'Search Resumed',
+        description: 'Your job search has been resumed successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to resume search:', error);
+      toast({
+        title: 'Resume Failed',
+        description: 'Failed to resume the search. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handlePauseResume = async () => {
     if (!currentSessionId) return;
 
     try {
       if (isPaused) {
-        // Resume search - for now, we'll just show a message since resume logic is not implemented yet
-        toast({
-          title: 'Resume Not Available',
-          description: 'Resume functionality is not yet implemented.',
-        });
+        // Resume search
+        await handleResumeSearch();
       } else {
         // Pause search
         await pauseSearchMutation.mutateAsync(currentSessionId);
@@ -223,15 +344,50 @@ export function MainDashboard() {
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Status Indicator */}
-              {isSearching && (
+              {/* Session Status Indicator */}
+              {currentSession && (
                 <div className="flex items-center gap-2">
                   <div
-                    className={`w-2 h-2 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-green-500 animate-pulse'}`}
+                    className={`w-2 h-2 rounded-full ${
+                      currentSession.status === 'running'
+                        ? 'bg-green-500 animate-pulse'
+                        : currentSession.status === 'paused'
+                          ? 'bg-yellow-500'
+                          : currentSession.status === 'stopped'
+                            ? 'bg-orange-500'
+                            : currentSession.status === 'error'
+                              ? 'bg-red-500'
+                              : 'bg-blue-500'
+                    }`}
                   />
-                  <span className="text-sm text-muted-foreground">
-                    {isPaused ? 'Paused' : 'Searching...'}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">
+                      {currentSession.status === 'running'
+                        ? 'Searching...'
+                        : currentSession.status === 'paused'
+                          ? 'Paused'
+                          : currentSession.status === 'stopped'
+                            ? 'Stopped'
+                            : currentSession.status === 'error'
+                              ? 'Error'
+                              : 'Completed'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Stage: {currentSession.currentStage}
+                      {currentSession.canResume && currentSession.status !== 'running' && (
+                        <span className="ml-1 text-blue-600">(Resumable)</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Sessions Count */}
+              {sessions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">
+                    {sessions.length} Session{sessions.length !== 1 ? 's' : ''}
+                  </Badge>
                 </div>
               )}
 
@@ -381,8 +537,10 @@ export function MainDashboard() {
             <div className="lg:col-span-2 space-y-6">
               <ProgressDashboard
                 progress={normalizedProgress}
+                session={currentSession}
                 onPauseResume={handlePauseResume}
                 onStop={handleStopSearch}
+                onResume={handleResumeSearch}
               />
 
               {/* Filtering Statistics - show when filtering stage is completed or in progress */}

@@ -15,6 +15,7 @@ import { IndeedScraper } from './scrapers/indeed.js';
 import { LinkedInScraper } from './scrapers/linkedin.js';
 import { GlassdoorScraper } from './scrapers/glassdoor.js';
 import { OpenAIWebSearchScraper } from './scrapers/openai-web-search.js';
+import { SessionSnapshotService } from './sessionSnapshotService.js';
 // Using HTTP polling for progress updates
 
 export interface OrchestratorResult {
@@ -31,6 +32,7 @@ export class MultiStageSearchOrchestrator {
   private collectionService: JobCollectionService;
   private filteringService: FilteringService;
   private enrichmentService: EnrichmentService;
+  private snapshotService: SessionSnapshotService;
   private activeProcesses: Map<string, MultiStageProgress> = new Map();
   private jobsStorage?: Map<string, Vacancy>;
 
@@ -38,6 +40,7 @@ export class MultiStageSearchOrchestrator {
     this.collectionService = new JobCollectionService();
     this.filteringService = new FilteringService();
     this.enrichmentService = new EnrichmentService();
+    this.snapshotService = new SessionSnapshotService();
     this.jobsStorage = jobsStorage;
   }
 
@@ -109,6 +112,9 @@ export class MultiStageSearchOrchestrator {
       // Save collected vacancies
       this.saveVacancies(collectionResult.vacancies, session_id);
 
+      // Save session snapshot after collection
+      await this.saveSessionSnapshot(session_id, progress, settings, collectionResult);
+
       // Stage 2: Filtering
       const filteringResult = this.executeFilteringStage(
         collectionResult.vacancies,
@@ -134,6 +140,15 @@ export class MultiStageSearchOrchestrator {
         console.warn('⚠️ Filtering stage had errors, continuing with available data');
       }
 
+      // Save session snapshot after filtering
+      await this.saveSessionSnapshot(
+        session_id,
+        progress,
+        settings,
+        collectionResult,
+        filteringResult,
+      );
+
       // Stage 3: Enrichment (обязательная стадия)
       if (filteringResult.filteredVacancies.length > 0) {
         if (!settings.sources.openaiWebSearch?.apiKey) {
@@ -151,11 +166,30 @@ export class MultiStageSearchOrchestrator {
         if (!enrichmentResult.success) {
           console.warn('⚠️ Enrichment stage had errors, using filtered data');
         }
+
+        // Save session snapshot after enrichment
+        await this.saveSessionSnapshot(
+          session_id,
+          progress,
+          settings,
+          collectionResult,
+          filteringResult,
+          enrichmentResult,
+        );
       } else {
         // Если нет вакансий для обогащения, помечаем стадию как пропущенную
         progress.stages.enriching.status = 'skipped';
         progress.stages.enriching.endTime = new Date().toISOString();
         console.log('⏭️ Enrichment stage skipped (no vacancies to enrich)');
+
+        // Save session snapshot after enrichment skipped
+        await this.saveSessionSnapshot(
+          session_id,
+          progress,
+          settings,
+          collectionResult,
+          filteringResult,
+        );
       }
 
       // Завершаем процесс
@@ -167,6 +201,16 @@ export class MultiStageSearchOrchestrator {
 
       result.success = true;
       result.finalProgress = progress;
+
+      // Save final session snapshot
+      await this.saveSessionSnapshot(
+        session_id,
+        progress,
+        settings,
+        collectionResult,
+        filteringResult,
+        result.enrichmentResult,
+      );
 
       // Progress updates available via polling: GET /api/multi-stage/progress/:sessionId
 
@@ -181,6 +225,16 @@ export class MultiStageSearchOrchestrator {
       progress.errors.push((error as Error).message);
       result.errors.push((error as Error).message);
       result.finalProgress = progress;
+
+      // Save error session snapshot (using available results)
+      await this.saveSessionSnapshot(
+        session_id,
+        progress,
+        settings,
+        result.collectionResult,
+        result.filteringResult,
+        result.enrichmentResult,
+      );
 
       console.error(`❌ Multi-stage search failed for session ${session_id}:`, error);
       return result;
@@ -197,6 +251,123 @@ export class MultiStageSearchOrchestrator {
    */
   getProgress(sessionId: string): MultiStageProgress | null {
     return this.activeProcesses.get(sessionId) ?? null;
+  }
+
+  /**
+   * Restores sessions from filesystem snapshots on server startup
+   */
+  async restoreSessionsFromSnapshots(): Promise<{ restored: number; failed: number }> {
+    try {
+      const listResult = await this.snapshotService.listSnapshots();
+
+      if (!listResult.success) {
+        console.error('❌ Failed to list snapshots for restoration:', listResult.error);
+        return { restored: 0, failed: 0 };
+      }
+
+      let restored = 0;
+      let failed = 0;
+
+      for (const snapshot of listResult.sessions) {
+        try {
+          // Only restore sessions that are not completed
+          if (snapshot.status === 'completed') {
+            console.log(
+              `⏭️ Skipping completed session ${snapshot.sessionId} (available for read-only viewing)`,
+            );
+            continue;
+          }
+
+          // Restore progress to active processes
+          this.activeProcesses.set(snapshot.sessionId, snapshot.progress);
+
+          // Restore vacancies to storage if available
+          if (this.jobsStorage && snapshot.vacancies.length > 0) {
+            for (const vacancy of snapshot.vacancies) {
+              this.jobsStorage.set(vacancy.id, vacancy);
+            }
+          }
+
+          console.log(
+            `🔄 Restored session ${snapshot.sessionId} (${snapshot.status} at ${snapshot.currentStage})`,
+          );
+          restored++;
+        } catch (error) {
+          console.error(`❌ Failed to restore session ${snapshot.sessionId}:`, error);
+          failed++;
+        }
+      }
+
+      console.log(`📊 Session restoration complete: ${restored} restored, ${failed} failed`);
+      return { restored, failed };
+    } catch (error) {
+      console.error('❌ Error during session restoration:', error);
+      return { restored: 0, failed: 1 };
+    }
+  }
+
+  /**
+   * Gets all available sessions (both active and from snapshots)
+   */
+  async getAllSessions(): Promise<
+    Array<{
+      sessionId: string;
+      status: string;
+      currentStage: string;
+      startTime: string;
+      canResume: boolean;
+      hasSnapshot: boolean;
+    }>
+  > {
+    const sessions: Array<{
+      sessionId: string;
+      status: string;
+      currentStage: string;
+      startTime: string;
+      canResume: boolean;
+      hasSnapshot: boolean;
+    }> = [];
+
+    // Add active processes
+    for (const [sessionId, progress] of this.activeProcesses.entries()) {
+      sessions.push({
+        sessionId,
+        status: progress.status,
+        currentStage: progress.currentStage,
+        startTime: progress.startTime,
+        canResume: !progress.isComplete,
+        hasSnapshot: true, // Active processes should have snapshots
+      });
+    }
+
+    // Add sessions from snapshots (excluding duplicates)
+    try {
+      const listResult = await this.snapshotService.listSnapshots();
+      if (listResult.success) {
+        for (const snapshot of listResult.sessions) {
+          // Skip if already in active processes
+          if (this.activeProcesses.has(snapshot.sessionId)) {
+            continue;
+          }
+
+          sessions.push({
+            sessionId: snapshot.sessionId,
+            status: snapshot.status,
+            currentStage: snapshot.currentStage,
+            startTime: snapshot.createdAt,
+            canResume: snapshot.canResume,
+            hasSnapshot: true,
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not load sessions from snapshots:', error);
+    }
+
+    // Sort by start time (newest first)
+    sessions.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+
+    return sessions;
   }
 
   /**
@@ -218,6 +389,9 @@ export class MultiStageSearchOrchestrator {
     progress.isComplete = true;
     progress.canStop = false;
     progress.errors.push(`Process stopped at ${currentStage} stage`);
+
+    // Save snapshot when process is stopped
+    void this.saveSessionSnapshot(sessionId, progress, {} as SearchRequest['settings']);
 
     console.log(`🛑 Process stopped for session ${sessionId} at ${currentStage} stage`);
     return true;
@@ -241,6 +415,9 @@ export class MultiStageSearchOrchestrator {
     progress.status = 'paused';
     progress.canStop = false;
     progress.errors.push(`Process paused at ${currentStage} stage`);
+
+    // Save snapshot when process is paused
+    void this.saveSessionSnapshot(sessionId, progress, {} as SearchRequest['settings']);
 
     console.log(`⏸️ Process paused for session ${sessionId} at ${currentStage} stage`);
     return true;
@@ -667,6 +844,39 @@ export class MultiStageSearchOrchestrator {
     }
 
     console.log(`💾 Saved ${vacancies.length} vacancies to storage`);
+  }
+
+  /**
+   * Saves a session snapshot to filesystem
+   */
+  private async saveSessionSnapshot(
+    sessionId: string,
+    progress: MultiStageProgress,
+    settings: SearchRequest['settings'],
+    collectionResult?: CollectionResult,
+    filteringResult?: FilteringResult,
+    enrichmentResult?: EnrichmentResult,
+  ): Promise<void> {
+    try {
+      // Get all vacancies for this session
+      const vacancies = this.getCollectedVacancies(sessionId);
+
+      const result = await this.snapshotService.saveSnapshot(
+        sessionId,
+        progress,
+        settings,
+        vacancies,
+        collectionResult,
+        filteringResult,
+        enrichmentResult,
+      );
+
+      if (!result.success) {
+        console.warn(`⚠️ Failed to save session snapshot: ${result.error}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error saving session snapshot:`, error);
+    }
   }
 
   /**

@@ -4,6 +4,8 @@ globs:
 alwaysApply: true
 ---
 # Instruction
+
+Add the following steps to the To-Do:
 1. Read the documentation
 2. Analyze all changes since the last commit for correctness and adequacy to the task (or tasks) in the whiteboard. Analyze for:
 - architectural issues

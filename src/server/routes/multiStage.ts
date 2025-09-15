@@ -90,4 +90,23 @@ router.post('/resume/:sessionId', (req: Request, res: Response) => {
   })();
 });
 
+// GET /api/multi-stage/sessions - Get all available sessions
+router.get('/sessions', (_req: Request, res: Response) => {
+  void (async () => {
+    try {
+      const sessions = await collectionController.getAllSessions();
+      res.json({
+        success: true,
+        sessions,
+      });
+    } catch (error) {
+      console.error('❌ Get sessions API error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get sessions',
+      });
+    }
+  })();
+});
+
 export default router;

@@ -2,13 +2,25 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card.tsx';
 import { Progress } from './ui/progress.tsx';
 import { Badge } from './ui/badge.tsx';
 import { Button } from './ui/button.tsx';
-import { Brain, CheckCircle, Clock, DollarSign, Filter, Pause, Play, Search } from 'lucide-react';
-import type { ProgressData } from '../../../shared/schema.ts';
+import {
+  Brain,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Filter,
+  Pause,
+  Search,
+  RotateCcw,
+  Square,
+} from 'lucide-react';
+import type { ProgressData, ClientSessionInfo } from '../../../shared/schema.ts';
 
 interface ProgressDashboardProps {
   progress: ProgressData;
+  session?: ClientSessionInfo | null;
   onPauseResume: () => void | Promise<void>;
   onStop: () => void | Promise<void>;
+  onResume?: () => void | Promise<void>;
 }
 
 const stages = [
@@ -32,7 +44,13 @@ const stages = [
   },
 ];
 
-export function ProgressDashboard({ progress, onPauseResume, onStop }: ProgressDashboardProps) {
+export function ProgressDashboard({
+  progress,
+  session,
+  onPauseResume,
+  onStop,
+  onResume,
+}: ProgressDashboardProps) {
   const formatTime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
@@ -80,6 +98,9 @@ export function ProgressDashboard({ progress, onPauseResume, onStop }: ProgressD
 
   const isRunning = progress.status === 'running';
   const isCompleted = progress.status === 'completed';
+  const isPaused = progress.status === 'paused';
+  const isStopped = progress.status === 'stopped';
+  const canResume = session?.canResume ?? (isPaused || isStopped);
 
   return (
     <div className="space-y-4">
@@ -219,22 +240,57 @@ export function ProgressDashboard({ progress, onPauseResume, onStop }: ProgressD
       {/* Control Buttons */}
       {!isCompleted && (
         <div className="flex gap-2">
-          <Button
-            variant={isRunning ? 'secondary' : 'default'}
-            onClick={() => void onPauseResume()}
-            className="flex-1"
-            data-testid="button-pause-resume"
-          >
-            {isRunning ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-            {isRunning ? 'Pause' : 'Resume'}
-          </Button>
+          {isRunning && (
+            <Button
+              variant="secondary"
+              onClick={() => void onPauseResume()}
+              className="flex-1"
+              data-testid="button-pause"
+            >
+              <Pause className="h-4 w-4 mr-2" />
+              Pause
+            </Button>
+          )}
+
+          {canResume && !isRunning && (
+            <Button
+              variant="default"
+              onClick={() => void (onResume ? onResume() : onPauseResume())}
+              className="flex-1"
+              data-testid="button-resume"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Resume
+            </Button>
+          )}
+
           <Button
             variant="destructive"
             onClick={() => void onStop()}
             className="flex-1"
             data-testid="button-stop"
           >
+            <Square className="h-4 w-4 mr-2" />
             Stop Search
+          </Button>
+        </div>
+      )}
+
+      {isCompleted && (
+        <div className="flex gap-2">
+          {canResume && onResume && (
+            <Button
+              variant="default"
+              onClick={() => void onResume()}
+              className="flex-1"
+              data-testid="button-resume-completed"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Resume Search
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => window.location.reload()} className="flex-1">
+            Start New Search
           </Button>
         </div>
       )}

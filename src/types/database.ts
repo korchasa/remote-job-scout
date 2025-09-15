@@ -167,3 +167,55 @@ export interface SearchResponse {
   message: string;
   total_found?: number;
 }
+
+/**
+ * Session Snapshot for persistence and restoration
+ * Saves complete session state to filesystem for recovery
+ */
+export interface SessionSnapshot {
+  // Metadata
+  sessionId: string;
+  version: string; // Schema version for compatibility
+  createdAt: string;
+  updatedAt: string;
+  snapshotVersion: number; // Incremental version for the snapshot
+
+  // Session state
+  status: 'running' | 'completed' | 'stopped' | 'error' | 'paused';
+  currentStage: ProcessingStage;
+
+  // Original request settings
+  settings: SearchRequest['settings'];
+
+  // Progress data
+  progress: MultiStageProgress;
+
+  // Collected data
+  vacancies: Vacancy[];
+  collectionResult?: {
+    success: boolean;
+    totalCollected: number;
+    errors: string[];
+  };
+  filteringResult?: {
+    success: boolean;
+    filteredCount: number;
+    skippedCount: number;
+    reasons: { [reason: string]: number };
+    errors: string[];
+  };
+  enrichmentResult?: {
+    success: boolean;
+    enrichedCount: number;
+    failedCount: number;
+    tokensUsed: number;
+    costUsd: number;
+    sources: string[];
+    errors: string[];
+  };
+
+  // Restoration flags
+  canResume: boolean;
+  lastCompletedStage?: ProcessingStage;
+  restorationNotes?: string[];
+}

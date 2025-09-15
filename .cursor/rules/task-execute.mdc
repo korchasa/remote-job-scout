@@ -4,7 +4,7 @@ alwaysApply: false
 ---
 # INSTRUCTIONS (until STOP section)
 
-Use To-Do and follow these steps:
+Add the following steps to the To-Do:
 1. Read existing documentation in `./documents`.
 2. Read task in `./documents/whiteboard.md`.
 3. Complete the task in a TDD manner and Autonomous Mode, updating the progress in `./documents/whiteboard.md` throughout the process.
