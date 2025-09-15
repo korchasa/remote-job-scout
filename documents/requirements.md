@@ -6,7 +6,7 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
 
 ## Functional Requirements
 
-### FR-1: Settings
+### FR-1: Settings ✅ COMPLETED
 
 - **Purpose**: User-configurable search settings stored client-side, sent to server in single request
 - **Usage**: User configures positions list, sources, language/country filters. Settings auto-restore from localStorage on reload. Search sends complete config once
