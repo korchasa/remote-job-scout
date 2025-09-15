@@ -2,10 +2,11 @@
 
 Web app for remote job search with AI analysis. Node.js runtime, Express.js backend, React frontend.
 
-## Status: 🚀 FR-2 Multi-Stage Search COMPLETED ✅
+## Status: 🚀 FR-3 Enhanced Collection COMPLETED ✅
 
 All core functionality implemented and tested:
 
+- ✅ **FR-3 Enhanced Collection**: 4 job sources (Indeed, LinkedIn, Glassdoor, OpenAI WebSearch)
 - ✅ 3-stage pipeline (Collect → Filter → Enrich)
 - ✅ Pause/Resume with state persistence
 - ✅ Real-time progress tracking
@@ -29,7 +30,7 @@ Configure OpenAI API key in UI settings:
 ## Features
 
 - **✅ Multi-Stage Search**: Collection → Filtering → Enrichment with pause/resume
-- **✅ Parallel Scraping**: Concurrent processing, retry/backoff (Indeed, LinkedIn, OpenAI WebSearch)
+- **✅ Parallel Scraping**: Concurrent processing, retry/backoff (Indeed, LinkedIn, Glassdoor, OpenAI WebSearch)
 - **✅ AI Enrichment**: OpenAI analysis, token/cost tracking, company research
 - **✅ Advanced Filtering**: Language/country filters, statistics, blacklist/whitelist
 - **✅ Real-Time Progress**: Live updates, filtering breakdown, ETA calculation
@@ -63,7 +64,7 @@ npm install
 ### CLI Commands
 
 - `./run check`: Full validation (build + lint + test)
-- `./run test`: Unit tests (70 passed, 8 skipped)
+- `./run test`: Unit tests (85 passed, 4 skipped)
 - `./run test integration`: Integration tests
 - `./run start`: Development server (client + server)
 - `./run stop`: Stop server
@@ -74,5 +75,5 @@ npm install
 - **Frontend**: React 19, TypeScript strict, Vite, Shadcn/ui, React Query
 - **Processing**: 3-stage pipeline (Collect → Filter → Enrich), parallel scraping, LLM enrichment
 - **Storage**: YAML serialization, filesystem sessions, localStorage client settings
-- **Testing**: Vitest, React Testing Library, 70+ tests, comprehensive coverage
-- **Scraping**: Indeed GraphQL, LinkedIn, OpenAI WebSearch with retry/backoff
+- **Testing**: Vitest, React Testing Library, 85+ tests, comprehensive coverage
+- **Scraping**: Indeed GraphQL, LinkedIn, Glassdoor GraphQL, OpenAI WebSearch with retry/backoff

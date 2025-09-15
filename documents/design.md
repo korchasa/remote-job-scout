@@ -2,11 +2,12 @@
 
 ## Project Status: 🚀 PRODUCTION READY ✅
 
-**Core FR-2 Multi-Stage Search: COMPLETED**
+**FR-3 Enhanced Collection: COMPLETED**
 
+- ✅ **FR-3 Enhanced Collection**: 4 job sources (Indeed, LinkedIn, Glassdoor, OpenAI WebSearch)
 - ✅ 3-stage pipeline (Collect → Filter → Enrich) with pause/resume
 - ✅ Real-time progress tracking and HTTP polling
-- ✅ Parallel scraping (Indeed, LinkedIn, OpenAI WebSearch)
+- ✅ Parallel scraping with retry/backoff and concurrency control
 - ✅ LLM enrichment with token/cost tracking
 - ✅ Session persistence and recovery
 
@@ -14,13 +15,13 @@
 
 ### Core Design
 
-Client-server web app for remote job search with AI analysis. **FR-2 Multi-Stage Search fully implemented and tested.**
+Client-server web app for remote job search with AI analysis. **FR-3 Enhanced Collection fully implemented with 4 job sources.**
 
 ### Subsystems
 
 - **✅ Settings**: localStorage persistence, language/country filters
 - **✅ Search**: 3-stage pipeline (collect → filter → enrich) with pause/resume ✅ COMPLETED
-- **✅ Collection**: Parallel scraping (Indeed GraphQL, LinkedIn, OpenAI WebSearch) with retry/backoff
+- **✅ Collection**: Parallel scraping (Indeed GraphQL, LinkedIn, Glassdoor GraphQL, OpenAI WebSearch) with retry/backoff
 - **✅ Filtering**: User criteria validation, blacklist/whitelist, stats tracking
 - **✅ Enrichment**: OpenAI LLM processing, token/cost tracking, company research
 - **✅ Storage**: YAML serialization, filesystem session persistence, UI presentation
@@ -45,10 +46,10 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **Tech**: Express.js REST API, modular middleware, Zod validation
 - **Arch**: Service-oriented, separation of concerns, type-safe schemas
 - **Storage**: ✅ YAML serialization, filesystem session persistence, localStorage client settings
-- **Services**: ✅ 6 business logic + 3 scrapers, parallel processing, token/cost tracking
+- **Services**: ✅ 6 business logic + 4 scrapers, parallel processing, token/cost tracking
 - **Middleware**: ✅ CORS, logging, security, error handling
 - **API**: ✅ HTTP polling, pause/resume, schema validation, multi-stage search endpoints
-- **Testing**: ✅ Vitest (70+ tests passed), React component testing, integration fixtures
+- **Testing**: ✅ Vitest (85+ tests passed), React component testing, integration fixtures
 
 ### Shared
 
@@ -82,7 +83,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 ### Key Algorithms
 
 - **✅ ETA**: `(total - processed) / speed × 60` - Real-time calculation
-- **✅ Retry**: Exponential backoff `delay = base × 2^(attempt - 1)` - 3 sources
+- **✅ Retry**: Exponential backoff `delay = base × 2^(attempt - 1)` - 4 sources
 - **✅ Concurrency**: Max sources/positions, queue management - Parallel processing
 - **✅ Progress**: Real-time % updates, pause/resume - HTTP polling
 - **✅ Cost**: Token usage × model rate per vacancy - OpenAI integration
@@ -111,7 +112,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **✅ Shadcn/ui**: 47 components, modern responsive design
 - **✅ Tailwind CSS 4.1+**: Utility styling, themes support
 - **✅ React Query**: API state, caching, real-time updates
-- **✅ React Testing Library**: Component testing, jsdom environment (70+ tests)
+- **✅ React Testing Library**: Component testing, jsdom environment (85+ tests)
 
 ### Backend
 
@@ -119,7 +120,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **✅ fs/promises**: File operations, session persistence, YAML serialization
 - **✅ YAML**: Data serialization, test fixtures, job storage
 - **✅ Zod**: Schema validation, input validation, type safety
-- **✅ JSDOM**: HTML parsing, scraping (Indeed, LinkedIn)
+- **✅ JSDOM**: HTML parsing, scraping (Indeed, LinkedIn, Glassdoor)
 
 ### Integrations
 
@@ -130,7 +131,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 ### Development
 
 - **✅ Docker**: Containerization, multi-stage builds, development environment
-- **✅ Vitest**: Testing framework, React component testing (70+ tests, 90% coverage)
+- **✅ Vitest**: Testing framework, React component testing (85+ tests, 90% coverage)
 - **✅ ESLint/Prettier**: Code quality, automated checks, zero warnings
 - **✅ TypeScript**: Strict compilation, type safety, Zod validation
 - **✅ CLI**: Unified runner (`./run check`), build/test automation
@@ -157,17 +158,17 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ### Current Status: Core Features ✅ COMPLETE
 
-**FR-2 Multi-Stage Search Pipeline: FULLY IMPLEMENTED**
+**FR-3 Enhanced Collection: FULLY IMPLEMENTED**
 
+- 4 job sources (Indeed, LinkedIn, Glassdoor, OpenAI WebSearch) ✅
 - 3-stage pipeline with pause/resume ✅
 - Real-time progress tracking ✅
-- Parallel scraping infrastructure ✅
+- Parallel scraping with retry/backoff ✅
 - LLM enrichment with cost tracking ✅
 - Session persistence and recovery ✅
 
 ### Roadmap
 
-- **FR-3**: Enhanced collection with additional job sources (Glassdoor, Monster, etc.)
 - **FR-4/5**: Advanced filtering options, AI-powered job matching
 - **FR-6**: Enhanced job management UI, favorites, bookmarks
 - **Database Migration**: From in-memory to persistent database (PostgreSQL/MongoDB)
@@ -186,4 +187,4 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ---
 
-_Last updated: September 15, 2025_
+_Last updated: September 16, 2025_

@@ -31,10 +31,11 @@ const defaultConfig: SearchConfig = {
   positions: ['Senior React Developer', 'Frontend Engineer'],
   blacklistedWords: ['unpaid', 'internship', 'commission'],
   blacklistedCompanies: ['Tyrell Corporation'],
-  selectedSources: ['indeed', 'linkedin', 'openai'],
+  selectedSources: ['indeed', 'linkedin', 'glassdoor', 'openai'],
   sources: {
     indeed: { enabled: true },
     linkedin: { enabled: true },
+    glassdoor: { enabled: true },
     openai: { enabled: true },
   },
   llm: {
@@ -52,6 +53,7 @@ const defaultConfig: SearchConfig = {
 const availableSources = [
   { id: 'indeed', name: 'Indeed', description: 'Most comprehensive job board' },
   { id: 'linkedin', name: 'LinkedIn', description: 'Professional networking platform' },
+  { id: 'glassdoor', name: 'Glassdoor', description: 'Company reviews and job listings' },
   { id: 'openai', name: 'OpenAI WebSearch', description: 'AI-powered web search' },
 ] as const;
 

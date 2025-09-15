@@ -27,17 +27,17 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
   - ✅ New search clears previous client results before new session start
   - ✅ Statistics: per-stage breakdown incl. filtering results, enrichment metrics (see FR-4/FR-5)
 
-### FR-3: Collection (Stage 1)
+### FR-3: Collection (Stage 1) ✅ COMPLETED
 
 - **Purpose**: Multi-source vacancy collection with parallel processing, exponential backoff, YAML serialization, intermediate progress updates. Tracks token costs for LLM-based sources
 - **Usage**: User enables Indeed, LinkedIn, OpenAI WebSearch sources. System processes requests in parallel with concurrency limits, retries on failures (429/403/network) using exponential backoff, writes YAML dumps, provides progress updates. LLM sources display token costs
 - **Acceptance**:
-  - Sources: Indeed GraphQL, LinkedIn, OpenAI WebSearch
-  - Parallel processing with configurable concurrency limit
-  - Exponential backoff retries with failure reason logging
-  - Intermediate progress available, displayed in UI during execution
-  - Collected vacancies serialized to YAML during processing
-  - LLM sources track tokens/costs, aggregates shown in progress panel
+  - ✅ Sources: Indeed GraphQL, LinkedIn, Glassdoor GraphQL, OpenAI WebSearch
+  - ✅ Parallel processing with configurable concurrency limit
+  - ✅ Exponential backoff retries with failure reason logging
+  - ✅ Intermediate progress available, displayed in UI during execution
+  - ✅ Collected vacancies serialized to YAML during processing
+  - ✅ LLM sources track tokens/costs, aggregates shown in progress panel
 
 ### FR-4: Filtering (Stage 2)
 
@@ -170,7 +170,7 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
 
 - OpenAI API for LLM processing
 - OpenAI WebSearch for global search
-- Job scraping: Indeed GraphQL, LinkedIn
+- Job scraping: Indeed GraphQL, LinkedIn, Glassdoor GraphQL
 - JobSpy reference architecture
 
 ### Data Formats
@@ -199,12 +199,12 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
 - ✅ Node.js 18+ + Express.js server with Zod validation
 - ✅ React 19/TypeScript strict + Vite frontend
 - ✅ 3-stage search pipeline (Collect → Filter → Enrich) with pause/resume ✅ COMPLETED
-- ✅ 3 scrapers: Indeed GraphQL, LinkedIn, OpenAI WebSearch with retry/backoff
+- ✅ 4 scrapers: Indeed GraphQL, LinkedIn, Glassdoor GraphQL, OpenAI WebSearch with retry/backoff
 - ✅ Job UI with Shadcn/ui (47 components), filtering stats, progress dashboard
 - ✅ Docker multi-stage build, development containers
 - ✅ OpenAI API integration, token/cost tracking, company research
 - ✅ TypeScript strict mode, type-safe schemas
-- ✅ Vitest testing (70+ tests pass), React Testing Library
+- ✅ Vitest testing (85+ tests pass), React Testing Library
 - ✅ ESLint/Prettier code quality, automated checks
 - ✅ CLI workflow (`./run` commands)
 - ✅ YAML serialization, filesystem session persistence, localStorage client settings

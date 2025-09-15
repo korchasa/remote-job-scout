@@ -13,6 +13,7 @@ import { EnrichmentService } from './enrichmentService.js';
 import type { Scraper } from '../types/scrapers.js';
 import { IndeedScraper } from './scrapers/indeed.js';
 import { LinkedInScraper } from './scrapers/linkedin.js';
+import { GlassdoorScraper } from './scrapers/glassdoor.js';
 import { OpenAIWebSearchScraper } from './scrapers/openai-web-search.js';
 // Using HTTP polling for progress updates
 
@@ -458,6 +459,9 @@ export class MultiStageSearchOrchestrator {
             break;
           case 'linkedin':
             scrapers.push(new LinkedInScraper());
+            break;
+          case 'glassdoor':
+            scrapers.push(new GlassdoorScraper());
             break;
           case 'openai':
             // OpenAI requires API key

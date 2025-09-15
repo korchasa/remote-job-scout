@@ -9,17 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ✅ Completed
 
+- **FR-3 Enhanced Collection**: Added Glassdoor as 4th job source
+  - Complete Glassdoor scraper implementation with GraphQL API
+  - Parallel processing with configurable concurrency limits
+  - Exponential backoff retry logic with failure logging
+  - YAML serialization during processing
+  - Intermediate progress updates for UI
+  - LLM token/cost tracking for AI sources
+
 - **FR-2 Multi-Stage Search**: Complete 3-stage pipeline implementation
   - Collection → Filtering → Enrichment with pause/resume functionality
   - Real-time progress tracking via HTTP polling
-  - Parallel scraping (Indeed, LinkedIn, OpenAI WebSearch)
+  - Parallel scraping (Indeed, LinkedIn, Glassdoor, OpenAI WebSearch)
   - LLM enrichment with token/cost tracking
   - Session persistence and recovery
   - Modern responsive UI with filtering statistics
 
 ### 🔧 Technical Improvements
 
-- **Testing Infrastructure**: 70+ passing tests, comprehensive coverage
+- **Testing Infrastructure**: 85+ passing tests, comprehensive coverage
 - **Type Safety**: Full TypeScript strict mode with Zod validation
 - **Code Quality**: ESLint/Prettier automation, zero linting errors
 - **Build System**: Docker multi-stage builds, optimized bundles
@@ -46,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Version**: 0.1.0 (Pre-release)
 - **Status**: Production Ready ✅
 - **Core Features**: 100% Complete
-- **Test Coverage**: 70/78 tests passing
+- **Test Coverage**: 85/89 tests passing
 - **Build Status**: ✅ All checks pass
 
 _Last updated: September 15, 2025_
