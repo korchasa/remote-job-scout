@@ -1,16 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '../lib/queryClient.ts';
-import type { ProgressData } from '@shared/schema';
+import type { ProgressData, SearchConfig } from '../../../shared/schema.ts';
 
 export function useStartSearch() {
   return useMutation({
-    mutationFn: async (config: {
-      positions: string[];
-      blacklistedWords: string[];
-      blacklistedCompanies: string[];
-      selectedSources: string[];
-      filters: Record<string, unknown>;
-    }) => {
+    mutationFn: async (config: SearchConfig) => {
       // Generate unique session ID
       const sessionId = crypto.randomUUID();
 
@@ -23,12 +17,15 @@ export function useStartSearch() {
             blacklistedCompanies: config.blacklistedCompanies,
             blacklistedWordsTitle: config.blacklistedWords,
             blacklistedWordsDescription: config.blacklistedWords,
-            countries: config.filters?.countries ?? [],
-            languages: [], // Empty for now
+            countries: config.filters.countries,
+            languages: config.filters.languages.map((lang) => ({
+              language: lang.language,
+              level: lang.level,
+            })),
           },
           sources: config.sources,
           llm: {
-            apiKey: config.llm?.apiKey ?? '',
+            apiKey: config.llm.apiKey,
           },
         },
       };

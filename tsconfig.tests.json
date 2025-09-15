@@ -3,8 +3,15 @@
   "compilerOptions": {
     "noEmit": true,
     "allowImportingTsExtensions": false,
-    "types": ["vitest/globals", "node"]
+    "types": ["vitest/globals", "node", "@testing-library/jest-dom"]
   },
-  "include": ["tests/**/*", "src/**/*"],
+  "include": [
+    "tests/**/*",
+    "src/**/*",
+    "src/**/*.test.*",
+    "src/**/*.spec.*",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ],
   "exclude": ["node_modules", "dist", "references"]
 }

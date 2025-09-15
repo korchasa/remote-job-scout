@@ -25,20 +25,20 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ### Frontend
 
-- **Tech**: React 19, TypeScript strict, Vite
+- **Tech**: React 19, TypeScript strict, Vite, jsdom testing
 - **UI**: Shadcn/ui (47 components), Tailwind CSS 4.1+
-- **State**: React Query, custom hooks
-- **Features**: Themes, responsive, progress polling, filtering dashboard
+- **State**: React Query, custom hooks, localStorage persistence
+- **Features**: Themes, responsive, progress polling, filtering dashboard, user config management
 
 ### Backend
 
-- **Tech**: Express.js REST API, modular middleware
-- **Arch**: Service-oriented, separation of concerns
-- **Storage**: In-memory with YAML serialization
-- **Services**: 6 business logic + 3 scrapers, parallel processing
+- **Tech**: Express.js REST API, modular middleware, Zod validation
+- **Arch**: Service-oriented, separation of concerns, type-safe schemas
+- **Storage**: In-memory with YAML serialization, filesystem session persistence
+- **Services**: 6 business logic + 3 scrapers, parallel processing, token/cost tracking
 - **Middleware**: CORS, logging, security, error handling
-- **API**: HTTP polling, pause/resume
-- **Testing**: Vitest coverage
+- **API**: HTTP polling, pause/resume, schema validation
+- **Testing**: Vitest coverage, React component testing, integration fixtures
 
 ### Shared
 
@@ -56,10 +56,10 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ### Storage Strategy
 
-- **Client**: localStorage (privacy-focused)
-- **Server**: In-memory with YAML serialization
-- **Format**: YAML for jobs, JSON for API
-- **Progress**: Real-time tracking, session persistence
+- **Client**: localStorage (privacy-focused, user settings/config persistence)
+- **Server**: In-memory with YAML serialization, filesystem session snapshots
+- **Format**: YAML for jobs, JSON for API, fixtures for testing
+- **Progress**: Real-time tracking, session persistence, pause/resume support
 
 ## Algorithm Design
 
@@ -101,14 +101,15 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **Shadcn/ui**: 47 components
 - **Tailwind CSS 4.1+**: Utility styling
 - **React Query**: API state, caching
+- **React Testing Library**: Component testing, jsdom environment
 
 ### Backend
 
 - **Express.js**: REST API, middleware (CORS, logging, security)
-- **fs/promises**: File operations
-- **YAML**: Data serialization
-- **Zod**: Schema validation
-- **JSDOM**: HTML parsing
+- **fs/promises**: File operations, session persistence
+- **YAML**: Data serialization, test fixtures
+- **Zod**: Schema validation, input validation
+- **JSDOM**: HTML parsing, scraping
 
 ### Integrations
 
@@ -118,41 +119,45 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ### Development
 
-- **Docker**: Containerization
-- **Vitest**: Testing framework
-- **ESLint/Prettier**: Code quality
-- **TypeScript**: Compilation
-- **CLI**: Unified runner
+- **Docker**: Containerization, multi-stage builds
+- **Vitest**: Testing framework, React component testing
+- **ESLint/Prettier**: Code quality, automated checks
+- **TypeScript**: Strict compilation, type safety
+- **CLI**: Unified runner, build/test automation
 
 ## Constraints
 
 ### Design Decisions
 
-- **Node.js**: Enterprise runtime, extensive ecosystem
-- Client-side storage (privacy over server persistence)
-- In-memory storage (dev over prod optimization)
-- HTTP polling (efficiency over real-time)
-- Modular architecture (maintainability over monolithic)
-- Streamlined API (simplicity over completeness)
+- **Node.js**: Enterprise runtime, extensive ecosystem, TypeScript support
+- Client-side storage (privacy over server persistence, localStorage for settings)
+- In-memory + filesystem storage (dev optimization with session persistence)
+- HTTP polling (efficiency over real-time, pause/resume support)
+- Modular architecture (maintainability, separation of concerns)
+- Streamlined API (simplicity, schema validation, error handling)
 
 ### Performance
 
-- Parallel processing across sources
-- Lazy loading for large datasets
-- Bundle optimization, code splitting
-- API caching, error recovery
+- Parallel processing across sources, configurable concurrency
+- Lazy loading for large datasets, optimized rendering
+- Bundle optimization, code splitting, tree shaking
+- API caching, error recovery, retry/backoff strategies
 
 ## Extensions
 
 ### Roadmap
 
 - Database migration from in-memory
-- Enhanced filtering
-- Additional sources
-- Performance optimization
+- Enhanced filtering, advanced search options
+- Additional job sources, API integrations
+- Performance optimization, caching strategies
+- User authentication, personalized dashboards
+- Mobile app development
 
 ### Scalability
 
-- Service modularization
-- Database indexing
-- Distributed processing
+- Service modularization, microservices architecture
+- Database indexing, query optimization
+- Distributed processing, load balancing
+- Horizontal scaling, container orchestration
+- Caching layers, CDN integration

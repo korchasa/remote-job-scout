@@ -106,6 +106,9 @@ remote-job-scout/
 ├── tests/               # Tests and fixtures
 │   ├── integration/     # Integration tests
 │   └── fixtures/        # Static YAML fixtures for jobs/sessions
+│       ├── parallel-test-session.yml
+│       ├── retry-test-session.yml
+│       └── yaml-test-session.yml
 └── dist/                # Build output
     ├── client/          # Built React app
     └── server/          # Built server
@@ -121,20 +124,20 @@ remote-job-scout/
 
 ### Components
 
-- **Frontend**: 9 core + 47 Shadcn/ui + 6 examples
+- **Frontend**: 9 core + 47 Shadcn/ui + 6 examples + test setup
 - **Backend**: Express.js server, middleware, routes, controllers
 - **Services**: 6 business + 3 scrapers, parallel processing
-- **Tests**: 13 files, Vitest coverage, fixtures in `tests/fixtures`
+- **Tests**: 15 files, Vitest coverage, fixtures in `tests/fixtures`, React component testing
 - **CLI**: Unified `run` script
-- **Storage**: YAML serialization, session persistence
+- **Storage**: YAML serialization, session persistence, localStorage client storage
 
 ### Technologies
 
-- **Runtime**: Node.js 18+, TypeScript strict
-- **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind 4.1+
-- **Backend**: Express.js, REST API, HTTP polling, JSDOM, YAML
+- **Runtime**: Node.js 18+, TypeScript strict, ESM modules
+- **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind 4.1+, jsdom testing
+- **Backend**: Express.js, REST API, HTTP polling, JSDOM, YAML, Zod validation
 - **Build**: Docker multi-stage, prod optimization
-- **Dev**: Hot reload, TS compilation, ESLint/Prettier
-- **Testing**: Vitest framework, comprehensive coverage
-- **CLI**: Unified workflow
-- **Processing**: Parallel scraping, retry/backoff, token/cost tracking
+- **Dev**: Hot reload, TS compilation, ESLint/Prettier, modular architecture
+- **Testing**: Vitest framework, React Testing Library, comprehensive coverage, test fixtures
+- **CLI**: Unified workflow, build/check/test automation
+- **Processing**: Parallel scraping, retry/backoff, token/cost tracking, localStorage persistence

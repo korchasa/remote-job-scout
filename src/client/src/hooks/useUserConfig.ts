@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '../lib/queryClient.ts';
-import type { UserConfig } from '../shared/schema.ts';
+import type { UserConfig } from '../../../shared/schema.ts';
 
 export function useUserConfig() {
   return useQuery({

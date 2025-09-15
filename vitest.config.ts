@@ -8,6 +8,9 @@ const maxThreads =
 
 export default defineConfig({
   test: {
+    // Настраиваем окружение для тестирования React компонентов
+    environment: 'jsdom',
+    setupFiles: ['./src/test-setup.ts'],
     // Запускаем тестовые файлы параллельно в пулах потоков (threads)
     pool: 'threads',
     poolOptions: {
@@ -22,7 +25,7 @@ export default defineConfig({
       concurrent: true,
       shuffle: false,
     },
-    include: ['src/**/*.{test,spec}.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude: [
       'node_modules/**',
       'dist/**',

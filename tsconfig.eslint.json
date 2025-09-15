@@ -5,5 +5,5 @@
     "allowImportingTsExtensions": false
   },
   "include": ["src/**/*", "*.ts", "*.js"],
-  "exclude": ["node_modules", "dist", "**/*.test.*", "**/*.spec.*"]
+  "exclude": ["node_modules", "dist"]
 }

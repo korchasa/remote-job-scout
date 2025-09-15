@@ -170,6 +170,9 @@ export interface UserSettings {
   };
 }
 
+// UserConfig is an alias for SearchConfig for backward compatibility
+export type UserConfig = SearchConfig;
+
 export interface LanguageRequirement {
   language: string;
   level: 'basic' | 'intermediate' | 'advanced' | 'native';
