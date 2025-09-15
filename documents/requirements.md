@@ -49,15 +49,15 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
   - ✅ Generates stage statuses, aggregated statistics
   - ✅ Skip reasons available: title_blacklisted_words, language_requirements, country_filter, company_blacklisted
 
-### FR-5: Обогащение с помощью LLM (этап 3)
+### FR-5: Обогащение с помощью LLM (этап 3) ✅ COMPLETED
 
 - Описание: Обогащение вакансий с использованием LLM (сейчас OpenAI), включая исследование компаний через веб-поиск, трекинг токенов/стоимости и источников обогащения, с корректной обработкой отсутствующих данных.
 - Сценарий использования: Пользователь вводит API-ключ LLM на клиенте. Во время обогащения интерфейс отображает расход токенов и оценочную стоимость; при недоступности источников/ошибках обогащение для конкретной вакансии помечается как неудачное без остановки конвейера.
 - Критерии приёмки:
-  - Интеграция с LLM (сейчас OpenAI) выполняет текстовое обогащение и может использовать веб-поиск для исследования компаний.
-  - Отслеживаются токены и стоимость на вакансию; агрегаты отображаются в панели прогресса.
-  - Фиксируется источник(и) обогащения для вакансии.
-  - Промежуточные результаты обновляются для UI в ходе этапа.
+  - ✅ Интеграция с LLM (сейчас OpenAI) выполняет текстовое обогащение и может использовать веб-поиск для исследования компаний.
+  - ✅ Отслеживаются токены и стоимость на вакансию; агрегаты отображаются в панели прогресса.
+  - ✅ Фиксируется источник(и) обогащения для вакансии.
+  - ✅ Промежуточные результаты обновляются для UI в ходе этапа.
 
 ### FR-6: Управление вакансиями
 
@@ -203,6 +203,9 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
 - ✅ Job UI with Shadcn/ui (47 components), filtering stats, progress dashboard
 - ✅ Docker multi-stage build, development containers
 - ✅ OpenAI API integration, token/cost tracking, company research
+- ✅ LLM enrichment with structured data extraction (company info, job details, location, salary)
+- ✅ Enrichment sources tracking and metadata management
+- ✅ Graceful error handling for enrichment failures without pipeline interruption
 - ✅ TypeScript strict mode, type-safe schemas
 - ✅ Vitest testing (85+ tests pass), React Testing Library
 - ✅ ESLint/Prettier code quality, automated checks
