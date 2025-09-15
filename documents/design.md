@@ -170,7 +170,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 ### Roadmap
 
 - **FR-4**: Filtering (Stage 2) ✅ COMPLETED - Advanced filtering with detailed skip reasons
-- **FR-5**: Enrichment with LLM (Stage 3)
+- **FR-5**: Enrichment with LLM (Stage 3) ✅ COMPLETED - LLM enrichment with token/cost tracking
 - **FR-6**: Enhanced job management UI, favorites, bookmarks
 - **Database Migration**: From in-memory to persistent database (PostgreSQL/MongoDB)
 - **Performance**: Caching strategies, CDN integration, query optimization

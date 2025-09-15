@@ -312,7 +312,9 @@ Focus on accuracy and only include information that can be reasonably inferred f
       const tokensUsed = usage?.total_tokens ?? 0;
 
       // Calculate cost based on GPT-3.5-turbo pricing (as of 2024)
-      // Input: $0.0015 per 1K tokens, Output: $0.002 per 1K tokens
+      // Input tokens (prompts): $0.0015 per 1K tokens
+      // Output tokens (completions): $0.002 per 1K tokens
+      // Cost calculation: (input_tokens / 1000) * 0.0015 + (output_tokens / 1000) * 0.002
       const inputTokens = usage?.prompt_tokens ?? 0;
       const outputTokens = usage?.completion_tokens ?? 0;
       const inputCost = (inputTokens / 1000) * 0.0015;
@@ -331,14 +333,16 @@ Focus on accuracy and only include information that can be reasonably inferred f
 
   /**
    * Парсит ответ от OpenAI
+   * Обрабатывает ответ LLM, удаляя markdown-обертки и парся JSON
    */
   private parseEnrichmentResponse(content: string): EnrichmentData | null {
     try {
-      // Убираем возможные markdown-обертки
+      // Убираем возможные markdown-обертки от LLM
+      // LLM может возвращать JSON в формате ```json ... ```
       const cleanedContent = content
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
+        .replace(/```json\n?/g, '') // Удаляем открывающий тег
+        .replace(/```\n?/g, '') // Удаляем закрывающий тег
+        .trim(); // Убираем лишние пробелы
       return JSON.parse(cleanedContent);
     } catch (error) {
       console.error('❌ Failed to parse enrichment response:', error);

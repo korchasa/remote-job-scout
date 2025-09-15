@@ -2,16 +2,17 @@
 
 Web app for remote job search with AI analysis. Node.js runtime, Express.js backend, React frontend.
 
-## Status: 🚀 FR-3 Enhanced Collection COMPLETED ✅
+## Status: 🚀 PRODUCTION READY ✅
 
 All core functionality implemented and tested:
 
 - ✅ **FR-3 Enhanced Collection**: 4 job sources (Indeed, LinkedIn, Glassdoor, OpenAI WebSearch)
-- ✅ 3-stage pipeline (Collect → Filter → Enrich)
-- ✅ Pause/Resume with state persistence
-- ✅ Real-time progress tracking
-- ✅ Parallel scraping with retry/backoff
-- ✅ LLM enrichment with token/cost tracking
+- ✅ **FR-4 Filtering**: Advanced filtering with detailed skip reasons
+- ✅ **FR-5 LLM Enrichment**: OpenAI integration with token/cost tracking and company research
+- ✅ 3-stage pipeline (Collect → Filter → Enrich) with pause/resume
+- ✅ Real-time progress tracking and HTTP polling
+- ✅ Parallel scraping with retry/backoff and concurrency control
+- ✅ Session persistence and recovery
 - ✅ Modern responsive UI with filtering stats
 
 ## Setup
