@@ -17,10 +17,13 @@ remote-job-scout/
 ├── tsconfig.server.json # TS config (server)
 ├── tsconfig.tests.json  # TS config (tests)
 ├── tsconfig.eslint.json # TS config (ESLint)
+├── README.md            # Project documentation
+├── CHANGELOG.md         # Change history
 ├── documents/           # Docs
 │   ├── design.md        # Design spec
 │   ├── file_structure.md # Structure
-│   └── requirements.md  # Requirements
+│   ├── requirements.md  # Requirements
+│   └── whiteboard.md    # Project status
 ├── references/          # External resources
 │   ├── JobSpy/          # Scraping library
 │   ├── JobSpy-review.md # Analysis
@@ -124,12 +127,12 @@ remote-job-scout/
 
 ### Components
 
-- **Frontend**: 9 core + 47 Shadcn/ui + 6 examples + test setup
+- **Frontend**: 10 core + 47 Shadcn/ui + 6 examples + test setup
 - **Backend**: Express.js server, middleware, routes, controllers
-- **Services**: 6 business + 3 scrapers, parallel processing
-- **Tests**: 15 files, Vitest coverage, fixtures in `tests/fixtures`, React component testing
-- **CLI**: Unified `run` script
-- **Storage**: YAML serialization, session persistence, localStorage client storage
+- **Services**: 6 business + 3 scrapers, parallel processing, LLM enrichment
+- **Tests**: 18 files, Vitest coverage (70 passed), fixtures in `tests/fixtures`, React component testing
+- **CLI**: Unified `run` script with full validation pipeline
+- **Storage**: YAML serialization, filesystem session persistence, localStorage client storage
 
 ### Technologies
 

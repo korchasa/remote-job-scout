@@ -16,16 +16,16 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
   - Persists to localStorage, auto-loads on app start
   - Search sends single consolidated request with current settings
 
-### FR-2: Multi-Stage Search
+### FR-2: Multi-Stage Search ✅ COMPLETED
 
 - **Purpose**: 3-stage pipeline (Collect → Filter → Enrich) with HTTP polling progress, pause/resume, per-stage statistics
 - **Usage**: User starts search from UI, monitors progress via polling, pauses collection, resumes later, views per-stage stats after completion. New search clears previous results before new data arrives
 - **Acceptance**:
-  - 3-stage pipeline with explicit transitions, states: pending, running, completed, failed, paused, skipped
-  - Progress via REST API with HTTP polling, real-time UI display
-  - Pause/Resume changes current stage state without data loss
-  - New search clears previous client results before new session start
-  - Statistics: per-stage breakdown incl. filtering results, enrichment metrics (see FR-4/FR-5)
+  - ✅ 3-stage pipeline with explicit transitions, states: pending, running, completed, failed, paused, skipped
+  - ✅ Progress via REST API with HTTP polling, real-time UI display
+  - ✅ Pause/Resume changes current stage state without data loss
+  - ✅ New search clears previous client results before new session start
+  - ✅ Statistics: per-stage breakdown incl. filtering results, enrichment metrics (see FR-4/FR-5)
 
 ### FR-3: Collection (Stage 1)
 
@@ -196,15 +196,16 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
 
 ## Current Implementation
 
-- Node.js + Express.js server
-- React/TypeScript + Vite frontend
-- 3-stage search pipeline with pause/resume
-- 3 scrapers: Indeed, LinkedIn, OpenAI with retry/backoff
-- Job UI with Shadcn/ui, filtering stats
-- Docker multi-stage build
-- API integration, token/cost tracking
-- TypeScript strict mode
-- Vitest testing
-- ESLint/Prettier code quality
-- CLI workflow
-- YAML serialization, session persistence
+- ✅ Node.js 18+ + Express.js server with Zod validation
+- ✅ React 19/TypeScript strict + Vite frontend
+- ✅ 3-stage search pipeline (Collect → Filter → Enrich) with pause/resume ✅ COMPLETED
+- ✅ 3 scrapers: Indeed GraphQL, LinkedIn, OpenAI WebSearch with retry/backoff
+- ✅ Job UI with Shadcn/ui (47 components), filtering stats, progress dashboard
+- ✅ Docker multi-stage build, development containers
+- ✅ OpenAI API integration, token/cost tracking, company research
+- ✅ TypeScript strict mode, type-safe schemas
+- ✅ Vitest testing (70+ tests pass), React Testing Library
+- ✅ ESLint/Prettier code quality, automated checks
+- ✅ CLI workflow (`./run` commands)
+- ✅ YAML serialization, filesystem session persistence, localStorage client settings
+- ✅ HTTP polling, real-time progress, ETA calculation

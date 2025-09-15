@@ -287,19 +287,23 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
   };
 
   return (
-    <Card className="h-fit">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-lg font-medium flex items-center gap-2">
-          <Settings className="h-4 w-4" />
+    <Card className="h-fit" data-testid="card">
+      <CardHeader
+        className="flex flex-row items-center justify-between space-y-0 pb-2"
+        data-testid="card-header"
+      >
+        <CardTitle className="text-lg font-medium flex items-center gap-2" data-testid="card-title">
+          <Settings className="h-4 w-4" data-testid="settings-icon" />
           Search Configuration
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6" data-testid="card-content">
         {/* Job Positions */}
         <div className="space-y-2">
           <Label
             htmlFor="positions"
             className={validationErrors.positions ? 'text-destructive' : ''}
+            data-testid="default"
           >
             Target Positions
           </Label>
@@ -311,10 +315,10 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
               onChange={(e) => setNewPosition(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPosition()}
               className={validationErrors.positions ? 'border-destructive' : ''}
-              data-testid="input-new-position"
+              data-testid="new-position"
             />
-            <Button size="sm" onClick={addPosition} data-testid="button-add-position">
-              <Plus className="h-3 w-3" />
+            <Button size="sm" onClick={addPosition} data-testid="add-position">
+              <Plus className="h-3 w-3" data-testid="plus-icon" />
             </Button>
           </div>
           {validationErrors.positions && (
@@ -322,16 +326,16 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
           )}
           <div className="flex flex-wrap gap-1">
             {config.positions.map((position) => (
-              <Badge key={position} variant="secondary" className="text-xs">
+              <Badge key={position} variant="secondary" className="text-xs" data-testid="badge">
                 {position}
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-3 w-3 p-0 ml-1"
                   onClick={() => removePosition(position)}
-                  data-testid={`button-remove-position-${position}`}
+                  data-testid={`remove-position-${position}`}
                 >
-                  <X className="h-2 w-2" />
+                  <X className="h-2 w-2" data-testid="x-icon" />
                 </Button>
               </Badge>
             ))}
@@ -340,12 +344,13 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
 
         {/* API Keys */}
         <div className="space-y-2">
-          <Label>API Keys</Label>
+          <Label data-testid="default">API Keys</Label>
           <div className="space-y-3">
             <div className="space-y-2">
               <Label
                 htmlFor="openai-key"
                 className={`text-sm font-medium ${validationErrors.apiKey ? 'text-destructive' : ''}`}
+                data-testid="default"
               >
                 OpenAI API Key
               </Label>
@@ -370,7 +375,7 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
                   }
                 }}
                 className={validationErrors.apiKey ? 'border-destructive' : ''}
-                data-testid="input-openai-api-key"
+                data-testid="openai-api-key"
               />
               {validationErrors.apiKey && (
                 <p className="text-sm text-destructive">{validationErrors.apiKey}</p>
@@ -384,7 +389,12 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
 
         {/* Job Sources */}
         <div className="space-y-2">
-          <Label className={validationErrors.sources ? 'text-destructive' : ''}>Job Sources</Label>
+          <Label
+            className={validationErrors.sources ? 'text-destructive' : ''}
+            data-testid="default"
+          >
+            Job Sources
+          </Label>
           <div
             className={`grid grid-cols-2 gap-2 ${validationErrors.sources ? 'border border-destructive rounded-md p-3' : ''}`}
           >
@@ -394,9 +404,14 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
                   id={source.id}
                   checked={config.sources[source.id]?.enabled ?? false}
                   onCheckedChange={() => toggleSource(source.id)}
-                  data-testid={`checkbox-source-${source.id}`}
+                  data-testid={`source-${source.id}`}
                 />
-                <Label htmlFor={source.id} className="text-sm" title={source.description}>
+                <Label
+                  htmlFor={source.id}
+                  className="text-sm"
+                  title={source.description}
+                  data-testid="default"
+                >
                   {source.name}
                 </Label>
               </div>
@@ -409,7 +424,9 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
 
         {/* Blacklisted Words */}
         <div className="space-y-2">
-          <Label htmlFor="blacklisted-words">Blacklisted Words</Label>
+          <Label htmlFor="blacklisted-words" data-testid="default">
+            Blacklisted Words
+          </Label>
           <div className="flex gap-2">
             <Input
               id="blacklisted-words"
@@ -417,28 +434,24 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
               value={newBlacklistedWord}
               onChange={(e) => setNewBlacklistedWord(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addBlacklistedWord()}
-              data-testid="input-blacklisted-word"
+              data-testid="blacklisted-word"
             />
-            <Button
-              size="sm"
-              onClick={addBlacklistedWord}
-              data-testid="button-add-blacklisted-word"
-            >
-              <Plus className="h-3 w-3" />
+            <Button size="sm" onClick={addBlacklistedWord} data-testid="add-blacklisted-word">
+              <Plus className="h-3 w-3" data-testid="plus-icon" />
             </Button>
           </div>
           <div className="flex flex-wrap gap-1">
             {config.blacklistedWords.map((word) => (
-              <Badge key={word} variant="destructive" className="text-xs">
+              <Badge key={word} variant="destructive" className="text-xs" data-testid="badge">
                 {word}
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-3 w-3 p-0 ml-1"
                   onClick={() => removeBlacklistedWord(word)}
-                  data-testid={`button-remove-blacklisted-word-${word}`}
+                  data-testid={`remove-blacklisted-word-${word}`}
                 >
-                  <X className="h-2 w-2" />
+                  <X className="h-2 w-2" data-testid="x-icon" />
                 </Button>
               </Badge>
             ))}
@@ -447,7 +460,9 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
 
         {/* Blacklisted Companies */}
         <div className="space-y-2">
-          <Label htmlFor="blacklisted-companies">Blacklisted Companies</Label>
+          <Label htmlFor="blacklisted-companies" data-testid="default">
+            Blacklisted Companies
+          </Label>
           <div className="flex gap-2">
             <Input
               id="blacklisted-companies"
@@ -455,28 +470,24 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
               value={newBlacklistedCompany}
               onChange={(e) => setNewBlacklistedCompany(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addBlacklistedCompany()}
-              data-testid="input-blacklisted-company"
+              data-testid="blacklisted-company"
             />
-            <Button
-              size="sm"
-              onClick={addBlacklistedCompany}
-              data-testid="button-add-blacklisted-company"
-            >
-              <Plus className="h-3 w-3" />
+            <Button size="sm" onClick={addBlacklistedCompany} data-testid="add-blacklisted-company">
+              <Plus className="h-3 w-3" data-testid="plus-icon" />
             </Button>
           </div>
           <div className="flex flex-wrap gap-1">
             {config.blacklistedCompanies.map((company) => (
-              <Badge key={company} variant="destructive" className="text-xs">
+              <Badge key={company} variant="destructive" className="text-xs" data-testid="badge">
                 {company}
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-3 w-3 p-0 ml-1"
                   onClick={() => removeBlacklistedCompany(company)}
-                  data-testid={`button-remove-blacklisted-company-${company}`}
+                  data-testid={`remove-blacklisted-company-${company}`}
                 >
-                  <X className="h-2 w-2" />
+                  <X className="h-2 w-2" data-testid="x-icon" />
                 </Button>
               </Badge>
             ))}
@@ -487,6 +498,7 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
         <div className="space-y-2">
           <Label
             className={`flex items-center gap-2 ${validationErrors.languages ? 'text-destructive' : ''}`}
+            data-testid="default"
           >
             <Languages className="h-4 w-4" />
             Language Requirements
@@ -520,7 +532,7 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
               </SelectContent>
             </Select>
             <Button size="sm" onClick={addLanguage}>
-              <Plus className="h-3 w-3" />
+              <Plus className="h-3 w-3" data-testid="plus-icon" />
             </Button>
           </div>
           {validationErrors.languages && (
@@ -528,7 +540,12 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
           )}
           <div className="flex flex-wrap gap-1">
             {config.filters.languages.map((langReq) => (
-              <Badge key={langReq.language} variant="secondary" className="text-xs">
+              <Badge
+                key={langReq.language}
+                variant="secondary"
+                className="text-xs"
+                data-testid="badge"
+              >
                 {langReq.language} ({langReq.level})
                 <Button
                   variant="ghost"
@@ -536,7 +553,7 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
                   className="h-3 w-3 p-0 ml-1"
                   onClick={() => removeLanguage(langReq.language)}
                 >
-                  <X className="h-2 w-2" />
+                  <X className="h-2 w-2" data-testid="x-icon" />
                 </Button>
               </Badge>
             ))}
@@ -547,6 +564,7 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
         <div className="space-y-2">
           <Label
             className={`flex items-center gap-2 ${validationErrors.countries ? 'text-destructive' : ''}`}
+            data-testid="default"
           >
             <Globe className="h-4 w-4" />
             Allowed Countries ({config.filters.countries.length} selected)
@@ -561,7 +579,7 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
                   checked={config.filters.countries.includes(country)}
                   onCheckedChange={() => toggleCountry(country)}
                 />
-                <Label htmlFor={`country-${country}`} className="text-sm">
+                <Label htmlFor={`country-${country}`} className="text-sm" data-testid="default">
                   {country}
                 </Label>
               </div>
@@ -614,9 +632,9 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
           onClick={handleStartSearch}
           className="w-full"
           disabled={isSearching}
-          data-testid="button-start-search"
+          data-testid="start-search"
         >
-          <Play className="h-4 w-4 mr-2" />
+          <Play className="h-4 w-4 mr-2" data-testid="play-icon" />
           {isSearching ? 'Searching...' : 'Start Job Search'}
         </Button>
       </CardContent>

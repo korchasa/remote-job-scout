@@ -1,9 +1,9 @@
 session_id: yaml-test-session
 total: 1
 vacancies:
-  - id: c04237a5-b9e4-4ac3-8065-057f9a861d9d
+  - id: 4e77d88f-87a6-4b7b-86ac-97fb42ec1c9c
     title: YAML Test Job
     company: YAML Test Company
     url: https://example.com/yaml-job
-    published_date: '2025-09-15T19:11:01.553Z'
+    published_date: '2025-09-15T20:19:24.257Z'
     source: indeed

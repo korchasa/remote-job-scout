@@ -2,7 +2,7 @@
  * Unit tests for FilteringStatsDashboard component
  */
 import { expect, test, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { FilteringStatsDashboard } from './FilteringStatsDashboard.tsx';
 import type { FilteringStats } from '../../../shared/schema.ts';
 
@@ -35,6 +35,21 @@ vi.mock('lucide-react', () => ({
   AlertTriangle: () => <div data-testid="alert-triangle-icon" />,
 }));
 
+// Use isolated containers for each test to prevent DOM pollution
+let testContainer: HTMLElement;
+
+beforeEach(() => {
+  testContainer = document.createElement('div');
+  document.body.appendChild(testContainer);
+});
+
+afterEach(() => {
+  if (testContainer?.parentNode) {
+    testContainer.parentNode.removeChild(testContainer);
+  }
+  cleanup();
+});
+
 test('FilteringStatsDashboard - renders with filtering stats', () => {
   const filteringStats: FilteringStats = {
     totalFiltered: 8,
@@ -45,7 +60,7 @@ test('FilteringStatsDashboard - renders with filtering stats', () => {
     },
   };
 
-  render(<FilteringStatsDashboard filteringStats={filteringStats} />);
+  render(<FilteringStatsDashboard filteringStats={filteringStats} />, { container: testContainer });
 
   // Check if main elements are rendered
   expect(screen.getByTestId('card')).toBeDefined();
@@ -54,8 +69,14 @@ test('FilteringStatsDashboard - renders with filtering stats', () => {
 
   // Check if stats are displayed
   expect(screen.getByText('10')).toBeDefined(); // Total processed (8 + 2)
-  expect(screen.getByText('8')).toHaveLength(2); // Filtered count appears twice
-  expect(screen.getByText('2')).toHaveLength(2); // Skipped count appears twice
+
+  // Check that the number 8 appears (multiple times in different contexts)
+  const eightElements = screen.getAllByText('8');
+  expect(eightElements.length).toBeGreaterThanOrEqual(2); // At least 2 occurrences
+
+  // Check that the number 2 appears (multiple times)
+  const twoElements = screen.getAllByText('2');
+  expect(twoElements.length).toBeGreaterThanOrEqual(2); // At least 2 occurrences
 });
 
 test('FilteringStatsDashboard - renders empty state when no data', () => {
@@ -65,7 +86,7 @@ test('FilteringStatsDashboard - renders empty state when no data', () => {
     skipReasons: {},
   };
 
-  render(<FilteringStatsDashboard filteringStats={filteringStats} />);
+  render(<FilteringStatsDashboard filteringStats={filteringStats} />, { container: testContainer });
 
   // Should show empty state message
   expect(screen.getByText('No filtering data available yet')).toBeDefined();
@@ -80,14 +101,16 @@ test('FilteringStatsDashboard - does not render when not visible', () => {
     },
   };
 
-  render(<FilteringStatsDashboard filteringStats={filteringStats} isVisible={false} />);
+  render(<FilteringStatsDashboard filteringStats={filteringStats} isVisible={false} />, {
+    container: testContainer,
+  });
 
-  // Should not render anything
+  // Should not render anything - component should return null
   expect(screen.queryByTestId('card')).toBeNull();
 });
 
 test('FilteringStatsDashboard - does not render when no filtering stats', () => {
-  render(<FilteringStatsDashboard filteringStats={undefined} />);
+  render(<FilteringStatsDashboard filteringStats={undefined} />, { container: testContainer });
 
   // Should not render anything
   expect(screen.queryByTestId('card')).toBeNull();
@@ -103,15 +126,15 @@ test('FilteringStatsDashboard - shows skip reasons correctly', () => {
     },
   };
 
-  render(<FilteringStatsDashboard filteringStats={filteringStats} />);
+  render(<FilteringStatsDashboard filteringStats={filteringStats} />, { container: testContainer });
 
   // Check if reasons are displayed
   expect(screen.getByText('Company Blacklisted')).toBeDefined();
   expect(screen.getByText('Blacklisted Words in Title')).toBeDefined();
 
-  // Check counts
-  expect(screen.getAllByText('2')).toBeDefined();
-  expect(screen.getAllByText('1')).toBeDefined();
+  // Check counts - each should appear at least once
+  expect(screen.getAllByText('2').length).toBeGreaterThan(0);
+  expect(screen.getAllByText('1').length).toBeGreaterThan(0);
 });
 
 test('FilteringStatsDashboard - calculates percentages correctly', () => {
@@ -124,7 +147,7 @@ test('FilteringStatsDashboard - calculates percentages correctly', () => {
     },
   };
 
-  render(<FilteringStatsDashboard filteringStats={filteringStats} />);
+  render(<FilteringStatsDashboard filteringStats={filteringStats} />, { container: testContainer });
 
   // 8 out of 10 = 80%
   expect(screen.getByText('80.0%')).toBeDefined();
@@ -132,6 +155,7 @@ test('FilteringStatsDashboard - calculates percentages correctly', () => {
   // 2 out of 10 = 20%
   expect(screen.getByText('20.0%')).toBeDefined();
 
-  // 1 out of 2 = 50%
-  expect(screen.getAllByText('50.0%')).toBeDefined();
+  // 1 out of 2 = 50% (should appear in the reason descriptions)
+  const fiftyPercentElements = screen.getAllByText(/1 jobs \(50\.0%\)/);
+  expect(fiftyPercentElements.length).toBeGreaterThanOrEqual(1);
 });
