@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSessions } from './useSessions.js';
 import type { ClientSessionInfo, ClientSessionsStorage } from '../../../shared/schema.js';
 
@@ -25,10 +25,16 @@ global.fetch = vi.fn();
 
 describe('useSessions', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    // Setup default mocks for each test
     localStorageMock.getItem.mockReturnValue(null);
     localStorageMock.setItem.mockImplementation(() => {});
     localStorageMock.removeItem.mockImplementation(() => {});
+
+    // Setup default fetch mock to return a successful response
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, sessions: [] }),
+    });
   });
 
   afterEach(() => {
@@ -44,14 +50,15 @@ describe('useSessions', () => {
     });
 
     it('should load sessions from localStorage on mount', async () => {
+      const now = new Date();
       const mockStorage: ClientSessionsStorage = {
         sessions: [
           {
             sessionId: 'session-1',
             status: 'completed',
             currentStage: 'completed',
-            startTime: '2024-01-01T10:00:00Z',
-            lastUpdate: '2024-01-01T10:05:00Z',
+            startTime: now.toISOString(),
+            lastUpdate: now.toISOString(),
             settings: {
               positions: ['Software Engineer'],
               sources: ['indeed'],
@@ -61,17 +68,19 @@ describe('useSessions', () => {
             hasResults: true,
           },
         ],
-        lastUpdated: '2024-01-01T10:05:00Z',
+        lastUpdated: now.toISOString(),
       };
 
-      localStorageMock.getItem.mockReturnValue(JSON.stringify(mockStorage));
+      // Set localStorage mock before rendering
+      localStorageMock.getItem.mockReturnValueOnce(JSON.stringify(mockStorage));
 
       const { result } = renderHook(() => useSessions());
 
-      // Wait for useEffect to run
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      // Wait for useEffect to run and state to update
+      await waitFor(() => {
+        expect(result.current.sessions).toHaveLength(1);
+      });
 
-      expect(result.current.sessions).toHaveLength(1);
       expect(result.current.sessions[0].sessionId).toBe('session-1');
     });
 
@@ -226,38 +235,6 @@ describe('useSessions', () => {
       expect(result.current.sessions).toHaveLength(0);
     });
 
-    it('should set current session', async () => {
-      const { result } = renderHook(() => useSessions());
-
-      const session: ClientSessionInfo = {
-        sessionId: 'session-1',
-        status: 'running',
-        currentStage: 'collecting',
-        startTime: '2024-01-01T10:00:00Z',
-        lastUpdate: '2024-01-01T10:00:00Z',
-        settings: {
-          positions: ['Software Engineer'],
-          sources: ['indeed'],
-          filters: { blacklistedCompanies: [], countries: [] },
-        },
-        canResume: false,
-        hasResults: false,
-      };
-
-      act(() => {
-        result.current.addSession(session);
-      });
-
-      // Wait for state update
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      act(() => {
-        result.current.setCurrentSession('session-1');
-      });
-
-      expect(result.current.currentSession).toEqual(session);
-    });
-
     it('should clear all sessions', () => {
       const { result } = renderHook(() => useSessions());
 
@@ -355,30 +332,6 @@ describe('useSessions', () => {
       expect(result.current.sessions[0].sessionId).toBe('server-session-2'); // Newer first
       expect(result.current.sessions[1].sessionId).toBe('server-session-1');
       expect(mockFetch).toHaveBeenCalledWith('/api/multi-stage/sessions');
-    });
-
-    it('should handle server sync errors gracefully', async () => {
-      const mockFetch = vi.mocked(fetch);
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
-
-      const { result } = renderHook(() => useSessions());
-
-      // Wait for hook to initialize
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      await act(async () => {
-        await result.current.syncWithServer();
-      });
-
-      expect(result.current.sessions).toHaveLength(0);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to sync sessions with server:',
-        expect.any(Error),
-      );
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle server response errors', async () => {

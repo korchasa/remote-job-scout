@@ -292,41 +292,33 @@ export class MultiStageSearchOrchestrator {
    * @param progress - The MultiStageProgress object to update with ETA data
    */
   private updateProgressWithETA(progress: MultiStageProgress): void {
-    // Create a properly typed stages object for the ETA service
-    const stagesForETA: Record<ProcessingStage, any> = {
-      ...progress.stages,
-      completed: {
-        status: 'completed',
-        progress: 100,
-        itemsProcessed: 0,
-        itemsTotal: 0,
-        errors: [],
-      },
-    };
+    try {
+      const overallETA = this.etaService.calculateOverallETA(
+        progress.stages as any,
+        progress.currentStage,
+      );
 
-    const overallETA = this.etaService.calculateOverallETA(
-      stagesForETA as any,
-      progress.currentStage,
-    );
+      // Update overall ETA
+      progress.estimatedCompletionTime =
+        overallETA.totalEstimatedTime > 0
+          ? new Date(Date.now() + overallETA.totalEstimatedTime * 1000).toISOString()
+          : undefined;
 
-    // Update overall ETA
-    progress.estimatedCompletionTime =
-      overallETA.totalEstimatedTime > 0
-        ? new Date(Date.now() + overallETA.totalEstimatedTime * 1000).toISOString()
-        : undefined;
-
-    // Update stage-specific ETA information (only for stages that exist in progress.stages)
-    for (const stageETA of overallETA.stageBreakdown) {
-      const stageKey = stageETA.stage as keyof typeof progress.stages;
-      if (stageKey in progress.stages) {
-        progress.stages[stageKey].etaSeconds = stageETA.smoothedETA;
-        progress.stages[stageKey].etaConfidence = stageETA.confidence;
+      // Update stage-specific ETA information (only for stages that exist in progress.stages)
+      for (const stageETA of overallETA.stageBreakdown) {
+        const stageKey = stageETA.stage as keyof typeof progress.stages;
+        if (stageKey in progress.stages) {
+          progress.stages[stageKey].etaSeconds = stageETA.smoothedETA;
+          progress.stages[stageKey].etaConfidence = stageETA.confidence;
+        }
       }
-    }
 
-    // Store overall ETA for backward compatibility with existing UI
-    progress.overallETA = overallETA.totalEstimatedTime;
-    progress.etaConfidence = overallETA.overallConfidence;
+      // Store overall ETA for backward compatibility with existing UI
+      progress.overallETA = overallETA.totalEstimatedTime;
+      progress.etaConfidence = overallETA.overallConfidence;
+    } catch (error) {
+      console.warn('⚠️ ETA update failed:', error);
+    }
   }
 
   /**
@@ -352,6 +344,9 @@ export class MultiStageSearchOrchestrator {
     const stageKeyTyped = stage as keyof typeof progress.stages;
     if (stageStartTime && stageKeyTyped in progress.stages) {
       const elapsedSeconds = (Date.now() - stageStartTime.getTime()) / 1000;
+      if (elapsedSeconds < 1) {
+        return;
+      }
       this.etaService.recordProgress(stage, progress.stages[stageKeyTyped], elapsedSeconds);
     }
   }

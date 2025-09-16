@@ -2,7 +2,7 @@
 description: update documentation
 alwaysApply: false
 ---
-# WORKFLOW (until STOP section)
+# INSTRUCTIONS
 
 Add the following steps to the To-Do:
 1. Read existing documentation in `./documents`.
@@ -21,6 +21,5 @@ Add the following steps to the To-Do:
    - Lemmatize words: reduce words to their base forms when applicable.
    - Prefer special symbols, numerals, ligatures, etc.: replace words with them when its relevant.
 4. Delete `./documents/whiteboard.md` file.
-5. STOP
 
 

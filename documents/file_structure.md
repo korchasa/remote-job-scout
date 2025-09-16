@@ -151,8 +151,8 @@ remote-job-scout/
 
 - **Frontend**: 11 core + 47 Shadcn/ui + 6 examples + test setup
 - **Backend**: Express.js server, middleware, routes, controllers
-- **Services**: 7 business + 3 scrapers, parallel processing, LLM enrichment, session snapshots
-- **Tests**: 22 files, Vitest coverage (90+ passed), fixtures in `tests/fixtures`, React component testing
+- **Services**: 7 business + 4 scrapers, parallel processing, LLM enrichment, session snapshots, logging, ETA calculation
+- **Tests**: 22+ files, Vitest coverage (118+ passed), fixtures in `tests/fixtures`, React component testing
 - **CLI**: Unified `run` script with full validation pipeline
 - **Storage**: YAML serialization, filesystem session persistence, localStorage client storage
 
@@ -160,9 +160,9 @@ remote-job-scout/
 
 - **Runtime**: Node.js 18+, TypeScript strict, ESM modules
 - **Frontend**: React 19, Vite, Shadcn/ui, React Query, Tailwind 4.1+, jsdom testing
-- **Backend**: Express.js, REST API, HTTP polling, JSDOM, YAML, Zod validation
+- **Backend**: Express.js, REST API, HTTP polling, JSDOM, YAML, Zod validation, Winston logging
 - **Build**: Docker multi-stage, prod optimization
 - **Dev**: Hot reload, TS compilation, ESLint/Prettier, modular architecture
-- **Testing**: Vitest framework, React Testing Library, comprehensive coverage, test fixtures
+- **Testing**: Vitest framework, React Testing Library, comprehensive coverage (118+ tests), test fixtures
 - **CLI**: Unified workflow, build/check/test automation
-- **Processing**: Parallel scraping, retry/backoff, token/cost tracking, localStorage persistence, session snapshots, filesystem persistence
+- **Processing**: Parallel scraping, retry/backoff, token/cost tracking, localStorage persistence, session snapshots, filesystem persistence, ETA calculation

@@ -48,7 +48,18 @@ interface OpenAIResponsesAPIResponse {
   };
 }
 
+/**
+ * FR-14: OpenAI WebSearch Scraper
+ *
+ * Этот класс использует OpenAI API для веб-поиска вакансий.
+ * API-ключ передается в конструкторе и никогда не сохраняется на сервере.
+ * Все ошибки API обрабатываются с понятными сообщениями для пользователя.
+ */
 export class OpenAIWebSearchScraper extends Scraper {
+  /**
+   * API-ключ OpenAI для веб-поиска
+   * FR-14: Передается от клиента, не сохраняется на сервере
+   */
   private apiKey: string;
 
   // Internal settings defined by scraper itself
@@ -59,6 +70,11 @@ export class OpenAIWebSearchScraper extends Scraper {
   // Transport settings - defined by scraper itself
   private timeout = 30000; // 30 seconds for OpenAI API calls
 
+  /**
+   * Создает экземпляр скрейпера с API ключом
+   * FR-14: API ключ передается от клиента для каждой операции поиска
+   * @param apiKey API ключ OpenAI для веб-поиска
+   */
   constructor(apiKey: string) {
     super();
     this.apiKey = apiKey;
@@ -110,6 +126,16 @@ export class OpenAIWebSearchScraper extends Scraper {
     };
   }
 
+  /**
+   * Выполняет веб-поиск с использованием OpenAI API
+   * FR-14: Обрабатывает ошибки API ключа и предоставляет детальные сообщения об ошибках
+   * @param input Параметры поиска
+   * @param apiKey API ключ OpenAI (передается от клиента)
+   * @param model Модель OpenAI для использования
+   * @param _globalSearch Флаг глобального поиска (не используется в текущей реализации)
+   * @param maxResults Максимальное количество результатов
+   * @returns Результаты веб-поиска
+   */
   private async performWebSearch(
     input: ScraperInput,
     apiKey: string,
@@ -156,13 +182,38 @@ export class OpenAIWebSearchScraper extends Scraper {
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error('OpenAI API rate limit exceeded');
+      let errorMessage = `OpenAI WebSearch API error: ${response.status} ${response.statusText}`;
+
+      // Provide more specific error messages based on status code
+      switch (response.status) {
+        case 401:
+          errorMessage = 'Invalid OpenAI API key. Please check your API key in settings.';
+          break;
+        case 403:
+          errorMessage =
+            'OpenAI API access denied. Your API key may not have the required permissions for web search.';
+          break;
+        case 429:
+          errorMessage = 'OpenAI API rate limit exceeded. Please wait before retrying.';
+          break;
+        case 400:
+          errorMessage =
+            'Invalid request to OpenAI WebSearch API. Please check your search parameters.';
+          break;
+        case 404:
+          errorMessage = 'OpenAI WebSearch API endpoint not found. The API may have changed.';
+          break;
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          errorMessage = 'OpenAI API server error. Please try again later.';
+          break;
+        default:
+          errorMessage = `OpenAI WebSearch API error: ${response.status} ${response.statusText}`;
       }
-      if (response.status === 401) {
-        throw new Error('Invalid OpenAI API key');
-      }
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+
+      throw new Error(errorMessage);
     }
 
     const data: OpenAIResponsesAPIResponse = await response.json();

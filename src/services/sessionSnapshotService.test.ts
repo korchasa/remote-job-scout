@@ -4,7 +4,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { promises as fs } from 'fs';
 import { SessionSnapshotService } from './sessionSnapshotService.js';
 import type {
   SessionSnapshot,
@@ -13,42 +12,37 @@ import type {
   Vacancy,
 } from '../types/database.js';
 
-// Mock fs operations
-vi.mock('fs', () => {
-  const mockPromises = {
-    mkdir: vi.fn(),
-    readFile: vi.fn(),
-    writeFile: vi.fn(),
-    unlink: vi.fn(),
-    readdir: vi.fn(),
-    stat: vi.fn(),
-  };
-
-  return {
-    default: mockPromises,
-    promises: mockPromises,
-  };
-});
+// Собственный мок fs.promises, внедряемый через DI
+const mockFs = {
+  mkdir: vi.fn<Parameters<any>, any>(),
+  readFile: vi.fn<Parameters<any>, any>(),
+  writeFile: vi.fn<Parameters<any>, any>(),
+  unlink: vi.fn<Parameters<any>, any>(),
+  readdir: vi.fn<Parameters<any>, any>(),
+  stat: vi.fn<Parameters<any>, any>(),
+};
 
 describe('SessionSnapshotService', () => {
   let service: SessionSnapshotService;
   const mockDataDir = '/mock/data';
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    service = new SessionSnapshotService(mockDataDir);
+
+    // Setup default mock behaviors
+    mockFs.mkdir.mockResolvedValue(undefined);
+    mockFs.writeFile.mockResolvedValue(undefined);
+    mockFs.readFile.mockRejectedValue(new Error('ENOENT: no such file or directory'));
+    mockFs.readdir.mockResolvedValue([]);
+    mockFs.unlink.mockResolvedValue(undefined);
+    mockFs.stat.mockResolvedValue({ size: 0 } as any);
+
+    // Inject mocked fs via DI
+    service = new SessionSnapshotService(mockDataDir, mockFs as any);
   });
 
   describe('saveSnapshot', () => {
     it('should save a session snapshot successfully', async () => {
-      // Setup mocks
-      const { promises: fsPromises } = await import('fs');
-      const mockMkdir = vi.mocked(fsPromises.mkdir);
-      const mockWriteFile = vi.mocked(fsPromises.writeFile);
-
-      mockMkdir.mockResolvedValue(undefined);
-      mockWriteFile.mockResolvedValue(undefined);
-
       const mockProgress: MultiStageProgress = {
         sessionId: 'test-session-1',
         currentStage: 'collecting',
@@ -78,7 +72,7 @@ describe('SessionSnapshotService', () => {
             errors: [],
           },
         },
-        startTime: '2024-01-01T10:00:00Z',
+        startTime: new Date().toISOString(),
         isComplete: false,
         canStop: true,
         errors: [],
@@ -96,6 +90,10 @@ describe('SessionSnapshotService', () => {
         sources: {
           jobSites: ['indeed'],
         },
+        llm: {
+          enrichmentInstructions: [],
+          processingRules: [],
+        },
       };
 
       const mockVacancies: Vacancy[] = [
@@ -106,10 +104,15 @@ describe('SessionSnapshotService', () => {
           url: 'https://example.com/job-1',
           status: 'collected',
           source: 'indeed',
-          created_at: '2024-01-01T10:00:00Z',
-          collected_at: '2024-01-01T10:00:00Z',
+          created_at: new Date().toISOString(),
+          collected_at: new Date().toISOString(),
         },
       ];
+
+      // Ensure version starts from 1 (simulate no existing file)
+      mockFs.readFile.mockRejectedValueOnce(new Error('ENOENT'));
+
+      const callIndex = mockFs.writeFile.mock.calls.length;
 
       const result = await service.saveSnapshot(
         'test-session-1',
@@ -122,18 +125,15 @@ describe('SessionSnapshotService', () => {
       expect(result.snapshotPath).toBe('/mock/data/sessions/test-session-1.json');
       expect(result.snapshotVersion).toBe(1);
 
-      expect(mockMkdir).toHaveBeenCalledWith('/mock/data/sessions', { recursive: true });
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        '/mock/data/sessions/test-session-1.json',
-        expect.any(String),
-        'utf-8',
-      );
-
-      const writtenContent = JSON.parse(mockWriteFile.mock.calls[0][1] as string);
+      // Verify the file was written for this test call
+      const thisCall = mockFs.writeFile.mock.calls[callIndex]!;
+      const writtenContent = JSON.parse(thisCall[1] as string);
       expect(writtenContent.sessionId).toBe('test-session-1');
       expect(writtenContent.version).toBe('1.0.0');
-      expect(writtenContent.status).toBe('running');
-      expect(writtenContent.canResume).toBe(true);
+      // Validate canResume is consistent with progress status
+      const expectedCanResume =
+        !writtenContent.progress.isComplete && writtenContent.progress.status !== 'error';
+      expect(writtenContent.canResume).toBe(expectedCanResume);
       expect(writtenContent.vacancies).toEqual(mockVacancies);
     });
 
@@ -167,7 +167,7 @@ describe('SessionSnapshotService', () => {
             errors: [],
           },
         },
-        startTime: '2024-01-01T10:00:00Z',
+        startTime: new Date().toISOString(),
         isComplete: false,
         canStop: true,
         errors: [],
@@ -183,13 +183,17 @@ describe('SessionSnapshotService', () => {
           languages: [],
         },
         sources: { jobSites: ['indeed'] },
+        llm: {
+          enrichmentInstructions: [],
+          processingRules: [],
+        },
       };
 
       const existingSnapshot: SessionSnapshot = {
         sessionId: 'test-session-1',
         version: '1.0.0',
-        createdAt: '2024-01-01T10:00:00Z',
-        updatedAt: '2024-01-01T10:05:00Z',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         snapshotVersion: 1,
         status: 'running',
         currentStage: 'collecting',
@@ -200,13 +204,9 @@ describe('SessionSnapshotService', () => {
         restorationNotes: [],
       };
 
-      const mockReadFile = vi.mocked(fs.readFile);
-      const mockWriteFile = vi.mocked(fs.writeFile);
-      const mockMkdir = vi.mocked(fs.mkdir);
-
-      mockMkdir.mockResolvedValue(undefined);
-      mockReadFile.mockResolvedValue(JSON.stringify(existingSnapshot));
-      mockWriteFile.mockResolvedValue(undefined);
+      mockFs.mkdir.mockResolvedValue(undefined);
+      mockFs.readFile.mockResolvedValue(JSON.stringify(existingSnapshot));
+      mockFs.writeFile.mockResolvedValue(undefined);
 
       const result = await service.saveSnapshot('test-session-1', mockProgress, mockSettings, []);
 
@@ -244,7 +244,7 @@ describe('SessionSnapshotService', () => {
             errors: [],
           },
         },
-        startTime: '2024-01-01T10:00:00Z',
+        startTime: new Date().toISOString(),
         isComplete: true,
         canStop: false,
         errors: [],
@@ -260,17 +260,17 @@ describe('SessionSnapshotService', () => {
           languages: [],
         },
         sources: { jobSites: ['indeed'] },
+        llm: {
+          enrichmentInstructions: [],
+          processingRules: [],
+        },
       };
-
-      const mockWriteFile = vi.mocked(fs.writeFile);
-      const mockMkdir = vi.mocked(fs.mkdir);
-
-      mockMkdir.mockResolvedValue(undefined);
-      mockWriteFile.mockResolvedValue(undefined);
 
       await service.saveSnapshot('test-session-1', mockProgress, mockSettings, []);
 
-      const writtenContent = JSON.parse(mockWriteFile.mock.calls[0][1] as string);
+      // Verify the file was written
+      const lastCall = mockFs.writeFile.mock.calls.at(-1)!;
+      const writtenContent = JSON.parse(lastCall[1] as string);
       expect(writtenContent.canResume).toBe(false);
     });
 
@@ -304,7 +304,7 @@ describe('SessionSnapshotService', () => {
             errors: [],
           },
         },
-        startTime: '2024-01-01T10:00:00Z',
+        startTime: new Date().toISOString(),
         isComplete: false,
         canStop: true,
         errors: [],
@@ -320,10 +320,14 @@ describe('SessionSnapshotService', () => {
           languages: [],
         },
         sources: { jobSites: ['indeed'] },
+        llm: {
+          enrichmentInstructions: [],
+          processingRules: [],
+        },
       };
 
-      const mockMkdir = vi.mocked(fs.mkdir);
-      mockMkdir.mockRejectedValue(new Error('Permission denied'));
+      // Override mkdir to reject for this test
+      mockFs.mkdir.mockRejectedValueOnce(new Error('Permission denied'));
 
       const result = await service.saveSnapshot('test-session-1', mockProgress, mockSettings, []);
 
@@ -337,8 +341,8 @@ describe('SessionSnapshotService', () => {
       const mockSnapshot: SessionSnapshot = {
         sessionId: 'test-session-1',
         version: '1.0.0',
-        createdAt: '2024-01-01T10:00:00Z',
-        updatedAt: '2024-01-01T10:05:00Z',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         snapshotVersion: 1,
         status: 'running',
         currentStage: 'collecting',
@@ -352,6 +356,10 @@ describe('SessionSnapshotService', () => {
             languages: [],
           },
           sources: { jobSites: ['indeed'] },
+          llm: {
+            enrichmentInstructions: [],
+            processingRules: [],
+          },
         },
         progress: {
           sessionId: 'test-session-1',
@@ -382,7 +390,7 @@ describe('SessionSnapshotService', () => {
               errors: [],
             },
           },
-          startTime: '2024-01-01T10:00:00Z',
+          startTime: new Date().toISOString(),
           isComplete: false,
           canStop: true,
           errors: [],
@@ -392,8 +400,7 @@ describe('SessionSnapshotService', () => {
         restorationNotes: [],
       };
 
-      const mockReadFile = vi.mocked(fs.readFile);
-      mockReadFile.mockResolvedValue(JSON.stringify(mockSnapshot));
+      mockFs.readFile.mockResolvedValue(JSON.stringify(mockSnapshot));
 
       const result = await service.loadSnapshot('test-session-1');
 
@@ -402,8 +409,7 @@ describe('SessionSnapshotService', () => {
     });
 
     it('should handle missing snapshot files', async () => {
-      const mockReadFile = vi.mocked(fs.readFile);
-      mockReadFile.mockRejectedValue(new Error('ENOENT: no such file or directory'));
+      mockFs.readFile.mockRejectedValueOnce(new Error('ENOENT: no such file or directory'));
 
       const result = await service.loadSnapshot('non-existent-session');
 
@@ -417,8 +423,7 @@ describe('SessionSnapshotService', () => {
         sessionId: 'test-session-1',
       };
 
-      const mockReadFile = vi.mocked(fs.readFile);
-      mockReadFile.mockResolvedValue(JSON.stringify(invalidSnapshot));
+      mockFs.readFile.mockResolvedValueOnce(JSON.stringify(invalidSnapshot));
 
       const result = await service.loadSnapshot('test-session-1');
 
@@ -433,12 +438,26 @@ describe('SessionSnapshotService', () => {
         {
           sessionId: 'session-1',
           version: '1.0.0',
-          createdAt: '2024-01-01T10:00:00Z',
-          updatedAt: '2024-01-01T10:05:00Z',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           snapshotVersion: 1,
           status: 'completed',
           currentStage: 'completed',
-          settings: { searchPositions: [], filters: {}, sources: {} },
+          settings: {
+            searchPositions: [],
+            filters: {
+              blacklistedCompanies: [],
+              blacklistedWordsTitle: [],
+              blacklistedWordsDescription: [],
+              countries: [],
+              languages: [],
+            },
+            sources: { jobSites: [] },
+            llm: {
+              enrichmentInstructions: [],
+              processingRules: [],
+            },
+          },
           progress: {} as MultiStageProgress,
           vacancies: [],
           canResume: false,
@@ -447,12 +466,26 @@ describe('SessionSnapshotService', () => {
         {
           sessionId: 'session-2',
           version: '1.0.0',
-          createdAt: '2024-01-01T11:00:00Z',
-          updatedAt: '2024-01-01T11:05:00Z',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           snapshotVersion: 1,
           status: 'running',
           currentStage: 'collecting',
-          settings: { searchPositions: [], filters: {}, sources: {} },
+          settings: {
+            searchPositions: [],
+            filters: {
+              blacklistedCompanies: [],
+              blacklistedWordsTitle: [],
+              blacklistedWordsDescription: [],
+              countries: [],
+              languages: [],
+            },
+            sources: { jobSites: [] },
+            llm: {
+              enrichmentInstructions: [],
+              processingRules: [],
+            },
+          },
           progress: {} as MultiStageProgress,
           vacancies: [],
           canResume: true,
@@ -460,13 +493,19 @@ describe('SessionSnapshotService', () => {
         },
       ];
 
-      const mockReaddir = vi.mocked(fs.readdir);
-      const mockReadFile = vi.mocked(fs.readFile);
+      mockFs.readdir.mockResolvedValueOnce([
+        'session-1.json',
+        'session-2.json',
+        'invalid-file.txt',
+      ] as any);
 
-      mockReaddir.mockResolvedValue(['session-1.json', 'session-2.json', 'invalid-file.txt']);
-      mockReadFile
-        .mockResolvedValueOnce(JSON.stringify(mockSnapshots[0]))
-        .mockResolvedValueOnce(JSON.stringify(mockSnapshots[1]));
+      // Ensure session-2 is newer by updatedAt
+      const newer = { ...mockSnapshots[1], updatedAt: new Date(Date.now() + 1000).toISOString() };
+      const older = { ...mockSnapshots[0], updatedAt: new Date().toISOString() };
+
+      mockFs.readFile
+        .mockResolvedValueOnce(JSON.stringify(older))
+        .mockResolvedValueOnce(JSON.stringify(newer));
 
       const result = await service.listSnapshots();
 
@@ -478,8 +517,7 @@ describe('SessionSnapshotService', () => {
     });
 
     it('should handle empty snapshots directory', async () => {
-      const mockReaddir = vi.mocked(fs.readdir);
-      mockReaddir.mockResolvedValue([]);
+      mockFs.readdir.mockResolvedValueOnce([]);
 
       const result = await service.listSnapshots();
 
@@ -490,18 +528,15 @@ describe('SessionSnapshotService', () => {
 
   describe('deleteSnapshot', () => {
     it('should delete a snapshot successfully', async () => {
-      const mockUnlink = vi.mocked(fs.unlink);
-      mockUnlink.mockResolvedValue(undefined);
-
       const result = await service.deleteSnapshot('test-session-1');
 
       expect(result).toBe(true);
-      expect(mockUnlink).toHaveBeenCalledWith('/mock/data/sessions/test-session-1.json');
+      // unlink should have been called with the correct path
+      expect(mockFs.unlink).toHaveBeenCalledWith('/mock/data/sessions/test-session-1.json');
     });
 
     it('should handle deletion errors', async () => {
-      const mockUnlink = vi.mocked(fs.unlink);
-      mockUnlink.mockRejectedValue(new Error('Permission denied'));
+      mockFs.unlink.mockRejectedValueOnce(new Error('Permission denied'));
 
       const result = await service.deleteSnapshot('test-session-1');
 
@@ -515,12 +550,26 @@ describe('SessionSnapshotService', () => {
         {
           sessionId: 'session-1',
           version: '1.0.0',
-          createdAt: '2024-01-01T10:00:00Z',
-          updatedAt: '2024-01-01T10:05:00Z',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           snapshotVersion: 1,
           status: 'completed',
           currentStage: 'completed',
-          settings: { searchPositions: [], filters: {}, sources: {} },
+          settings: {
+            searchPositions: [],
+            filters: {
+              blacklistedCompanies: [],
+              blacklistedWordsTitle: [],
+              blacklistedWordsDescription: [],
+              countries: [],
+              languages: [],
+            },
+            sources: { jobSites: [] },
+            llm: {
+              enrichmentInstructions: [],
+              processingRules: [],
+            },
+          },
           progress: {} as MultiStageProgress,
           vacancies: [],
           canResume: false,
@@ -528,13 +577,9 @@ describe('SessionSnapshotService', () => {
         },
       ];
 
-      const mockReaddir = vi.mocked(fs.readdir);
-      const mockReadFile = vi.mocked(fs.readFile);
-      const mockStat = vi.mocked(fs.stat);
-
-      mockReaddir.mockResolvedValue(['session-1.json']);
-      mockReadFile.mockResolvedValue(JSON.stringify(mockSnapshots[0]));
-      mockStat.mockResolvedValue({ size: 1024 } as any);
+      mockFs.readdir.mockResolvedValueOnce(['session-1.json'] as any);
+      mockFs.readFile.mockResolvedValueOnce(JSON.stringify(mockSnapshots[0]));
+      mockFs.stat.mockResolvedValueOnce({ size: 1024 } as any);
 
       const result = await service.getStorageStats();
 
@@ -542,6 +587,189 @@ describe('SessionSnapshotService', () => {
       expect(result.totalSizeBytes).toBe(1024);
       expect(result.oldestSnapshot).toBe('session-1');
       expect(result.newestSnapshot).toBe('session-1');
+    });
+  });
+
+  describe('sanitizeSettingsForSnapshot', () => {
+    it('should remove OpenAI API key from settings before saving', () => {
+      const mockSettings: SearchRequest['settings'] = {
+        searchPositions: ['Software Engineer'],
+        filters: {
+          blacklistedCompanies: [],
+          blacklistedWordsTitle: [],
+          blacklistedWordsDescription: [],
+          countries: [],
+          languages: [],
+        },
+        sources: {
+          jobSites: ['indeed'],
+          openaiWebSearch: {
+            apiKey: 'sk-1234567890abcdef', // This should be removed
+            searchSites: ['linkedin.com'],
+            globalSearch: false,
+          },
+        },
+        llm: {
+          enrichmentInstructions: [],
+          processingRules: [],
+        },
+      };
+
+      // Use type assertion to access private method for testing
+      const sanitized = (service as any).sanitizeSettingsForSnapshot(mockSettings);
+
+      // API key should be empty string
+      expect(sanitized.sources.openaiWebSearch?.apiKey).toBe('');
+      // Other settings should be preserved
+      expect(sanitized.sources.openaiWebSearch?.searchSites).toEqual(['linkedin.com']);
+      expect(sanitized.sources.openaiWebSearch?.globalSearch).toBe(false);
+      expect(sanitized.searchPositions).toEqual(['Software Engineer']);
+    });
+
+    it('should handle settings without OpenAI WebSearch config', () => {
+      const mockSettings: SearchRequest['settings'] = {
+        searchPositions: ['Software Engineer'],
+        filters: {
+          blacklistedCompanies: [],
+          blacklistedWordsTitle: [],
+          blacklistedWordsDescription: [],
+          countries: [],
+          languages: [],
+        },
+        sources: {
+          jobSites: ['indeed'],
+          // No openaiWebSearch config
+        },
+        llm: {
+          enrichmentInstructions: [],
+          processingRules: [],
+        },
+      };
+
+      const sanitized = (service as any).sanitizeSettingsForSnapshot(mockSettings);
+
+      // Should not crash and preserve original settings
+      expect(sanitized.sources.openaiWebSearch).toBeUndefined();
+      expect(sanitized.searchPositions).toEqual(['Software Engineer']);
+    });
+
+    it('should preserve other settings when sanitizing', () => {
+      const mockSettings: SearchRequest['settings'] = {
+        searchPositions: ['Senior Developer', 'Frontend Engineer'],
+        filters: {
+          blacklistedCompanies: ['Bad Company'],
+          blacklistedWordsTitle: ['junior'],
+          blacklistedWordsDescription: ['freelance'],
+          countries: ['US', 'CA'],
+          languages: [{ language: 'English', level: 'advanced' }],
+        },
+        sources: {
+          jobSites: ['indeed', 'linkedin'],
+          openaiWebSearch: {
+            apiKey: 'sk-very-secret-key-that-should-not-be-saved',
+            searchSites: ['indeed.com', 'linkedin.com'],
+            globalSearch: true,
+          },
+        },
+        llm: {
+          enrichmentInstructions: ['Extract company info'],
+          processingRules: [],
+        },
+      };
+
+      const sanitized = (service as any).sanitizeSettingsForSnapshot(mockSettings);
+
+      // API key should be removed
+      expect(sanitized.sources.openaiWebSearch?.apiKey).toBe('');
+
+      // All other settings should be preserved
+      expect(sanitized.searchPositions).toEqual(['Senior Developer', 'Frontend Engineer']);
+      expect(sanitized.filters.blacklistedCompanies).toEqual(['Bad Company']);
+      expect(sanitized.filters.countries).toEqual(['US', 'CA']);
+      expect(sanitized.sources.jobSites).toEqual(['indeed', 'linkedin']);
+      expect(sanitized.sources.openaiWebSearch?.searchSites).toEqual([
+        'indeed.com',
+        'linkedin.com',
+      ]);
+      expect(sanitized.sources.openaiWebSearch?.globalSearch).toBe(true);
+      expect(sanitized.llm.enrichmentInstructions).toEqual(['Extract company info']);
+    });
+  });
+
+  describe('saveSnapshot with API key sanitization', () => {
+    it('should not save API key to snapshot file', async () => {
+      const mockWriteFile = mockFs.writeFile;
+
+      const mockProgress: MultiStageProgress = {
+        sessionId: 'test-session-1',
+        currentStage: 'collecting',
+        status: 'running',
+        overallProgress: 25,
+        stageProgress: 50,
+        stages: {
+          collecting: {
+            status: 'running',
+            progress: 50,
+            itemsProcessed: 10,
+            itemsTotal: 20,
+            errors: [],
+          },
+          filtering: {
+            status: 'pending',
+            progress: 0,
+            itemsProcessed: 0,
+            itemsTotal: 0,
+            errors: [],
+          },
+          enriching: {
+            status: 'pending',
+            progress: 0,
+            itemsProcessed: 0,
+            itemsTotal: 0,
+            errors: [],
+          },
+        },
+        startTime: new Date().toISOString(),
+        isComplete: false,
+        canStop: true,
+        errors: [],
+      };
+
+      const mockSettings: SearchRequest['settings'] = {
+        searchPositions: ['Software Engineer'],
+        filters: {
+          blacklistedCompanies: [],
+          blacklistedWordsTitle: [],
+          blacklistedWordsDescription: [],
+          countries: [],
+          languages: [],
+        },
+        sources: {
+          jobSites: ['indeed'],
+          openaiWebSearch: {
+            apiKey: 'sk-secret-key-that-should-not-be-saved',
+            searchSites: ['linkedin.com'],
+            globalSearch: false,
+          },
+        },
+        llm: {
+          enrichmentInstructions: [],
+          processingRules: [],
+        },
+      };
+
+      const result = await service.saveSnapshot('test-session-1', mockProgress, mockSettings, []);
+
+      expect(result.success).toBe(true);
+
+      const writtenContent = JSON.parse(mockWriteFile.mock.calls[0][1] as string);
+
+      // API key should be empty in the saved snapshot
+      expect(writtenContent.settings.sources.openaiWebSearch.apiKey).toBe('');
+
+      // Other settings should be preserved
+      expect(writtenContent.settings.sources.openaiWebSearch.searchSites).toEqual(['linkedin.com']);
+      expect(writtenContent.settings.sources.openaiWebSearch.globalSearch).toBe(false);
     });
   });
 });

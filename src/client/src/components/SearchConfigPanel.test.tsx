@@ -90,9 +90,9 @@ vi.mock('./ui/select.tsx', () => ({
       </select>
     </div>
   ),
-  SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   SelectItem: ({ children, value }: any) => <option value={value}>{children}</option>,
-  SelectTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   SelectValue: ({ placeholder }: { placeholder: string }) => <span>{placeholder}</span>,
 }));
 

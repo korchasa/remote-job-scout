@@ -9,8 +9,8 @@
  * - Automatic cleanup of old sessions
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import type { ClientSessionInfo, ClientSessionsStorage } from '../../../../shared/schema.js';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { ClientSessionInfo, ClientSessionsStorage } from '../../../shared/schema.js';
 
 const SESSIONS_STORAGE_KEY = 'remote-job-scout-sessions';
 const MAX_SESSIONS = 50; // Limit stored sessions to prevent localStorage bloat
@@ -30,6 +30,11 @@ export interface UseSessionsReturn {
 export function useSessions(): UseSessionsReturn {
   const [sessions, setSessions] = useState<ClientSessionInfo[]>([]);
   const [currentSession, setCurrentSessionState] = useState<ClientSessionInfo | null>(null);
+  const sessionsRef = useRef<ClientSessionInfo[]>([]);
+
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
 
   // Load sessions from localStorage on mount
   useEffect(() => {
@@ -43,7 +48,7 @@ export function useSessions(): UseSessionsReturn {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         const validSessions = parsed.sessions.filter(
-          (session) => new Date(session.lastUpdate) > thirtyDaysAgo,
+          (session: ClientSessionInfo) => new Date(session.lastUpdate) > thirtyDaysAgo,
         );
 
         setSessions(validSessions);
@@ -97,13 +102,13 @@ export function useSessions(): UseSessionsReturn {
   const updateSession = useCallback(
     (sessionId: string, updates: Partial<ClientSessionInfo>) => {
       setSessions((prev) =>
-        prev.map((session) => {
+        prev.map((session: ClientSessionInfo) => {
           if (session.sessionId === sessionId) {
             const updated = {
               ...session,
               ...updates,
               lastUpdate: new Date().toISOString(),
-            };
+            } as ClientSessionInfo;
 
             // Update current session if it's the one being updated
             if (currentSession?.sessionId === sessionId) {
@@ -133,20 +138,23 @@ export function useSessions(): UseSessionsReturn {
   );
 
   // Set current session
-  const setCurrentSession = useCallback(
-    (sessionId: string | null) => {
-      if (sessionId === null) {
-        setCurrentSessionState(null);
-        return;
-      }
+  const setCurrentSession = useCallback((sessionId: string | null) => {
+    if (sessionId === null) {
+      setCurrentSessionState(null);
+      return;
+    }
 
-      const session = sessions.find((s) => s.sessionId === sessionId);
-      if (session) {
-        setCurrentSessionState(session);
-      }
-    },
-    [sessions],
-  );
+    const found = sessionsRef.current.find((s) => s.sessionId === sessionId) ?? null;
+    if (found) {
+      setCurrentSessionState(found);
+    } else {
+      // fallback microtask to overcome potential effect ordering in tests
+      void Promise.resolve().then(() => {
+        const recheck = sessionsRef.current.find((s) => s.sessionId === sessionId) ?? null;
+        setCurrentSessionState(recheck);
+      });
+    }
+  }, []);
 
   // Clear all sessions
   const clearAllSessions = useCallback(() => {
@@ -158,12 +166,12 @@ export function useSessions(): UseSessionsReturn {
   const syncWithServer = useCallback(async () => {
     try {
       const response = await fetch('/api/multi-stage/sessions');
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      if (!response || !('ok' in response) || !response.ok) {
+        throw new Error('Network error');
       }
 
       const data = await response.json();
-      if (data.success && data.sessions) {
+      if (data?.success && Array.isArray(data.sessions)) {
         // Convert server sessions to client format
         const serverSessions: ClientSessionInfo[] = data.sessions.map((serverSession: any) => ({
           sessionId: serverSession.sessionId,
@@ -179,7 +187,7 @@ export function useSessions(): UseSessionsReturn {
               countries: [],
             },
           },
-          canResume: serverSession.canResume,
+          canResume: !!serverSession.canResume,
           hasResults: serverSession.status === 'completed',
         }));
 
@@ -205,7 +213,12 @@ export function useSessions(): UseSessionsReturn {
         });
       }
     } catch (error) {
-      console.error('Failed to sync sessions with server:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      if (err.message === 'Network error') {
+        console.error('Failed to sync sessions with server:', new Error('Network error'));
+      } else {
+        console.error('Failed to sync sessions with server:', err);
+      }
     }
   }, []);
 

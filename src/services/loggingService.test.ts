@@ -11,12 +11,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import winston from 'winston';
-import {
-  LoggingService,
-  maskSensitiveData,
-  LogLevel,
-  LogEntrySchema,
-} from './loggingService';
+import { LoggingService, maskSensitiveData, LogLevel, LogEntrySchema } from './loggingService';
 
 // Mock winston to capture log output
 vi.mock('winston', () => {

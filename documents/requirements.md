@@ -49,96 +49,99 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
   - ✅ Generates stage statuses, aggregated statistics
   - ✅ Skip reasons available: title_blacklisted_words, language_requirements, country_filter, company_blacklisted
 
-### FR-5: Обогащение с помощью LLM (этап 3) ✅ COMPLETED
+### FR-5: LLM Enrichment (Stage 3) ✅ COMPLETED
 
-- Описание: Обогащение вакансий с использованием LLM (сейчас OpenAI), включая исследование компаний через веб-поиск, трекинг токенов/стоимости и источников обогащения, с корректной обработкой отсутствующих данных.
-- Сценарий использования: Пользователь вводит API-ключ LLM на клиенте. Во время обогащения интерфейс отображает расход токенов и оценочную стоимость; при недоступности источников/ошибках обогащение для конкретной вакансии помечается как неудачное без остановки конвейера.
-- Критерии приёмки:
-  - ✅ Интеграция с LLM (сейчас OpenAI) выполняет текстовое обогащение и может использовать веб-поиск для исследования компаний.
-  - ✅ Отслеживаются токены и стоимость на вакансию; агрегаты отображаются в панели прогресса.
-  - ✅ Фиксируется источник(и) обогащения для вакансии.
-  - ✅ Промежуточные результаты обновляются для UI в ходе этапа.
+**Purpose**: Enrich vacancies using LLM (OpenAI), incl. company research via web search, token/cost tracking, enrichment sources, proper missing data handling
+**Acceptance**:
 
-### FR-6: Управление вакансиями ✅ COMPLETED
+- ✅ LLM integration (OpenAI) performs text enrichment + company research via web search
+- ✅ Tracks tokens/costs per vacancy; aggregates shown in progress panel
+- ✅ Records enrichment source(s) per vacancy
+- ✅ Intermediate results updated for UI during processing
 
-- Описание: Современный адаптивный интерфейс для просмотра и управления вакансиями: карточки, детали, переходы на внешние ссылки, базовое управление чёрным списком, темы.
-- Сценарий использования: Пользователь просматривает список карточек, открывает модальное окно с деталями, переходит по внешней ссылке на оригинальное объявление, управляет чёрным списком через доступные действия. Интерфейс корректно работает на мобильных и десктопах, поддерживает светлую/тёмную темы.
-- Критерии приёмки:
-  - ✅ Доступны список вакансий и модальное окно с деталями с плавной навигацией.
-  - ✅ Внешние ссылки открываются в новой вкладке с безопасными атрибутами.
-  - ✅ Базовые операции управления чёрным списком доступны в UI; серверные изменения выполняются через соответствующие API (если применимо на текущем этапе).
-  - ✅ Интерфейс адаптивен, поддерживает переключение тем; выбор темы сохраняется.
-  - ✅ Исключается избыточный трафик за счёт оптимизированного взаимодействия клиент-сервер.
+### FR-6: Job Management UI ✅ COMPLETED
 
-### FR-7: Избранное ✅ COMPLETED
+**Purpose**: Modern responsive interface for viewing/managing jobs: cards, details, external links, basic blacklist management, themes
+**Acceptance**:
 
-- Описание: Интерфейс для сохранения и просмотра избранных вакансий с действием «Добавить в избранное» и локальной персистентностью пользовательских пометок.
-- Сценарий использования: Пользователь отмечает вакансию как избранную, просматривает список избранных на отдельном экране, при этом при блокировке, обновляются параметры поиска.
-- Критерии приёмки:
-  - ✅ Действие «Добавить в избранное» в карточке и в модальном окне.
-  - ✅ Существует отдельный экран/вкладка «Избранное» со списком сохранённых вакансий.
-  - ✅ Избранные вакансии персистируются локально (localStorage) и применяются при рендеринге.
-  - ✅ При блокировке вакансии, ее работодатель добавляется в чёрный список и обновляются параметры поиска.
+- ✅ Job list + detail modal with smooth navigation
+- ✅ External links open in new tab with security attributes
+- ✅ Basic blacklist operations available in UI; server changes via APIs (as applicable)
+- ✅ Interface responsive, supports theme switching; theme choice persists
+- ✅ Optimized client-server interaction prevents unnecessary traffic
 
-### FR-8: Сохранение и восстановление снимков сессии ✅ COMPLETED
+### FR-7: Favorites ✅ COMPLETED
 
-- Описание: Сервер должен сохранять снимки сессий поиска (прогресс и результаты) в файловую систему и восстанавливать их при запуске.
-- Сценарий использования: Пользователь запускает многоэтапный поиск; сервер неожиданно перезапускается; после перезапуска пользователь видит сессию с соответствующей меткой (завершена/приостановлена/остановлена) и может возобновить или просмотреть результаты.
-- Критерии приёмки:
-  - ✅ Снимки записываются в `data/sessions/<sessionId>.json` во время обработки и при переходе между этапами.
-  - ✅ Клиент хранит сессии в localStorage и восстанавливает их при запуске.
-  - ✅ При запуске сервера ранее завершённые сессии доступны для просмотра только для чтения; сессии в процессе восстанавливаются как остановленные/приостановленные без потери данных.
-  - ✅ После восстановления не происходит дублирования обработки; возобновление продолжается с правильных границ этапов.
+**Purpose**: Interface for saving/viewing favorite jobs with "Add to Favorites" action + local persistence of user marks
+**Acceptance**:
 
-### FR-9: Расчёт и отображение ETA ✅ COMPLETED
+- ✅ "Add to Favorites" action in card + modal
+- ✅ Dedicated "Favorites" screen/tab with saved jobs list
+- ✅ Favorite jobs persist locally (localStorage) + apply on render
+- ✅ Blocking job adds employer to blacklist + updates search settings
 
-- Описание: Система должна вычислять и отображать оценку оставшегося времени (ETA) для каждого этапа на основе скорости обработки и оставшегося объёма работы.
-- Сценарий использования: Во время сбора из нескольких источников пользователь видит на панели мониторинга процент выполнения и ETA, который обновляется со временем.
-- Критерии приёмки:
-  - ✅ ETA рассчитывается по формуле `(всего - обработано) / скорость × 60` (в минутах) с сглаживанием для уменьшения скачков.
-  - ✅ ETA и процент выполнения доступны через API и отображаются в интерфейсе прогресса.
-  - ✅ Когда работа завершается, ETA становится 0, и этап немедленно переходит к следующему.
-  - ✅ Добавлены индикаторы уверенности в расчёте ETA (зелёный ≥80%, жёлтый 50-79%, красный <50%).
-  - ✅ Этап-специфичный ETA отображается только для активных этапов.
-  - ✅ Реализован механизм сглаживания для предотвращения резких колебаний ETA.
+### FR-8: Session Snapshots Persistence ✅ COMPLETED
 
-### FR-11: Сохранение действий на стороне клиента (скрытие/блокировка) ✅ COMPLETED
+**Purpose**: Server saves search session snapshots (progress + results) to filesystem + restores on startup
+**Acceptance**:
 
-- Описание: Скрытие вакансий и блокировка работодателей хранятся и применяются только на клиенте и не отправляются на сервер.
-- Сценарий использования: Пользователь скрывает вакансию и блокирует компанию; после перезагрузки страницы эти действия сохраняются через localStorage, а сервер не изменяется.
-- Критерии приёмки:
-  - ✅ localStorage хранит списки скрытых идентификаторов вакансий и заблокированных названий компаний.
-  - ✅ заблокированные работодатели и скрытые вакансии отфильтровываются на стадии фильтрации.
-  - ✅ пользователь может просмотреть список скрытых вакансий на отдельном экране, в коротком виде: название, работодатель, дата и кнопкой восстановления.
-  - ✅ список скрытых вакансий передается на сервер в параметре запроса, с полями: работодатель, название вакансии.
-  - ✅ после восстановления вакансии, она перестает отфильтровываться.
+- ✅ Snapshots saved to `data/sessions/<sessionId>.json` during processing + stage transitions
+- ✅ Client stores sessions in localStorage + restores on startup
+- ✅ Completed sessions available read-only; in-progress sessions restore as stopped/paused without data loss
+- ✅ No processing duplication after restoration; resumption continues from correct stage boundaries
 
-### FR-12: Валидация ввода на основе схем и ответы об ошибках ✅ COMPLETED
+### FR-9: ETA Calculation & Display ✅ COMPLETED
 
-- Описание: Все серверные конечные точки должны проверять входные данные по схемам и возвращать стандартизированные ответы об ошибках при неудачной валидации.
-- Сценарий использования: Отправляется некорректный запрос поиска; сервер отвечает ошибкой 400 с машинно-читаемым отчётом о валидации.
-- Критерии приёмки:
-  - ✅ Запросы к конечным точкам поиска, действий с вакансиями и настроек проверяются по схемам.
-  - ✅ При неудаче ответы содержат HTTP 400 с `{ code, message, details }`, где `details` перечисляет ошибки по полям.
-  - ✅ Корректные запросы передаются в бизнес-логику; некорректные не изменяют состояние.
+**Purpose**: Calculate/display estimated completion time (ETA) for each stage based on processing speed + remaining work volume
+**Acceptance**:
 
-### FR-13: Операционное логирование и аудит ✅ COMPLETED
+- ✅ ETA calculated as `(total - processed) / speed × 60` (minutes) with smoothing to reduce fluctuations
+- ✅ ETA + completion % available via API + displayed in progress UI
+- ✅ Work completion sets ETA to 0 + immediately transitions to next stage
+- ✅ Confidence indicators added (green ≥80%, yellow 50-79%, red <50%)
+- ✅ Stage-specific ETA displayed only for active stages
+- ✅ Smoothing mechanism prevents sharp ETA fluctuations
 
-- Описание: Система должна записывать структурированные логи для действий пользователя, переходов между этапами, повторных попыток и ошибок с маскировкой конфиденциальных данных.
-- Сценарий использования: Оператор просматривает логи для анализа неудачного обогащения; в логах отображаются попытки, интервалы задержки и замаскированные API-ключи.
-- Критерии приёмки:
-  - ✅ Логи включают временные метки, идентификаторы сессий, названия этапов, количество попыток и краткие описания ошибок.
-  - ✅ Секреты (например, ключи LLM) никогда не записываются в логи; маскировка проверяется в тестах.
-  - ✅ Логи доступны во время разработки через консоль и могут направляться в файлы в Docker.
+### FR-11: Client-Side Job Actions (Hide/Block) ✅ COMPLETED
 
-### FR-14: Обработка API-ключа LLM (только на клиенте)
+**Purpose**: Job hiding + company blocking stored/applied client-side only, never sent to server
+**Acceptance**:
 
-- Описание: API-ключ LLM (сейчас OpenAI) хранится только на клиенте, передаётся с запросами обогащения и OpenAI WebSearch при необходимости и никогда не сохраняется и не логируется на сервере.
-- Сценарий использования: Пользователь вводит API-ключ в интерфейсе; запускается обогащение; перезапуск сервера не сохраняет ключ; в логах сервера ключ не отображается.
-- Критерии приёмки:
-  - Ключ хранится в localStorage на клиенте и исключён из серверных слоёв хранения.
-  - Сервер получает ключ только как часть операций обогащения и OpenAI WebSearch и не записывает его на диск или в логи.
-  - Обогащение и OpenAI WebSearch работают с валидным ключом и корректно завершаются с понятными сообщениями при отсутствии или неверности ключа.
+- ✅ localStorage stores hidden job IDs + blocked company names lists
+- ✅ Blocked employers + hidden jobs filtered during filtering stage
+- ✅ User views hidden jobs list on dedicated screen, compact format: title, employer, date + restore button
+- ✅ Hidden jobs list sent to server in query param with fields: employer, job title
+- ✅ Job restoration removes filtering
+
+### FR-12: Schema-Based Input Validation & Error Responses ✅ COMPLETED
+
+**Purpose**: All server endpoints validate input against schemas + return standardized error responses on validation failure
+**Acceptance**:
+
+- ✅ Search, job action, settings endpoint requests validated against schemas
+- ✅ Failure responses include HTTP 400 with `{code, message, details}`, details lists field-specific errors
+- ✅ Valid requests passed to business logic; invalid requests don't modify state
+
+### FR-13: Operational Logging & Auditing ✅ COMPLETED
+
+**Purpose**: Record structured logs for user actions, stage transitions, retries, errors with sensitive data masking
+**Acceptance**:
+
+- ✅ Logs include timestamps, session IDs, stage names, attempt counts, brief error descriptions
+- ✅ Secrets (LLM keys) never logged; masking verified in tests
+- ✅ Logs available during development via console + routable to files in Docker
+
+### FR-14: LLM API Key Client-Side Only ✅ COMPLETED
+
+**Purpose**: LLM API key (OpenAI) stored client-side only, sent with enrichment/OpenAI WebSearch requests, never persisted/logged server-side
+**Acceptance**:
+
+- ✅ Key stored in client localStorage, excluded from server storage layers
+- ✅ Server receives key only as part of enrichment/OpenAI WebSearch operations, doesn't persist to disk/logs
+- ✅ Enrichment/OpenAI WebSearch work with valid key + gracefully fail with clear messages on missing/invalid key
+- ✅ API key cleared before saving session snapshots to prevent leaks
+- ✅ API key format validation + enhanced error handling added
+- ✅ All sensitive data masked in logs
 
 ## Non-Functional Requirements
 
@@ -199,20 +202,29 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
 
 ## Current Implementation
 
+### Core Stack
+
 - ✅ Node.js 18+ + Express.js server with Zod validation
 - ✅ React 19/TypeScript strict + Vite frontend
 - ✅ 3-stage search pipeline (Collect → Filter → Enrich) with pause/resume ✅ COMPLETED
 - ✅ 4 scrapers: Indeed GraphQL, LinkedIn, Glassdoor GraphQL, OpenAI WebSearch with retry/backoff
+
+### Features
+
 - ✅ Job UI with Shadcn/ui (47 components), filtering stats, progress dashboard
 - ✅ Docker multi-stage build, development containers
 - ✅ OpenAI API integration, token/cost tracking, company research
 - ✅ LLM enrichment with structured data extraction (company info, job details, location, salary)
-- ✅ Enrichment sources tracking and metadata management
+- ✅ Enrichment sources tracking + metadata management
 - ✅ Graceful error handling for enrichment failures without pipeline interruption
-- ✅ **FR-11 Client-Side Job Actions**: Privacy-focused localStorage persistence for hidden jobs and blocked companies ✅ COMPLETED
+- ✅ **FR-11 Client-Side Job Actions**: Privacy-focused localStorage persistence for hidden jobs + blocked companies ✅ COMPLETED
 - ✅ **FR-12 Input Validation**: Zod schema validation for all API endpoints with standardized error responses ✅ COMPLETED
-- ✅ **FR-13 Operational Logging and Auditing**: Structured logging with session IDs, timestamps, stage transitions, and sensitive data masking ✅ COMPLETED
-- ✅ Client-side filtering with reactive UI updates and dedicated management interface
+- ✅ **FR-13 Operational Logging + Auditing**: Structured logging with session IDs, timestamps, stage transitions, sensitive data masking ✅ COMPLETED
+- ✅ **FR-14 API Key Client-Side Only**: OpenAI API key stored only in browser localStorage, never persisted server-side ✅ COMPLETED
+
+### Quality Assurance
+
+- ✅ Client-side filtering with reactive UI updates + dedicated management interface
 - ✅ TypeScript strict mode, type-safe schemas, Zod validation schemas
 - ✅ Vitest testing (85+ tests pass), React Testing Library, 33 new tests for FR-11, validation tests for FR-12
 - ✅ ESLint/Prettier code quality, automated checks

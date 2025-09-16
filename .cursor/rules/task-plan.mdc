@@ -2,8 +2,7 @@
 description: Create a task plan
 alwaysApply: false
 ---
-# WORKFLOW (until STOP section)
-
+# INSTRUCTIONS
 Add the following steps to the To-Do:
 1. Read existing documentation in `./documents`.
 2. Analyze the user query and restate the user query.
@@ -22,4 +21,3 @@ Add the following steps to the To-Do:
 6. Critique the task and refine it taking the criticism into account.
 7. Add passed project checks to the Definition of Done (DoD).
 8. Add the project check as the final step of the solution.
-9. STOP

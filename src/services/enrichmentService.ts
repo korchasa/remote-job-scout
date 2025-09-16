@@ -57,12 +57,26 @@ export interface EnrichmentData {
   };
 }
 
+/**
+ * FR-14: Обработка API-ключа LLM (только на клиенте)
+ *
+ * Этот класс отвечает за обогащение вакансий данными от LLM (OpenAI).
+ * API-ключ хранится только на клиенте и никогда не сохраняется на сервере.
+ * Все чувствительные данные маскируются в логах для обеспечения безопасности.
+ */
 export class EnrichmentService {
+  /**
+   * API-ключ OpenAI. Хранится только в памяти сервера во время обработки,
+   * никогда не сохраняется на диск и не логируется.
+   * FR-14: Ключ передается от клиента и не хранится на сервере.
+   */
   private openaiApiKey?: string;
   private baseUrl = 'https://api.openai.com/v1';
 
   /**
    * Настраивает сервис с API ключом OpenAI
+   * FR-14: Ключ передается от клиента для каждого запроса обогащения
+   * @param apiKey API ключ OpenAI, полученный от клиента
    */
   setOpenAIKey(apiKey: string): void {
     this.openaiApiKey = apiKey;
@@ -70,6 +84,10 @@ export class EnrichmentService {
 
   /**
    * Обогащает вакансии данными от LLM
+   * FR-14: Проверяет наличие API ключа и его формат перед обработкой
+   * @param vacancies Список вакансий для обогащения
+   * @param settings Настройки поиска (содержат API ключ от клиента)
+   * @returns Результат обогащения с детальной информацией об ошибках
    */
   async enrichVacancies(
     vacancies: Vacancy[],
@@ -87,13 +105,26 @@ export class EnrichmentService {
       errors: [],
     };
 
+    // Check API key availability (log without revealing the key)
     console.log(`🔍 EnrichmentService: API key configured: ${!!this.openaiApiKey}`);
     console.log(`🔍 EnrichmentService: API key length: ${this.openaiApiKey?.length ?? 0}`);
 
-    if (!this.openaiApiKey) {
+    if (!this.openaiApiKey || this.openaiApiKey.trim() === '') {
       result.success = false;
-      result.errors.push('OpenAI API key not configured');
-      console.error('❌ EnrichmentService: No OpenAI API key configured');
+      result.errors.push(
+        'OpenAI API key is required but not provided. Please configure your API key in the settings.',
+      );
+      console.error('❌ EnrichmentService: OpenAI API key not configured or empty');
+      return result;
+    }
+
+    // Validate API key format (basic check)
+    if (!this.openaiApiKey.startsWith('sk-') || this.openaiApiKey.length < 20) {
+      result.success = false;
+      result.errors.push(
+        'Invalid OpenAI API key format. API key should start with "sk-" and be at least 20 characters long.',
+      );
+      console.error('❌ EnrichmentService: Invalid OpenAI API key format');
       return result;
     }
 
@@ -255,7 +286,11 @@ Focus on accuracy and only include information that can be reasonably inferred f
   }
 
   /**
-   * Вызывает OpenAI API
+   * Вызывает OpenAI API с детальной обработкой ошибок
+   * FR-14: Обрабатывает различные типы ошибок API (401, 403, 429, etc.)
+   * и предоставляет понятные сообщения для пользователя
+   * @param prompt Промпт для отправки в OpenAI
+   * @returns Результат вызова API с информацией об использовании токенов
    */
   protected async callOpenAI(prompt: string): Promise<{
     success: boolean;
@@ -297,7 +332,34 @@ Focus on accuracy and only include information that can be reasonably inferred f
       console.log(`🌐 EnrichmentService: OpenAI API response status: ${response.status}`);
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+        let errorMessage = `OpenAI API error: ${response.status} ${response.statusText}`;
+
+        // Provide more specific error messages based on status code
+        switch (response.status) {
+          case 401:
+            errorMessage = 'Invalid OpenAI API key. Please check your API key in settings.';
+            break;
+          case 403:
+            errorMessage =
+              'OpenAI API access denied. Your API key may not have the required permissions.';
+            break;
+          case 429:
+            errorMessage = 'OpenAI API rate limit exceeded. Please wait before retrying.';
+            break;
+          case 400:
+            errorMessage = 'Invalid request to OpenAI API. Please check your prompt format.';
+            break;
+          case 500:
+          case 502:
+          case 503:
+          case 504:
+            errorMessage = 'OpenAI API server error. Please try again later.';
+            break;
+          default:
+            errorMessage = `OpenAI API error: ${response.status} ${response.statusText}`;
+        }
+
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

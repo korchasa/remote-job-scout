@@ -1,8 +1,7 @@
 ---
 alwaysApply: false
 ---
-# INSTRUCTIONS (until STOP section)
-
+# INSTRUCTIONS
 Add the following steps to the To-Do:
 1. Read existing documentation in `./documents`.
 2. Implement the task in given Feature Request(FR) in a TDD manner and Autonomous Mode, updating the progress in `./documents/whiteboard.md` throughout the process.
@@ -10,4 +9,3 @@ Add the following steps to the To-Do:
 4. Run `./run check`
 5. Fix all founded issues and go to step "Run `./run check`".
 6. Add steps from @task-update-docs.mdc rules to update the documentation.
-7. STOP

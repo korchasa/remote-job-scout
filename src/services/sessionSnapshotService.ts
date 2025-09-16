@@ -9,7 +9,7 @@
  * - Providing utilities for session recovery
  */
 
-import { promises as fs } from 'fs';
+import { promises as nodeFs } from 'fs';
 import type {
   SessionSnapshot,
   MultiStageProgress,
@@ -37,13 +37,24 @@ export interface SessionListResult {
   error?: string;
 }
 
+interface FsLike {
+  mkdir: typeof nodeFs.mkdir;
+  readFile: typeof nodeFs.readFile;
+  writeFile: typeof nodeFs.writeFile;
+  unlink: typeof nodeFs.unlink;
+  readdir: typeof nodeFs.readdir;
+  stat: typeof nodeFs.stat;
+}
+
 export class SessionSnapshotService {
   private readonly sessionsDir: string;
   private readonly schemaVersion = '1.0.0';
+  private readonly fs: FsLike;
 
-  constructor(dataDir = './data') {
+  constructor(dataDir = './data', fsDep: FsLike = nodeFs) {
     // Use string concatenation for better testability
     this.sessionsDir = dataDir.endsWith('/') ? `${dataDir}sessions` : `${dataDir}/sessions`;
+    this.fs = fsDep;
   }
 
   /**
@@ -51,7 +62,7 @@ export class SessionSnapshotService {
    */
   private async ensureSessionsDir(): Promise<void> {
     try {
-      await fs.mkdir(this.sessionsDir, { recursive: true });
+      await this.fs.mkdir(this.sessionsDir, { recursive: true });
     } catch (error) {
       console.error('❌ Failed to create sessions directory:', error);
       throw new Error(`Cannot create sessions directory: ${this.sessionsDir}`);
@@ -60,6 +71,8 @@ export class SessionSnapshotService {
 
   /**
    * Saves a session snapshot to filesystem
+   * FR-14: IMPORTANT - Sensitive data like API keys are removed before saving to ensure security
+   * This prevents accidental persistence of OpenAI API keys on the server filesystem
    */
   async saveSnapshot(
     sessionId: string,
@@ -90,6 +103,10 @@ export class SessionSnapshotService {
       const canResume = this.canResumeFromProgress(progress);
       const lastCompletedStage = this.getLastCompletedStage(progress);
 
+      // FR-14: IMPORTANT - Remove sensitive data from settings before saving to disk
+      // This ensures API keys are never persisted on the server filesystem
+      const sanitizedSettings = this.sanitizeSettingsForSnapshot(settings);
+
       const snapshot: SessionSnapshot = {
         // Metadata
         sessionId,
@@ -102,8 +119,8 @@ export class SessionSnapshotService {
         status: progress.status,
         currentStage: progress.currentStage,
 
-        // Original request settings
-        settings,
+        // Sanitized request settings (sensitive data removed)
+        settings: sanitizedSettings,
 
         // Progress data
         progress,
@@ -124,7 +141,7 @@ export class SessionSnapshotService {
 
       // Write snapshot to file
       const snapshotJson = JSON.stringify(snapshot, null, 2);
-      await fs.writeFile(snapshotPath, snapshotJson, 'utf-8');
+      await this.fs.writeFile(snapshotPath, snapshotJson, 'utf-8');
 
       console.log(`💾 Session snapshot saved: ${snapshotPath} (v${snapshotVersion})`);
 
@@ -153,7 +170,7 @@ export class SessionSnapshotService {
     try {
       const snapshotPath = `${this.sessionsDir}/${sessionId}.json`;
 
-      const snapshotData = await fs.readFile(snapshotPath, 'utf-8');
+      const snapshotData = await this.fs.readFile(snapshotPath, 'utf-8');
       const snapshot: SessionSnapshot = JSON.parse(snapshotData);
 
       // Validate snapshot structure
@@ -188,7 +205,7 @@ export class SessionSnapshotService {
     try {
       await this.ensureSessionsDir();
 
-      const files = await fs.readdir(this.sessionsDir);
+      const files = await this.fs.readdir(this.sessionsDir);
       const sessions: SessionSnapshot[] = [];
 
       for (const file of files) {
@@ -226,7 +243,7 @@ export class SessionSnapshotService {
   async deleteSnapshot(sessionId: string): Promise<boolean> {
     try {
       const snapshotPath = `${this.sessionsDir}/${sessionId}.json`;
-      await fs.unlink(snapshotPath);
+      await this.fs.unlink(snapshotPath);
 
       console.log(`🗑️ Session snapshot deleted: ${snapshotPath}`);
 
@@ -288,6 +305,38 @@ export class SessionSnapshotService {
   }
 
   /**
+   * Sanitizes settings by removing sensitive data before saving to snapshot
+   * FR-14: CRITICAL SECURITY FUNCTION - This ensures API keys and other secrets are never persisted to disk
+   * OpenAI API keys are replaced with empty strings to prevent accidental server-side storage
+   * @param settings Original settings that may contain sensitive data
+   * @returns Sanitized settings safe for disk storage
+   */
+  private sanitizeSettingsForSnapshot(
+    settings: SearchRequest['settings'],
+  ): SearchRequest['settings'] {
+    const sanitized = { ...settings };
+
+    // FR-14: Remove OpenAI API key from sources to prevent server-side persistence
+    if (sanitized.sources?.openaiWebSearch) {
+      sanitized.sources.openaiWebSearch = {
+        ...sanitized.sources.openaiWebSearch,
+        apiKey: '', // Always empty in snapshots for security - FR-14 requirement
+      };
+    }
+
+    // FR-14: Remove LLM API key if present (future compatibility)
+    if (sanitized.llm) {
+      sanitized.llm = {
+        ...sanitized.llm,
+        // Note: LLM settings in SearchRequest don't include API keys currently
+        // but we keep this for future compatibility and FR-14 compliance
+      };
+    }
+
+    return sanitized;
+  }
+
+  /**
    * Validates snapshot structure
    */
   private validateSnapshot(snapshot: any): snapshot is SessionSnapshot {
@@ -331,7 +380,7 @@ export class SessionSnapshotService {
       for (const session of sessions) {
         try {
           const snapshotPath = `${this.sessionsDir}/${session.sessionId}.json`;
-          const stats = await fs.stat(snapshotPath);
+          const stats = await this.fs.stat(snapshotPath);
           totalSizeBytes += stats.size;
         } catch {
           // Skip files that can't be stat'd

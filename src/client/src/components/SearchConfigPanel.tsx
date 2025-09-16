@@ -344,7 +344,7 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
           </div>
         </div>
 
-        {/* API Keys */}
+        {/* API Keys - FR-14: Client-side only storage */}
         <div className="space-y-2">
           <Label data-testid="default">API Keys</Label>
           <div className="space-y-3">
@@ -383,7 +383,9 @@ export function SearchConfigPanel({ onStartSearch, isSearching = false }: Search
                 <p className="text-sm text-destructive">{validationErrors.apiKey}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                Required for LLM enrichment. Stored locally, sent securely to server during search.
+                {/* FR-14: API key is stored only on client-side localStorage, never on server */}
+                Required for LLM enrichment. Stored locally in browser, sent securely to server only
+                during search operations. Never persisted on server-side for security and privacy.
               </p>
             </div>
           </div>

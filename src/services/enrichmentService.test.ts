@@ -93,7 +93,7 @@ test('EnrichmentService - handles missing API key', async () => {
 
 test('EnrichmentService - processes vacancies without enrichment', async () => {
   const enrichmentService = new TestEnrichmentService();
-  enrichmentService.setOpenAIKey('test-key'); // Set API key to avoid early return
+  enrichmentService.setOpenAIKey('sk-valid-test-key-for-testing-purposes'); // Set valid API key format to avoid early return
 
   const vacancies: Vacancy[] = [
     {
@@ -121,7 +121,7 @@ test('EnrichmentService - processes vacancies without enrichment', async () => {
     sources: {
       jobSites: ['linkedin'],
       openaiWebSearch: {
-        apiKey: 'test-key',
+        apiKey: 'sk-valid-test-key-for-testing-purposes',
         searchSites: ['linkedin.com'],
         globalSearch: false,
       },
@@ -147,9 +147,9 @@ test('EnrichmentService - processes vacancies without enrichment', async () => {
 
   // The service should still succeed overall, but record the failure
   expect(result.success).toBe(true); // 'Should succeed even with API failures');
-  expect(result.enrichedCount, 0, 'Should not enrich any vacancies due to mock failure');
-  expect(result.failedCount, 1, 'Should count failed enrichments');
-  expect(result.enrichedVacancies.length, 1, 'Should return original vacancy');
+  expect(result.enrichedCount).toBe(0); // 'Should not enrich any vacancies due to mock failure');
+  expect(result.failedCount).toBe(1); // 'Should count failed enrichments');
+  expect(result.enrichedVacancies.length).toBe(1); // 'Should return original vacancy');
 });
 
 test('EnrichmentService - parses vacancy data correctly', () => {
@@ -242,7 +242,7 @@ test('EnrichmentService - builds correct enrichment prompt', () => {
 
 test('EnrichmentService - handles empty vacancies array', async () => {
   const enrichmentService = new TestEnrichmentService();
-  enrichmentService.setOpenAIKey('test-key');
+  enrichmentService.setOpenAIKey('sk-valid-test-key-for-testing-purposes');
 
   const settings: SearchRequest['settings'] = {
     searchPositions: ['Software Engineer'],
@@ -256,7 +256,7 @@ test('EnrichmentService - handles empty vacancies array', async () => {
     sources: {
       jobSites: ['linkedin'],
       openaiWebSearch: {
-        apiKey: 'test-key',
+        apiKey: 'sk-valid-test-key-for-testing-purposes',
         searchSites: ['linkedin.com'],
         globalSearch: false,
       },
@@ -270,7 +270,183 @@ test('EnrichmentService - handles empty vacancies array', async () => {
   const result = await enrichmentService.enrichVacancies([], settings);
 
   expect(result.success).toBe(true); // 'Should handle empty array');
-  expect(result.totalProcessed, 0);
-  expect(result.enrichedCount, 0);
-  expect(result.failedCount, 0);
+  expect(result.totalProcessed).toBe(0);
+  expect(result.enrichedCount).toBe(0);
+  expect(result.failedCount).toBe(0);
+});
+
+test('EnrichmentService - validates API key format (invalid prefix)', async () => {
+  const enrichmentService = new EnrichmentService();
+  enrichmentService.setOpenAIKey('invalid-key-without-sk-prefix');
+
+  const vacancies: Vacancy[] = [
+    {
+      id: '1',
+      title: 'Software Engineer',
+      description: 'Great job opportunity',
+      url: 'https://example.com/job1',
+      published_date: '2024-01-01',
+      status: 'filtered',
+      created_at: new Date().toISOString(),
+      source: 'linkedin',
+      country: 'USA',
+    },
+  ];
+
+  const settings: SearchRequest['settings'] = {
+    searchPositions: ['Software Engineer'],
+    filters: {
+      blacklistedCompanies: [],
+      blacklistedWordsTitle: [],
+      blacklistedWordsDescription: [],
+      countries: [],
+      languages: [],
+    },
+    sources: {
+      jobSites: ['linkedin'],
+    },
+    llm: {
+      enrichmentInstructions: [],
+      processingRules: [],
+    },
+  };
+
+  const result: EnrichmentResult = await enrichmentService.enrichVacancies(vacancies, settings);
+
+  expect(result.success).toBe(false); // 'Should fail with invalid API key format');
+  expect(result.errors.length).toBe(1); // 'Should have one error');
+  expect(result.errors[0]).toContain('Invalid OpenAI API key format'); // 'Should mention invalid format');
+  expect(result.enrichedCount).toBe(0); // 'Should not enrich any vacancies');
+});
+
+test('EnrichmentService - validates API key format (too short)', async () => {
+  const enrichmentService = new EnrichmentService();
+  enrichmentService.setOpenAIKey('sk-short');
+
+  const vacancies: Vacancy[] = [
+    {
+      id: '1',
+      title: 'Software Engineer',
+      description: 'Great job opportunity',
+      url: 'https://example.com/job1',
+      published_date: '2024-01-01',
+      status: 'filtered',
+      created_at: new Date().toISOString(),
+      source: 'linkedin',
+      country: 'USA',
+    },
+  ];
+
+  const settings: SearchRequest['settings'] = {
+    searchPositions: ['Software Engineer'],
+    filters: {
+      blacklistedCompanies: [],
+      blacklistedWordsTitle: [],
+      blacklistedWordsDescription: [],
+      countries: [],
+      languages: [],
+    },
+    sources: {
+      jobSites: ['linkedin'],
+    },
+    llm: {
+      enrichmentInstructions: [],
+      processingRules: [],
+    },
+  };
+
+  const result: EnrichmentResult = await enrichmentService.enrichVacancies(vacancies, settings);
+
+  expect(result.success).toBe(false); // 'Should fail with too short API key');
+  expect(result.errors.length).toBe(1); // 'Should have one error');
+  expect(result.errors[0]).toContain('Invalid OpenAI API key format'); // 'Should mention invalid format');
+  expect(result.enrichedCount).toBe(0); // 'Should not enrich any vacancies');
+});
+
+test('EnrichmentService - handles API key with whitespace', async () => {
+  const enrichmentService = new EnrichmentService();
+  enrichmentService.setOpenAIKey('   '); // Only whitespace
+
+  const vacancies: Vacancy[] = [
+    {
+      id: '1',
+      title: 'Software Engineer',
+      description: 'Great job opportunity',
+      url: 'https://example.com/job1',
+      published_date: '2024-01-01',
+      status: 'filtered',
+      created_at: new Date().toISOString(),
+      source: 'linkedin',
+      country: 'USA',
+    },
+  ];
+
+  const settings: SearchRequest['settings'] = {
+    searchPositions: ['Software Engineer'],
+    filters: {
+      blacklistedCompanies: [],
+      blacklistedWordsTitle: [],
+      blacklistedWordsDescription: [],
+      countries: [],
+      languages: [],
+    },
+    sources: {
+      jobSites: ['linkedin'],
+    },
+    llm: {
+      enrichmentInstructions: [],
+      processingRules: [],
+    },
+  };
+
+  const result: EnrichmentResult = await enrichmentService.enrichVacancies(vacancies, settings);
+
+  expect(result.success).toBe(false); // 'Should fail with whitespace-only API key');
+  expect(result.errors.length).toBe(1); // 'Should have one error');
+  expect(result.errors[0]).toContain('OpenAI API key is required but not provided'); // 'Should mention missing key');
+  expect(result.enrichedCount).toBe(0); // 'Should not enrich any vacancies');
+});
+
+test('EnrichmentService - handles null API key', async () => {
+  const enrichmentService = new EnrichmentService();
+  // Don't set API key at all
+
+  const vacancies: Vacancy[] = [
+    {
+      id: '1',
+      title: 'Software Engineer',
+      description: 'Great job opportunity',
+      url: 'https://example.com/job1',
+      published_date: '2024-01-01',
+      status: 'filtered',
+      created_at: new Date().toISOString(),
+      source: 'linkedin',
+      country: 'USA',
+    },
+  ];
+
+  const settings: SearchRequest['settings'] = {
+    searchPositions: ['Software Engineer'],
+    filters: {
+      blacklistedCompanies: [],
+      blacklistedWordsTitle: [],
+      blacklistedWordsDescription: [],
+      countries: [],
+      languages: [],
+    },
+    sources: {
+      jobSites: ['linkedin'],
+    },
+    llm: {
+      enrichmentInstructions: [],
+      processingRules: [],
+    },
+  };
+
+  const result: EnrichmentResult = await enrichmentService.enrichVacancies(vacancies, settings);
+
+  expect(result.success).toBe(false); // 'Should fail with null API key');
+  expect(result.errors.length).toBe(1); // 'Should have one error');
+  expect(result.errors[0]).toContain('OpenAI API key is required but not provided'); // 'Should mention missing key');
+  expect(result.enrichedCount).toBe(0); // 'Should not enrich any vacancies');
 });
