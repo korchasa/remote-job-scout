@@ -14,6 +14,7 @@
 - ✅ **FR-8 Session Snapshots**: Server-side persistence and restoration of search sessions
 - ✅ **FR-9 ETA Calculation**: Real-time ETA calculation with confidence indicators and smoothing
 - ✅ **FR-11 Client-Side Job Actions**: Privacy-focused localStorage persistence for hidden jobs and blocked companies
+- ✅ **FR-13 Operational Logging and Auditing**: Structured logging with session IDs, timestamps, stage transitions, and sensitive data masking
 
 ## System Architecture
 
@@ -200,6 +201,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **FR-8**: Session Snapshots ✅ COMPLETED - Server-side persistence and restoration of search sessions
 - **FR-9**: ETA Calculation ✅ COMPLETED - Real-time ETA with confidence indicators and smoothing
 - **FR-11**: Client-Side Job Actions ✅ COMPLETED - Privacy-focused localStorage persistence for hidden jobs and blocked companies
+- **FR-13**: Operational Logging and Auditing ✅ COMPLETED - Structured logging with session IDs, timestamps, stage transitions, and sensitive data masking
 - **Database Migration**: From in-memory to persistent database (PostgreSQL/MongoDB)
 - **Performance**: Caching strategies, CDN integration, query optimization
 - **Authentication**: User accounts, personalized dashboards, API rate limiting

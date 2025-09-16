@@ -25,6 +25,7 @@
  */
 
 import type { Compensation, JobPost, JobResponse, ScraperInput } from '../../types/scrapers.js';
+import { loggingService } from '../loggingService.js';
 import {
   CompensationInterval,
   DescriptionFormat,
@@ -380,6 +381,14 @@ export class IndeedScraper extends Scraper {
     });
 
     try {
+      // Log the scraper request
+      loggingService.logScraperRequest(
+        'unknown', // Session ID not available in scraper context
+        'indeed',
+        this.api_url,
+        { method: 'POST', payload: JSON.stringify(payload) },
+      );
+
       const response = await fetch(this.api_url, {
         method: 'POST',
         headers: {
@@ -390,12 +399,15 @@ export class IndeedScraper extends Scraper {
         signal: AbortSignal.timeout(this.timeout),
       });
 
-      // Логируем ответ от Indeed API
-      console.log('📥 Indeed API Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-        ok: response.ok,
+      // Log the scraper response
+      loggingService.logInfo('Indeed API Response', {
+        sessionId: 'unknown', // Session ID not available in scraper context
+        stage: 'collection',
+        metadata: {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+        },
       });
 
       if (!response.ok) {
@@ -436,9 +448,24 @@ export class IndeedScraper extends Scraper {
         }
       }
 
+      // Log successful scraping
+      loggingService.logScraperSuccess(
+        'unknown', // Session ID not available in scraper context
+        'indeed',
+        job_list.length,
+        { page: cursor ? 'next' : 'first' },
+      );
+
       return job_list;
     } catch (error) {
-      console.error('Error scraping page:', error);
+      // Log scraper failure
+      loggingService.logScraperFailure(
+        'unknown', // Session ID not available in scraper context
+        'indeed',
+        error as Error,
+        undefined,
+        { page: cursor ? 'next' : 'first' },
+      );
       return jobs;
     }
   }

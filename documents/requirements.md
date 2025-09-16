@@ -122,14 +122,14 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
   - ✅ При неудаче ответы содержат HTTP 400 с `{ code, message, details }`, где `details` перечисляет ошибки по полям.
   - ✅ Корректные запросы передаются в бизнес-логику; некорректные не изменяют состояние.
 
-### FR-13: Операционное логирование и аудит
+### FR-13: Операционное логирование и аудит ✅ COMPLETED
 
 - Описание: Система должна записывать структурированные логи для действий пользователя, переходов между этапами, повторных попыток и ошибок с маскировкой конфиденциальных данных.
 - Сценарий использования: Оператор просматривает логи для анализа неудачного обогащения; в логах отображаются попытки, интервалы задержки и замаскированные API-ключи.
 - Критерии приёмки:
-  - Логи включают временные метки, идентификаторы сессий, названия этапов, количество попыток и краткие описания ошибок.
-  - Секреты (например, ключи LLM) никогда не записываются в логи; маскировка проверяется в тестах.
-  - Логи доступны во время разработки через консоль и могут направляться в файлы в Docker.
+  - ✅ Логи включают временные метки, идентификаторы сессий, названия этапов, количество попыток и краткие описания ошибок.
+  - ✅ Секреты (например, ключи LLM) никогда не записываются в логи; маскировка проверяется в тестах.
+  - ✅ Логи доступны во время разработки через консоль и могут направляться в файлы в Docker.
 
 ### FR-14: Обработка API-ключа LLM (только на клиенте)
 
@@ -211,6 +211,7 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
 - ✅ Graceful error handling for enrichment failures without pipeline interruption
 - ✅ **FR-11 Client-Side Job Actions**: Privacy-focused localStorage persistence for hidden jobs and blocked companies ✅ COMPLETED
 - ✅ **FR-12 Input Validation**: Zod schema validation for all API endpoints with standardized error responses ✅ COMPLETED
+- ✅ **FR-13 Operational Logging and Auditing**: Structured logging with session IDs, timestamps, stage transitions, and sensitive data masking ✅ COMPLETED
 - ✅ Client-side filtering with reactive UI updates and dedicated management interface
 - ✅ TypeScript strict mode, type-safe schemas, Zod validation schemas
 - ✅ Vitest testing (85+ tests pass), React Testing Library, 33 new tests for FR-11, validation tests for FR-12

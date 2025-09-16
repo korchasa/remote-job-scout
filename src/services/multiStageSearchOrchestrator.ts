@@ -37,6 +37,7 @@ import { GlassdoorScraper } from './scrapers/glassdoor.js';
 import { OpenAIWebSearchScraper } from './scrapers/openai-web-search.js';
 import { SessionSnapshotService } from './sessionSnapshotService.js';
 import { ETAService } from './etaService.js';
+import { loggingService } from './loggingService.js';
 // Using HTTP polling for progress updates
 
 export interface OrchestratorResult {
@@ -127,7 +128,10 @@ export class MultiStageSearchOrchestrator {
     };
 
     try {
-      console.log(`🚀 Starting multi-stage search process for session ${session_id}`);
+      loggingService.logSearchStart(session_id, {
+        positions: (request as any).positions,
+        sources: Object.keys((request as any).sources),
+      });
 
       // Stage 1: Collection
       const collectionResult = await this.executeCollectionStage(request, progress);
@@ -208,7 +212,9 @@ export class MultiStageSearchOrchestrator {
         // Если нет вакансий для обогащения, помечаем стадию как пропущенную
         progress.stages.enriching.status = 'skipped';
         progress.stages.enriching.endTime = new Date().toISOString();
-        console.log('⏭️ Enrichment stage skipped (no vacancies to enrich)');
+        loggingService.logStageTransition(session_id, 'enrichment', 'pending', 'skipped', {
+          reason: 'no vacancies to enrich',
+        });
 
         // Save session snapshot after enrichment skipped
         await this.saveSessionSnapshot(
@@ -242,7 +248,9 @@ export class MultiStageSearchOrchestrator {
 
       // Progress updates available via polling: GET /api/multi-stage/progress/:sessionId
 
-      console.log(`✅ Multi-stage search completed for session ${session_id}`);
+      loggingService.logInfo(`Multi-stage search completed for session ${session_id}`, {
+        sessionId: session_id,
+      });
       this.logFinalStatistics(result);
 
       return result;
@@ -511,7 +519,11 @@ export class MultiStageSearchOrchestrator {
     // Save snapshot when process is stopped
     void this.saveSessionSnapshot(sessionId, progress, {} as SearchRequest['settings']);
 
-    console.log(`🛑 Process stopped for session ${sessionId} at ${currentStage} stage`);
+    loggingService.logUserAction(
+      'search.stop',
+      `Process stopped for session ${sessionId} at ${currentStage} stage`,
+      { sessionId },
+    );
     return true;
   }
 
@@ -741,7 +753,10 @@ export class MultiStageSearchOrchestrator {
     progress.stages.collecting.startTime = new Date().toISOString();
     progress.overallProgress = 10; // 10% за подготовку
 
-    console.log(`📥 Starting collection stage for session ${session_id}`);
+    loggingService.logStageStart(session_id, 'collection', {
+      positions: (request as any).positions,
+      sources: Object.keys((request as any).sources),
+    });
 
     // Формируем массив скрейперов на основе настроек
     const scrapers: Scraper[] = [];
@@ -797,7 +812,10 @@ export class MultiStageSearchOrchestrator {
       progress.stages.collecting.itemsTotal = result.totalCollected;
       progress.stages.collecting.errors = result.errors;
 
-      console.log(`📥 Collection stage completed: ${result.totalCollected} jobs collected`);
+      loggingService.logStageComplete(session_id, 'collection', {
+        totalCollected: result.totalCollected,
+        duration: (result as any).duration,
+      });
 
       // Collection stage completed - progress available via polling
 
@@ -829,7 +847,7 @@ export class MultiStageSearchOrchestrator {
     // Record stage start time for ETA calculation
     this.stageStartTimes.set(`${sessionId}-filtering`, new Date());
 
-    console.log(`🔍 Starting filtering stage with ${vacancies.length} vacancies`);
+    loggingService.logStageStart(sessionId, 'filtering', { vacancyCount: vacancies.length });
 
     try {
       const result = this.filteringService.filterVacancies(vacancies, settings);
@@ -877,15 +895,25 @@ export class MultiStageSearchOrchestrator {
     // Record stage start time for ETA calculation
     this.stageStartTimes.set(`${sessionId}-enriching`, new Date());
 
-    console.log(`🤖 Starting enrichment stage with ${vacancies.length} vacancies`);
-    console.log(`🔑 OpenAI API key available: ${!!settings.sources.openaiWebSearch?.apiKey}`);
+    loggingService.logStageStart(sessionId, 'enrichment', { vacancyCount: vacancies.length });
+    loggingService.logInfo('OpenAI API key availability check', {
+      sessionId: sessionId,
+      stage: 'enrichment',
+      metadata: { apiKeyAvailable: !!settings.sources.openaiWebSearch?.apiKey },
+    });
 
     // Настраиваем OpenAI
     if (settings.sources.openaiWebSearch?.apiKey) {
       this.enrichmentService.setOpenAIKey(settings.sources.openaiWebSearch.apiKey);
-      console.log(`🔑 OpenAI API key set in enrichment service`);
+      loggingService.logInfo('OpenAI API key configured for enrichment service', {
+        sessionId: sessionId,
+        stage: 'enrichment',
+      });
     } else {
-      console.error(`❌ No OpenAI API key provided for enrichment`);
+      loggingService.logError('No OpenAI API key provided for enrichment', undefined, {
+        sessionId: sessionId,
+        stage: 'enrichment',
+      });
     }
 
     try {

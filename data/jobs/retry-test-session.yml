@@ -1,9 +1,9 @@
 session_id: retry-test-session
 total: 1
 vacancies:
-  - id: 496d1dcc-5a74-42d2-84a4-9d017fad8d42
+  - id: eda49791-f1c2-452e-b481-690e59b7bc89
     title: Test OpenAI Job
     company: Test Company
     url: https://example.com/openai-job
-    published_date: '2025-09-16T03:10:17.708Z'
+    published_date: '2025-09-16T03:27:00.301Z'
     source: openai

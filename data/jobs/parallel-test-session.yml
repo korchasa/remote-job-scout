@@ -1,15 +1,15 @@
 session_id: parallel-test-session
 total: 2
 vacancies:
-  - id: d791e910-a971-49d5-bb8c-1640b2f38274
+  - id: 3b968c98-80fc-4513-8cf9-c8b3dfd4b662
     title: Test Job 1
     company: Test Company
     url: https://example.com/job1
-    published_date: '2025-09-16T03:10:14.704Z'
+    published_date: '2025-09-16T03:26:57.297Z'
     source: indeed
-  - id: 4f8c7abb-82a0-40c0-bdc9-4662af63f725
+  - id: c45a13b6-3aa2-4973-9f03-db592af5d679
     title: Test Job 2
     company: Test Company 2
     url: https://example.com/job2
-    published_date: '2025-09-16T03:10:14.704Z'
+    published_date: '2025-09-16T03:26:57.297Z'
     source: linkedin
