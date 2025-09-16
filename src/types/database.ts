@@ -107,6 +107,9 @@ export interface MultiStageProgress {
   errors: string[];
   filteringStats?: FilteringStats;
   enrichmentStats?: EnrichmentStats;
+  // ETA calculation fields
+  overallETA?: number; // seconds
+  etaConfidence?: number; // 0-1
 }
 
 export interface FilteringStats {
@@ -133,6 +136,9 @@ export interface StageProgress {
   pauseTime?: string;
   errors: string[];
   details?: string;
+  // ETA calculation fields
+  etaSeconds?: number; // estimated time remaining in seconds
+  etaConfidence?: number; // 0-1 confidence in ETA calculation
 }
 
 export interface SearchRequest {

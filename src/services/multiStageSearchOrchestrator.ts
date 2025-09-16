@@ -1,9 +1,29 @@
 /**
  * Multi-Stage Search Orchestrator
  * Координирует выполнение многоэтапного процесса поиска вакансий
+ *
+ * ## Responsibilities:
+ * - Manages the complete 3-stage search pipeline (Collect → Filter → Enrich)
+ * - Tracks processing progress and calculates ETA for each stage
+ * - Handles pause/resume functionality with state persistence
+ * - Integrates with ETAService for real-time time estimation
+ * - Manages session snapshots for recovery after restarts
+ *
+ * ## Relationships:
+ * - Uses JobCollectionService for parallel job scraping
+ * - Uses FilteringService for vacancy filtering logic
+ * - Uses EnrichmentService for LLM-based job enrichment
+ * - Uses SessionSnapshotService for persistence and recovery
+ * - Uses ETAService for ETA calculations and progress tracking
+ * - Provides progress data to ProgressDashboard via API endpoints
  */
 
-import type { MultiStageProgress, SearchRequest, Vacancy } from '../types/database.js';
+import type {
+  MultiStageProgress,
+  SearchRequest,
+  Vacancy,
+  ProcessingStage,
+} from '../types/database.js';
 import type { CollectionResult } from './jobCollectionService.js';
 import { JobCollectionService } from './jobCollectionService.js';
 import type { FilteringResult } from './filteringService.js';
@@ -16,6 +36,7 @@ import { LinkedInScraper } from './scrapers/linkedin.js';
 import { GlassdoorScraper } from './scrapers/glassdoor.js';
 import { OpenAIWebSearchScraper } from './scrapers/openai-web-search.js';
 import { SessionSnapshotService } from './sessionSnapshotService.js';
+import { ETAService } from './etaService.js';
 // Using HTTP polling for progress updates
 
 export interface OrchestratorResult {
@@ -33,14 +54,17 @@ export class MultiStageSearchOrchestrator {
   private filteringService: FilteringService;
   private enrichmentService: EnrichmentService;
   private snapshotService: SessionSnapshotService;
+  private etaService: ETAService;
   private activeProcesses: Map<string, MultiStageProgress> = new Map();
   private jobsStorage?: Map<string, Vacancy>;
+  private stageStartTimes: Map<string, Date> = new Map();
 
   constructor(jobsStorage?: Map<string, Vacancy>) {
     this.collectionService = new JobCollectionService();
     this.filteringService = new FilteringService();
     this.enrichmentService = new EnrichmentService();
     this.snapshotService = new SessionSnapshotService();
+    this.etaService = new ETAService();
     this.jobsStorage = jobsStorage;
   }
 
@@ -88,6 +112,10 @@ export class MultiStageSearchOrchestrator {
     };
 
     this.activeProcesses.set(session_id, progress);
+
+    // Initialize ETA tracking for this session
+    this.etaService.resetAllData();
+    this.stageStartTimes.set(`${session_id}-collecting`, new Date());
 
     // Progress updates available via polling: GET /api/multi-stage/progress/:sessionId
 
@@ -247,10 +275,100 @@ export class MultiStageSearchOrchestrator {
   }
 
   /**
-   * Получает текущий прогресс процесса
+   * Updates ETA information in the progress object
+   *
+   * This method integrates with the ETAService to calculate real-time ETA
+   * for the overall process and individual stages. It implements the formula:
+   * ETA = (total - processed) / speed × 60 seconds with smoothing.
+   *
+   * @param progress - The MultiStageProgress object to update with ETA data
+   */
+  private updateProgressWithETA(progress: MultiStageProgress): void {
+    // Create a properly typed stages object for the ETA service
+    const stagesForETA: Record<ProcessingStage, any> = {
+      ...progress.stages,
+      completed: {
+        status: 'completed',
+        progress: 100,
+        itemsProcessed: 0,
+        itemsTotal: 0,
+        errors: [],
+      },
+    };
+
+    const overallETA = this.etaService.calculateOverallETA(
+      stagesForETA as any,
+      progress.currentStage,
+    );
+
+    // Update overall ETA
+    progress.estimatedCompletionTime =
+      overallETA.totalEstimatedTime > 0
+        ? new Date(Date.now() + overallETA.totalEstimatedTime * 1000).toISOString()
+        : undefined;
+
+    // Update stage-specific ETA information (only for stages that exist in progress.stages)
+    for (const stageETA of overallETA.stageBreakdown) {
+      const stageKey = stageETA.stage as keyof typeof progress.stages;
+      if (stageKey in progress.stages) {
+        progress.stages[stageKey].etaSeconds = stageETA.smoothedETA;
+        progress.stages[stageKey].etaConfidence = stageETA.confidence;
+      }
+    }
+
+    // Store overall ETA for backward compatibility with existing UI
+    progress.overallETA = overallETA.totalEstimatedTime;
+    progress.etaConfidence = overallETA.overallConfidence;
+  }
+
+  /**
+   * Records current progress data for ETA speed calculation
+   *
+   * This method captures processing speed data points that are used by the ETAService
+   * to calculate accurate ETA estimates. Speed is calculated as items processed per minute.
+   * The data is recorded periodically during active processing stages.
+   *
+   * @param sessionId - The session identifier for tracking
+   * @param stage - Current processing stage (collecting, filtering, enriching)
+   * @param progress - Current progress data containing stage information
+   */
+  private recordProgressForETA(
+    sessionId: string,
+    stage: ProcessingStage,
+    progress: MultiStageProgress,
+  ): void {
+    const stageKey = `${sessionId}-${stage}`;
+    const stageStartTime = this.stageStartTimes.get(stageKey);
+
+    // Only record progress for stages that exist in the progress object
+    const stageKeyTyped = stage as keyof typeof progress.stages;
+    if (stageStartTime && stageKeyTyped in progress.stages) {
+      const elapsedSeconds = (Date.now() - stageStartTime.getTime()) / 1000;
+      this.etaService.recordProgress(stage, progress.stages[stageKeyTyped], elapsedSeconds);
+    }
+  }
+
+  /**
+   * Gets current process progress with updated ETA information
+   *
+   * This method extends the base progress retrieval to include real-time ETA calculations.
+   * Each call triggers progress recording for speed calculation and updates ETA estimates
+   * based on current processing speed and remaining work.
+   *
+   * @param sessionId - The session identifier to get progress for
+   * @returns MultiStageProgress with ETA data or null if session not found
    */
   getProgress(sessionId: string): MultiStageProgress | null {
-    return this.activeProcesses.get(sessionId) ?? null;
+    const progress = this.activeProcesses.get(sessionId);
+    if (!progress) return null;
+
+    // Record current progress for ETA calculation
+    this.recordProgressForETA(sessionId, progress.currentStage, progress);
+
+    // Update progress with latest ETA information
+    this.updateProgressWithETA(progress);
+
+    return progress;
   }
 
   /**
@@ -664,9 +782,12 @@ export class MultiStageSearchOrchestrator {
           progress.stageProgress = progress.stages.collecting.progress;
           progress.overallProgress = 10 + progress.stageProgress * 0.3; // 10-40% за сбор
 
+          // Record progress for ETA calculation
+          this.recordProgressForETA(session_id, 'collecting', progress);
+
           // Progress update available via polling
         }
-      }, 1000);
+      }, 2000); // Increased interval for better ETA calculation stability
 
       const result = await collectionPromise;
       clearInterval(progressInterval);
@@ -697,13 +818,16 @@ export class MultiStageSearchOrchestrator {
     vacancies: Vacancy[],
     settings: SearchRequest['settings'],
     progress: MultiStageProgress,
-    _sessionId: string,
+    sessionId: string,
   ): FilteringResult {
     progress.currentStage = 'filtering';
     progress.stages.filtering.status = 'running';
     progress.stages.filtering.startTime = new Date().toISOString();
     progress.stages.filtering.itemsTotal = vacancies.length;
     progress.overallProgress = 40; // Переходим к 40%
+
+    // Record stage start time for ETA calculation
+    this.stageStartTimes.set(`${sessionId}-filtering`, new Date());
 
     console.log(`🔍 Starting filtering stage with ${vacancies.length} vacancies`);
 
@@ -742,13 +866,16 @@ export class MultiStageSearchOrchestrator {
     vacancies: Vacancy[],
     settings: SearchRequest['settings'],
     progress: MultiStageProgress,
-    _sessionId: string,
+    sessionId: string,
   ): Promise<EnrichmentResult> {
     progress.currentStage = 'enriching';
     progress.stages.enriching.status = 'running';
     progress.stages.enriching.startTime = new Date().toISOString();
     progress.stages.enriching.itemsTotal = vacancies.length;
     progress.overallProgress = 70; // Переходим к 70%
+
+    // Record stage start time for ETA calculation
+    this.stageStartTimes.set(`${sessionId}-enriching`, new Date());
 
     console.log(`🤖 Starting enrichment stage with ${vacancies.length} vacancies`);
     console.log(`🔑 OpenAI API key available: ${!!settings.sources.openaiWebSearch?.apiKey}`);

@@ -97,6 +97,35 @@ export interface ProgressData {
     costUsd: number;
     sourcesCount: number;
   };
+  // ETA calculation fields
+  overallETA?: number; // seconds
+  etaConfidence?: number; // 0-1
+  stages?: {
+    collecting: {
+      status: string;
+      progress: number;
+      itemsProcessed: number;
+      itemsTotal: number;
+      etaSeconds?: number;
+      etaConfidence?: number;
+    };
+    filtering: {
+      status: string;
+      progress: number;
+      itemsProcessed: number;
+      itemsTotal: number;
+      etaSeconds?: number;
+      etaConfidence?: number;
+    };
+    enriching: {
+      status: string;
+      progress: number;
+      itemsProcessed: number;
+      itemsTotal: number;
+      etaSeconds?: number;
+      etaConfidence?: number;
+    };
+  };
 }
 
 export interface FilteringStats {

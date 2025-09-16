@@ -12,6 +12,7 @@
 - ✅ Session persistence and recovery
 - ✅ **FR-7 Favorites Feature**: Complete favorites system with localStorage persistence
 - ✅ **FR-8 Session Snapshots**: Server-side persistence and restoration of search sessions
+- ✅ **FR-9 ETA Calculation**: Real-time ETA calculation with confidence indicators and smoothing
 
 ## System Architecture
 
@@ -41,7 +42,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **Tech**: React 19, TypeScript strict, Vite, jsdom testing
 - **UI**: Shadcn/ui (47 components), Tailwind CSS 4.1+, responsive design
 - **State**: React Query, custom hooks, localStorage persistence
-- **Features**: ✅ Multi-stage search UI, progress dashboard, filtering stats, themes, responsive, real-time polling, session snapshots/persistence, favorites system
+- **Features**: ✅ Multi-stage search UI, progress dashboard with ETA calculation, filtering stats, themes, responsive, real-time polling, session snapshots/persistence, favorites system
 
 ### Backend
 
@@ -50,7 +51,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **Storage**: ✅ YAML serialization, filesystem session persistence, localStorage client settings
 - **Services**: ✅ 6 business logic + 4 scrapers, parallel processing, token/cost tracking
 - **Middleware**: ✅ CORS, logging, security, error handling
-- **API**: ✅ HTTP polling, pause/resume, schema validation, multi-stage search endpoints, session snapshots
+- **API**: ✅ HTTP polling, pause/resume, schema validation, multi-stage search endpoints with ETA data, session snapshots
 - **Testing**: ✅ Vitest (85+ tests passed), React component testing, integration fixtures
 
 ### Shared
@@ -84,10 +85,10 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ### Key Algorithms
 
-- **✅ ETA**: `(total - processed) / speed × 60` - Real-time calculation
+- **✅ ETA**: `(total - processed) / speed × 60` - Real-time calculation with exponential smoothing (α=0.2) and confidence indicators
 - **✅ Retry**: Exponential backoff `delay = base × 2^(attempt - 1)` - 4 sources
 - **✅ Concurrency**: Max sources/positions, queue management - Parallel processing
-- **✅ Progress**: Real-time % updates, pause/resume - HTTP polling
+- **✅ Progress**: Real-time % updates, ETA calculation with confidence, pause/resume - HTTP polling
 - **✅ Cost**: Token usage × model rate per vacancy - OpenAI integration
 
 ### Rules
@@ -176,6 +177,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **FR-6**: Enhanced job management UI ✅ COMPLETED - Modern responsive job management with cards, details, external links, blacklist management, and themes
 - **FR-7**: Favorites Feature ✅ COMPLETED - Complete favorites system with localStorage persistence, employer blocking, and dedicated UI
 - **FR-8**: Session Snapshots ✅ COMPLETED - Server-side persistence and restoration of search sessions
+- **FR-9**: ETA Calculation ✅ COMPLETED - Real-time ETA with confidence indicators and smoothing
 - **Database Migration**: From in-memory to persistent database (PostgreSQL/MongoDB)
 - **Performance**: Caching strategies, CDN integration, query optimization
 - **Authentication**: User accounts, personalized dashboards, API rate limiting

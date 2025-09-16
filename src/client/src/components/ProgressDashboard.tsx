@@ -1,3 +1,23 @@
+/**
+ * ProgressDashboard Component
+ *
+ * Displays real-time progress information for multi-stage job search processes.
+ * Enhanced with ETA (Estimated Time of Arrival) calculations and confidence indicators.
+ *
+ * ## Features:
+ * - Real-time progress tracking across 3 stages (Collect → Filter → Enrich)
+ * - ETA calculation with confidence levels for overall process and individual stages
+ * - Color-coded confidence indicators (green ≥80%, yellow 50-79%, red <50%)
+ * - Item count display for each processing stage
+ * - Pause/resume/stop controls with session management
+ *
+ * ## ETA Integration:
+ * - Uses ETAService for time formatting and confidence visualization
+ * - Displays overall ETA with fallback to legacy estimatedTimeRemaining
+ * - Shows stage-specific ETA only for currently active stages
+ * - Confidence indicators help users understand ETA reliability
+ */
+
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card.tsx';
 import { Progress } from './ui/progress.tsx';
 import { Badge } from './ui/badge.tsx';
@@ -12,8 +32,11 @@ import {
   Search,
   RotateCcw,
   Square,
+  TrendingUp,
+  AlertCircle,
 } from 'lucide-react';
 import type { ProgressData, ClientSessionInfo } from '../../../shared/schema.ts';
+import { ETAService } from '../../../services/etaService.js';
 
 interface ProgressDashboardProps {
   progress: ProgressData;
@@ -59,6 +82,24 @@ export function ProgressDashboard({
 
   const formatCost = (cost: number) => {
     return `$${cost.toFixed(4)}`;
+  };
+
+  const formatETA = (seconds: number) => {
+    return ETAService.formatETA(seconds);
+  };
+
+  const getConfidenceColor = (confidence?: number) => {
+    if (!confidence) return 'text-muted-foreground';
+    if (confidence >= 0.8) return 'text-green-600';
+    if (confidence >= 0.5) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const getConfidenceIcon = (confidence?: number) => {
+    if (!confidence) return <AlertCircle className="h-3 w-3" />;
+    if (confidence >= 0.8) return <TrendingUp className="h-3 w-3" />;
+    if (confidence >= 0.5) return <AlertCircle className="h-3 w-3" />;
+    return <AlertCircle className="h-3 w-3" />;
   };
 
   const getStageProgress = (stageId: number) => {
@@ -153,6 +194,13 @@ export function ProgressDashboard({
             const isActive = stage.id === progress.currentStage;
             const isComplete = stage.id < progress.currentStage;
 
+            // Get stage-specific ETA data
+            const stageKey =
+              stage.id === 1 ? 'collecting' : stage.id === 2 ? 'filtering' : 'enriching';
+            const stageData = progress.stages?.[stageKey];
+            const stageETA = stageData?.etaSeconds;
+            const stageConfidence = stageData?.etaConfidence;
+
             return (
               <div key={stage.id} className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -172,12 +220,32 @@ export function ProgressDashboard({
                         <stage.icon className="h-4 w-4" />
                       )}
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <div className="font-medium">{stage.name}</div>
                       <div className="text-xs text-muted-foreground">{stage.description}</div>
+                      {stageETA && isActive && (
+                        <div
+                          className={`text-xs flex items-center gap-1 mt-1 ${getConfidenceColor(stageConfidence)}`}
+                        >
+                          {getConfidenceIcon(stageConfidence)}
+                          <span>ETA: {formatETA(stageETA)}</span>
+                          {stageConfidence && (
+                            <span className="text-xs opacity-75">
+                              ({Math.round(stageConfidence * 100)}% confidence)
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="text-sm font-medium">{stageProgress.toFixed(0)}%</div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium">{stageProgress.toFixed(0)}%</div>
+                    {stageData && (
+                      <div className="text-xs text-muted-foreground">
+                        {stageData.itemsProcessed}/{stageData.itemsTotal || 0} items
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <Progress value={stageProgress} className="h-2" />
               </div>
@@ -198,9 +266,21 @@ export function ProgressDashboard({
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">Time Remaining</span>
               </div>
-              <span className="font-mono text-sm" data-testid="text-time-remaining">
-                {formatTime(progress.estimatedTimeRemaining)}
-              </span>
+              <div className="text-right">
+                <div className="font-mono text-sm" data-testid="text-time-remaining">
+                  {progress.overallETA
+                    ? formatETA(progress.overallETA)
+                    : formatTime(progress.estimatedTimeRemaining)}
+                </div>
+                {progress.etaConfidence && (
+                  <div
+                    className={`text-xs flex items-center justify-end gap-1 ${getConfidenceColor(progress.etaConfidence)}`}
+                  >
+                    {getConfidenceIcon(progress.etaConfidence)}
+                    <span>{Math.round(progress.etaConfidence * 100)}% confidence</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
