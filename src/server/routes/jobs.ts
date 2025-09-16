@@ -3,32 +3,35 @@ import { Router } from 'express';
 import { jobs } from '../storage.js';
 import type { JobPost } from '../../shared/schema';
 import { logPerformance } from '../middleware/logging.js';
+import { validateRequest, validateJobIdParam } from '../middleware/validation.js';
+import { jobsQuerySchema, jobUpdateSchema } from '../../shared/validationSchemas.js';
 
 const router = Router();
 
 // GET /api/jobs - Get all jobs with filtering and pagination
-router.get('/', (req: Request, res: Response) => {
+router.get('/', validateRequest(jobsQuerySchema, 'query'), (req: Request, res: Response) => {
   try {
     const startTime = performance.now();
 
     const allJobs = Array.from(jobs.values());
+    const query = req.validatedQuery as {
+      status?: string;
+      source?: string;
+      limit: number;
+      offset: number;
+    };
 
     // Apply filters
-    const status = req.query.status as string;
-    const source = req.query.source as string;
-    const limit = parseInt((req.query.limit as string) ?? '50');
-    const offset = parseInt((req.query.offset as string) ?? '0');
-
     let filteredJobs = allJobs;
-    if (status) {
-      filteredJobs = filteredJobs.filter((job) => job.status === status);
+    if (query.status) {
+      filteredJobs = filteredJobs.filter((job) => job.status === query.status);
     }
-    if (source) {
-      filteredJobs = filteredJobs.filter((job) => job.source === source);
+    if (query.source) {
+      filteredJobs = filteredJobs.filter((job) => job.source === query.source);
     }
 
     // Apply pagination
-    const paginatedJobs = filteredJobs.slice(offset, offset + limit);
+    const paginatedJobs = filteredJobs.slice(query.offset, query.offset + query.limit);
 
     // Convert to JobPost format for frontend
     const jobPosts: JobPost[] = paginatedJobs.map((job) => ({
@@ -60,10 +63,10 @@ router.get('/', (req: Request, res: Response) => {
 });
 
 // GET /api/jobs/:id - Get single job
-router.get('/:id', (req: Request, res: Response) => {
+router.get('/:id', validateJobIdParam(), (req: Request, res: Response) => {
   try {
-    const jobId = req.params.id;
-    const job = jobs.get(jobId);
+    const params = req.validatedParams as { id: string };
+    const job = jobs.get(params.id);
 
     if (!job) {
       return res.status(404).json({ error: 'Job not found' });
@@ -91,25 +94,30 @@ router.get('/:id', (req: Request, res: Response) => {
 });
 
 // PATCH /api/jobs/:id - Update job
-router.patch('/:id', (req: Request, res: Response) => {
-  try {
-    const jobId = req.params.id;
-    const updates = req.body;
+router.patch(
+  '/:id',
+  validateJobIdParam(),
+  validateRequest(jobUpdateSchema, 'body'),
+  (req: Request, res: Response) => {
+    try {
+      const params = req.validatedParams as { id: string };
+      const updates = req.validatedBody as Record<string, unknown>;
 
-    const job = jobs.get(jobId);
-    if (!job) {
-      return res.status(404).json({ error: 'Job not found' });
+      const job = jobs.get(params.id);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+
+      // Update job with validated data
+      const updatedJob = { ...job, ...updates };
+      jobs.set(params.id, updatedJob);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('❌ Update job API error:', error);
+      res.status(500).json({ error: 'Failed to update job' });
     }
-
-    // Update job
-    const updatedJob = { ...job, ...updates };
-    jobs.set(jobId, updatedJob);
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('❌ Update job API error:', error);
-    res.status(500).json({ error: 'Failed to update job' });
-  }
-});
+  },
+);
 
 export default router;

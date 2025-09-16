@@ -35,6 +35,7 @@ remote-job-scout/
 │   │   │   ├── components/ # UI components
 │   │   │   │   ├── FilteringStatsDashboard.test.tsx
 │   │   │   │   ├── FilteringStatsDashboard.tsx
+│   │   │   │   ├── HiddenJobsView.tsx              # FR-11: Hidden jobs management UI
 │   │   │   │   ├── JobCard.tsx
 │   │   │   │   ├── JobDetailsModal.tsx
 │   │   │   │   ├── JobListView.tsx
@@ -46,6 +47,8 @@ remote-job-scout/
 │   │   │   │   ├── examples/ (6 examples)
 │   │   │   │   └── ui/ (47 Shadcn/ui)
 │   │   │   ├── hooks/    # React hooks
+│   │   │   │   ├── useClientJobActions.test.ts # FR-11: Client-side job actions tests
+│   │   │   │   ├── useClientJobActions.ts      # FR-11: Client-side job actions hook
 │   │   │   │   ├── useFavorites.test.ts
 │   │   │   │   ├── useFavorites.ts
 │   │   │   │   ├── useJobs.ts
@@ -56,6 +59,8 @@ remote-job-scout/
 │   │   │   │   ├── use-mobile.tsx
 │   │   │   │   └── use-toast.ts
 │   │   │   ├── lib/      # Utils
+│   │   │   │   ├── clientSideFiltering.test.ts # FR-11: Client-side filtering tests
+│   │   │   │   ├── clientSideFiltering.ts      # FR-11: Client-side filtering utilities
 │   │   │   │   ├── queryClient.ts
 │   │   │   │   └── utils.ts
 │   │   │   ├── pages/    # Route pages
@@ -71,7 +76,9 @@ remote-job-scout/
 │   │   │   ├── cors.ts
 │   │   │   ├── logging.ts
 │   │   │   ├── security.ts
-│   │   │   └── errorHandler.ts
+│   │   │   ├── errorHandler.ts
+│   │   │   ├── validation.ts # Zod validation middleware (FR-12)
+│   │   │   └── validation.test.ts # Zod validation middleware tests (FR-12)
 │   │   ├── routes/      # API routes
 │   │   │   ├── jobs.ts
 │   │   │   ├── search.ts
@@ -79,7 +86,9 @@ remote-job-scout/
 │   │   ├── controllers/ # Controllers
 │   │   └── storage.ts   # In-memory storage
 │   ├── shared/          # Shared schemas
-│   │   └── schema.ts
+│   │   ├── schema.ts    # TypeScript interfaces (JobPost, HiddenJob, BlockedCompany, etc.)
+│   │   ├── validationSchemas.ts # Zod validation schemas (FR-12)
+│   │   └── validationSchemas.test.ts # Zod validation tests (FR-12)
 │   ├── controllers/     # Legacy controllers
 │   │   ├── collectionController.ts
 │   │   └── collectionController.test.ts

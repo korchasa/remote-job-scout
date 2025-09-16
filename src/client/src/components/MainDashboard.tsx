@@ -8,6 +8,7 @@ import { ProgressDashboard } from './ProgressDashboard.tsx';
 import { FilteringStatsDashboard } from './FilteringStatsDashboard.tsx';
 import { JobListView } from './JobListView.tsx';
 import { FavoritesView } from './FavoritesView.tsx';
+import { HiddenJobsView } from './HiddenJobsView.tsx';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { useJobs } from '../hooks/useJobs.ts';
 import {
@@ -17,17 +18,27 @@ import {
   useResumeSearch,
   useSearchProgress,
 } from '../hooks/useSearchSessions.ts';
-import { useSaveUserConfig } from '../hooks/useUserConfig.ts';
 import { useSessions } from '../hooks/useSessions.ts';
 // Using HTTP polling for progress updates
 import { useToast } from '../hooks/use-toast.ts';
 import { queryClient } from '../lib/queryClient.ts';
-import { BarChart3, Briefcase, Heart, Search, Settings, TrendingUp, Zap } from 'lucide-react';
+import { useClientJobActions } from '../hooks/useClientJobActions.ts';
+import { applyClientSideFiltering } from '../lib/clientSideFiltering.ts';
+import {
+  BarChart3,
+  Briefcase,
+  Heart,
+  Search,
+  Settings,
+  TrendingUp,
+  Zap,
+  EyeOff,
+} from 'lucide-react';
 import type { JobPost, ProgressData, SearchConfig } from '../../../shared/schema.ts';
 
 // Real data is now fetched from API hooks above
 
-type ViewMode = 'config' | 'progress' | 'results' | 'favorites';
+type ViewMode = 'config' | 'progress' | 'results' | 'favorites' | 'hidden';
 
 export function MainDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>('config');
@@ -44,16 +55,22 @@ export function MainDashboard() {
   const pauseSearchMutation = usePauseSearch();
   const resumeSearchMutation = useResumeSearch();
   const { data: progressData, isLoading: progressLoading } = useSearchProgress(currentSessionId);
-  const saveUserConfigMutation = useSaveUserConfig();
 
   // Sessions management
   const { sessions, currentSession, addSession, updateSession, setCurrentSession, syncWithServer } =
     useSessions();
 
+  // Client-side job actions (FR-11)
+  const { hideJob, blockCompany, hiddenJobs, blockedCompanies } = useClientJobActions();
+
   // Using HTTP polling for progress updates
 
-  const jobs = jobsResponse?.jobs ?? [];
+  const rawJobs = jobsResponse?.jobs ?? [];
   const progressUnion = (progressData ?? null) as ProgressData | null;
+
+  // Apply client-side filtering (FR-11)
+  const clientSideFilteringResult = applyClientSideFiltering(rawJobs, hiddenJobs, blockedCompanies);
+  const jobs = clientSideFilteringResult.filteredJobs;
   const normalizedProgress: ProgressData = progressUnion ?? {
     currentStage: 1,
     status: 'running',
@@ -274,56 +291,62 @@ export function MainDashboard() {
     setViewMode('results');
   };
 
+  /**
+   * Handle job actions (FR-11: Client-side storage)
+   *
+   * Client-side job actions are stored only in localStorage and do not affect
+   * the server state. Actions include hiding jobs and blocking companies.
+   *
+   * @param job - The job to perform action on
+   * @param action - The action to perform ('skip', 'defer', 'blacklist')
+   */
   const handleJobAction = async (job: JobPost, action: 'skip' | 'defer' | 'blacklist') => {
-    console.log(`${action} job:`, job.id);
-    try {
-      // Update job status via API
-      await fetch(`/api/jobs/${job.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: action === 'blacklist' ? 'blacklisted' : 'skipped',
-          statusReason: action,
-        }),
-      });
+    console.log(`[FR-11] Client-side ${action} job:`, job.id);
 
-      // If blacklisting, also add the company to blacklist and update search config
+    try {
       if (action === 'blacklist' && job.company) {
-        try {
-          await saveUserConfigMutation.mutateAsync({
-            blacklistedCompanies: [job.company], // This will be merged with existing blacklist
-          });
-          console.log(`Added ${job.company} to blacklist`);
-        } catch (configError) {
-          console.error('Failed to update blacklist config:', configError);
-        }
+        // Block the company (client-side only)
+        blockCompany(job.company, 'job_action');
+        console.log(`[FR-11] Company "${job.company}" blocked client-side`);
+      } else {
+        // Hide the job (client-side only)
+        const reason = action === 'skip' ? 'skip' : action === 'defer' ? 'defer' : 'manual';
+        hideJob(job, reason);
+        console.log(`[FR-11] Job "${job.id}" hidden client-side with reason: ${reason}`);
       }
 
-      // Refresh jobs list
-      void queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
+      // Note: No server calls are made for client-side actions
+      // The UI will automatically update due to reactive state changes
 
       const actionMessage =
         action === 'blacklist'
-          ? `Job blacklisted and ${job.company} added to company blacklist.`
-          : `Job has been ${action === 'skip' ? 'skipped' : 'deferred'}.`;
+          ? `Job hidden and ${job.company} blocked locally.`
+          : `Job hidden locally (${action}).`;
 
       toast({
-        title: 'Job Updated',
+        title: 'Job Hidden Locally',
         description: actionMessage,
       });
     } catch (error) {
-      console.error(`Failed to ${action} job:`, error);
+      console.error(`[FR-11] Failed to perform client-side ${action} action:`, error);
       toast({
-        title: 'Update Failed',
-        description: `Failed to ${action} the job. Please try again.`,
+        title: 'Action Failed',
+        description: `Failed to ${action} the job locally. Please try again.`,
         variant: 'destructive',
       });
     }
   };
 
-  const getActiveJobs = () =>
-    jobs.filter((job) => job.status !== 'skipped' && job.status !== 'blacklisted');
   const getEnrichedJobs = () => jobs.filter((job) => job.status === 'enriched');
+
+  // Client-side statistics (FR-11)
+  const clientSideStats = {
+    totalHidden: clientSideFilteringResult.stats.totalHidden,
+    hiddenByAction: clientSideFilteringResult.stats.hiddenByAction,
+    hiddenByCompany: clientSideFilteringResult.stats.hiddenByCompany,
+    totalVisible: jobs.length,
+    totalRaw: rawJobs.length,
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -392,10 +415,15 @@ export function MainDashboard() {
               )}
 
               {/* Quick Stats */}
-              {jobs.length > 0 && (
+              {rawJobs.length > 0 && (
                 <div className="flex items-center gap-3 text-sm">
-                  <Badge variant="secondary">{getActiveJobs().length} Active</Badge>
+                  <Badge variant="secondary">{clientSideStats.totalVisible} Visible</Badge>
                   <Badge variant="default">{getEnrichedJobs().length} Enriched</Badge>
+                  {clientSideStats.totalHidden > 0 && (
+                    <Badge variant="outline" className="text-orange-600">
+                      {clientSideStats.totalHidden} Hidden
+                    </Badge>
+                  )}
                 </div>
               )}
 
@@ -450,6 +478,16 @@ export function MainDashboard() {
             >
               <Heart className="h-4 w-4 mr-2" />
               Favorites
+            </Button>
+            <Button
+              variant={viewMode === 'hidden' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('hidden')}
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+              data-testid="button-nav-hidden"
+            >
+              <EyeOff className="h-4 w-4 mr-2" />
+              Hidden ({clientSideStats.totalHidden})
             </Button>
           </div>
         </div>
@@ -608,6 +646,7 @@ export function MainDashboard() {
 
         {viewMode === 'results' && <JobListView jobs={jobs} onJobAction={handleJobAction} />}
         {viewMode === 'favorites' && <FavoritesView />}
+        {viewMode === 'hidden' && <HiddenJobsView />}
       </main>
     </div>
   );

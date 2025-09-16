@@ -4,6 +4,8 @@ import type { SearchRequest } from '../../types/database.js';
 import { CollectionController } from '../../controllers/collectionController.js';
 import { jobs } from '../storage.js';
 import { logPerformance } from '../middleware/logging.js';
+import { validateRequest, validateSessionIdParam } from '../middleware/validation.js';
+import { searchRequestSchema } from '../../shared/validationSchemas.js';
 
 // Create collection controller instance
 const collectionController = new CollectionController(jobs);
@@ -11,11 +13,11 @@ const collectionController = new CollectionController(jobs);
 const router = Router();
 
 // POST /api/search - Start new search
-router.post('/', (req: Request, res: Response) => {
+router.post('/', validateRequest(searchRequestSchema, 'body'), (req: Request, res: Response) => {
   void (async () => {
     try {
       const startTime = performance.now();
-      const searchRequest: SearchRequest = req.body;
+      const searchRequest = req.validatedBody as SearchRequest;
 
       console.log('🔍 New search request:', {
         sessionId: searchRequest.session_id,
@@ -40,13 +42,13 @@ router.post('/', (req: Request, res: Response) => {
 });
 
 // GET /api/progress/:sessionId - Get collection progress
-router.get('/progress/:sessionId', (req: Request, res: Response) => {
-  const sessionId = req.params.sessionId;
-  const progress = collectionController.getCollectionProgress(sessionId);
+router.get('/progress/:sessionId', validateSessionIdParam(), (req: Request, res: Response) => {
+  const params = req.validatedParams as { sessionId: string };
+  const progress = collectionController.getCollectionProgress(params.sessionId);
 
   if (progress) {
     res.json({
-      session_id: sessionId,
+      session_id: params.sessionId,
       status: progress.isComplete ? 'completed' : 'collecting',
       progress: Math.round((progress.sourcesCompleted / progress.totalSources) * 100),
       current_source: progress.currentSource,
@@ -61,31 +63,31 @@ router.get('/progress/:sessionId', (req: Request, res: Response) => {
 });
 
 // POST /api/stop/:sessionId - Stop collection
-router.post('/stop/:sessionId', (req: Request, res: Response) => {
-  const sessionId = req.params.sessionId;
-  const result = collectionController.stopCollection(sessionId);
+router.post('/stop/:sessionId', validateSessionIdParam(), (req: Request, res: Response) => {
+  const params = req.validatedParams as { sessionId: string };
+  const result = collectionController.stopCollection(params.sessionId);
   res.json(result);
 });
 
 // GET /api/stats/:sessionId - Get collection stats
-router.get('/stats/:sessionId', (req: Request, res: Response) => {
-  const sessionId = req.params.sessionId;
-  const stats = collectionController.getCollectionStats(sessionId);
+router.get('/stats/:sessionId', validateSessionIdParam(), (req: Request, res: Response) => {
+  const params = req.validatedParams as { sessionId: string };
+  const stats = collectionController.getCollectionStats(params.sessionId);
   res.json(stats);
 });
 
 // Sessions endpoints removed - using multi-stage search instead
 
 // POST /api/search/:sessionId/pause - Pause search session
-router.post('/:sessionId/pause', (req: Request, res: Response) => {
+router.post('/:sessionId/pause', validateSessionIdParam(), (req: Request, res: Response) => {
   try {
-    const sessionId = req.params.sessionId;
-    collectionController.stopCollection(sessionId);
+    const params = req.validatedParams as { sessionId: string };
+    collectionController.stopCollection(params.sessionId);
 
     res.json({
       success: true,
       message: 'Search paused',
-      sessionId,
+      sessionId: params.sessionId,
     });
   } catch (error) {
     console.error('❌ Pause search API error:', error);

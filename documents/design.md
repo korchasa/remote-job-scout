@@ -2,7 +2,7 @@
 
 ## Project Status: 🚀 PRODUCTION READY ✅
 
-**FR-3 Enhanced Collection: COMPLETED**
+**All Core Features COMPLETED**
 
 - ✅ **FR-3 Enhanced Collection**: 4 job sources (Indeed, LinkedIn, Glassdoor, OpenAI WebSearch)
 - ✅ 3-stage pipeline (Collect → Filter → Enrich) with pause/resume
@@ -13,21 +13,23 @@
 - ✅ **FR-7 Favorites Feature**: Complete favorites system with localStorage persistence
 - ✅ **FR-8 Session Snapshots**: Server-side persistence and restoration of search sessions
 - ✅ **FR-9 ETA Calculation**: Real-time ETA calculation with confidence indicators and smoothing
+- ✅ **FR-11 Client-Side Job Actions**: Privacy-focused localStorage persistence for hidden jobs and blocked companies
 
 ## System Architecture
 
 ### Core Design
 
-Client-server web app for remote job search with AI analysis. **FR-3 Enhanced Collection fully implemented with 4 job sources.**
+Client-server web app for remote job search with AI analysis. **All core features fully implemented including privacy-focused client-side job management.**
 
 ### Subsystems
 
 - **✅ Settings**: localStorage persistence, language/country filters
 - **✅ Search**: 3-stage pipeline (collect → filter → enrich) with pause/resume ✅ COMPLETED
 - **✅ Collection**: Parallel scraping (Indeed GraphQL, LinkedIn, Glassdoor GraphQL, OpenAI WebSearch) with retry/backoff
-- **✅ Filtering**: User criteria validation, blacklist/whitelist, stats tracking (FR-4 COMPLETED)
+- **✅ Filtering**: Server-side filtering + client-side privacy filtering (FR-4 + FR-11 COMPLETED)
 - **✅ Enrichment**: OpenAI LLM processing, token/cost tracking, company research
 - **✅ Storage**: YAML serialization, filesystem session persistence, UI presentation
+- **✅ Client Actions**: localStorage-based job hiding/blocking with reactive filtering
 - **✅ Backend**: Express.js middleware, routes, controllers, Zod validation
 - **✅ API**: HTTP polling endpoints, schema validation, error handling
 
@@ -42,7 +44,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **Tech**: React 19, TypeScript strict, Vite, jsdom testing
 - **UI**: Shadcn/ui (47 components), Tailwind CSS 4.1+, responsive design
 - **State**: React Query, custom hooks, localStorage persistence
-- **Features**: ✅ Multi-stage search UI, progress dashboard with ETA calculation, filtering stats, themes, responsive, real-time polling, session snapshots/persistence, favorites system
+- **Features**: ✅ Multi-stage search UI, progress dashboard with ETA calculation, filtering stats, themes, responsive, real-time polling, session snapshots/persistence, favorites system, **client-side job actions with reactive filtering**
 
 ### Backend
 
@@ -51,14 +53,25 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **Storage**: ✅ YAML serialization, filesystem session persistence, localStorage client settings
 - **Services**: ✅ 6 business logic + 4 scrapers, parallel processing, token/cost tracking
 - **Middleware**: ✅ CORS, logging, security, error handling
-- **API**: ✅ HTTP polling, pause/resume, schema validation, multi-stage search endpoints with ETA data, session snapshots
-- **Testing**: ✅ Vitest (85+ tests passed), React component testing, integration fixtures
+- **API**: ✅ HTTP polling, pause/resume, Zod schema validation with standardized error responses (FR-12), multi-stage search endpoints with ETA data, session snapshots
+- **Client Integration**: ✅ Privacy-focused client-side job actions (hide/block) with reactive filtering
+- **Testing**: ✅ Vitest (118+ tests passed), React component testing, integration fixtures, 33 new tests for FR-11
 
 ### Shared
 
 - **Schemas**: Type-safe TypeScript
 - **Comm**: REST API, HTTP polling
-- **Validation**: Zod schemas
+- **Validation**: Zod schemas with comprehensive input validation and standardized error responses (FR-12)
+
+#### FR-12 Input Validation Implementation
+
+**Comprehensive API Input Validation with Zod**
+
+- **Validation Schemas**: Complete Zod schemas for all API endpoints (search requests, job updates, query parameters)
+- **Standardized Error Responses**: HTTP 400 with `{code: "VALIDATION_ERROR", message, details: [...]}` format
+- **Middleware Integration**: Express middleware for automatic validation and error handling
+- **Type Safety**: Full TypeScript integration with inferred types from Zod schemas
+- **Coverage**: All server endpoints validated (jobs, search, multi-stage, session operations)
 
 ## Data Architecture
 
@@ -67,20 +80,23 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **✅ Vacancy**: Job data with JSON metadata, enrichment tracking, LLM analysis
 - **✅ Settings**: User config with language/country filters, blacklist/whitelist
 - **✅ Progress**: Real-time tracking, 6 states (pending, running, completed, failed, paused, skipped)
+- **✅ HiddenJob**: Client-side job hiding with metadata (reason, timestamp, source)
+- **✅ BlockedCompany**: Client-side company blocking with metadata (reason, job count, timestamp)
 
 ### Storage Strategy
 
-- **✅ Client**: localStorage (privacy-focused, user settings/config persistence, favorites storage, session metadata)
+- **✅ Client**: localStorage (privacy-focused, user settings/config persistence, favorites storage, **client-side job actions**, session metadata)
 - **✅ Server**: YAML serialization, filesystem session snapshots, session recovery
 - **✅ Format**: YAML for jobs, JSON for API/snapshots, fixtures for testing
 - **✅ Progress**: Real-time tracking, session persistence, pause/resume support
+- **✅ Client Actions**: Isolated localStorage for hidden jobs and blocked companies with reactive filtering
 
 ## Algorithm Design
 
 ### Search Pipeline
 
 1. **✅ Collect**: Parallel scraping, concurrency control, retry/backoff ✅ IMPLEMENTED
-2. **✅ Filter**: Criteria validation, stats tracking ✅ IMPLEMENTED (FR-4 COMPLETED)
+2. **✅ Filter**: Server-side criteria validation + client-side privacy filtering ✅ IMPLEMENTED (FR-4 + FR-11 COMPLETED)
 3. **✅ Enrich**: OpenAI LLM processing, token/cost accounting ✅ IMPLEMENTED
 
 ### Key Algorithms
@@ -90,11 +106,15 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **✅ Concurrency**: Max sources/positions, queue management - Parallel processing
 - **✅ Progress**: Real-time % updates, ETA calculation with confidence, pause/resume - HTTP polling
 - **✅ Cost**: Token usage × model rate per vacancy - OpenAI integration
+- **✅ Client Filtering**: Privacy-focused job hiding/blocking with reactive UI updates - localStorage persistence
+- **✅ Company Matching**: Case-insensitive company blocking with automatic job filtering
 
 ### Rules
 
 - Blacklist filtering priority
 - User settings override auto rules
+- **Client actions take precedence**: Hidden jobs and blocked companies override server-side results
+- **Privacy by design**: Client-side actions never leave the browser
 - Operations logged for audit
 - API key client-side only
 
@@ -159,9 +179,9 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ## Extensions
 
-### Current Status: Core Features ✅ COMPLETE
+### Current Status: ALL CORE FEATURES ✅ COMPLETE
 
-**FR-3 Enhanced Collection: FULLY IMPLEMENTED**
+**All Major Features: FULLY IMPLEMENTED**
 
 - 4 job sources (Indeed, LinkedIn, Glassdoor, OpenAI WebSearch) ✅
 - 3-stage pipeline with pause/resume ✅
@@ -169,6 +189,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - Parallel scraping with retry/backoff ✅
 - LLM enrichment with cost tracking ✅
 - Session persistence and recovery ✅
+- **Privacy-focused client-side job actions** ✅
 
 ### Roadmap
 
@@ -178,6 +199,7 @@ JobSpy library principles adapted to Node.js ecosystem.
 - **FR-7**: Favorites Feature ✅ COMPLETED - Complete favorites system with localStorage persistence, employer blocking, and dedicated UI
 - **FR-8**: Session Snapshots ✅ COMPLETED - Server-side persistence and restoration of search sessions
 - **FR-9**: ETA Calculation ✅ COMPLETED - Real-time ETA with confidence indicators and smoothing
+- **FR-11**: Client-Side Job Actions ✅ COMPLETED - Privacy-focused localStorage persistence for hidden jobs and blocked companies
 - **Database Migration**: From in-memory to persistent database (PostgreSQL/MongoDB)
 - **Performance**: Caching strategies, CDN integration, query optimization
 - **Authentication**: User accounts, personalized dashboards, API rate limiting
@@ -194,4 +216,4 @@ JobSpy library principles adapted to Node.js ecosystem.
 
 ---
 
-_Last updated: September 16, 2025_
+_Last updated: September 16, 2025 - FR-11 Client-Side Job Actions completed_

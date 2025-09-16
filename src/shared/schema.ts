@@ -243,6 +243,32 @@ export interface FavoriteJob {
   source: string;
 }
 
+// Client-side job actions types (FR-11)
+export interface HiddenJob {
+  id: string;
+  jobId: string;
+  title: string;
+  company: string;
+  location?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  currency?: string;
+  employmentType?: string;
+  remoteType?: string;
+  hiddenAt: Date;
+  originalUrl: string;
+  source: string;
+  hiddenReason: 'manual' | 'defer' | 'skip';
+}
+
+export interface BlockedCompany {
+  id: string;
+  companyName: string;
+  blockedAt: Date;
+  reason: 'manual' | 'job_action';
+  jobCount?: number; // Number of jobs from this company that were blocked
+}
+
 export interface FavoritesSettings {
   favorites: FavoriteJob[];
   lastUpdated: Date;

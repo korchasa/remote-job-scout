@@ -58,7 +58,7 @@ export class ETAService {
 
   constructor(config: Partial<ETAServiceConfig> = {}) {
     this.config = {
-      smoothingFactor: 0.2,
+      smoothingFactor: 0.05,
       minimumDataPoints: 3,
       maxHistoryLength: 10,
       minimumSpeedThreshold: 0.1,
@@ -84,7 +84,7 @@ export class ETAService {
 
     // Skip if speed is below threshold (likely invalid measurement)
     if (speed < this.config.minimumSpeedThreshold) {
-      return;
+      return; // Skip invalid measurements
     }
 
     const dataPoint: SpeedDataPoint = {
@@ -114,13 +114,14 @@ export class ETAService {
     stage: ProcessingStage,
     stageProgress: StageProgress,
   ): StageETACalculation | null {
-    const history = this.speedHistory.get(stage);
-    if (!history || history.length < this.config.minimumDataPoints) {
-      return null; // Not enough data points
-    }
+    const history = this.speedHistory.get(stage) ?? [];
+    const hasMinimumData = history.length >= this.config.minimumDataPoints;
 
-    const remainingItems = Math.max(0, stageProgress.itemsTotal - stageProgress.itemsProcessed);
-    if (remainingItems === 0) {
+    const remainingItems = stageProgress.itemsTotal - stageProgress.itemsProcessed;
+
+    // Handle edge cases: negative remaining items should be clamped to 0
+    const clampedRemainingItems = Math.max(0, remainingItems);
+    if (clampedRemainingItems === 0) {
       // Stage is complete
       return {
         stage,
@@ -134,14 +135,45 @@ export class ETAService {
     }
 
     // Calculate current speed using exponential smoothing
-    const currentSpeed = this.calculateSmoothedSpeed(history);
+    let currentSpeed = this.calculateSmoothedSpeed(history);
+
+    // Handle edge case: zero remaining items (stage is complete)
+    if (clampedRemainingItems === 0) {
+      return {
+        stage,
+        currentSpeed: Math.max(0, currentSpeed),
+        remainingItems: 0,
+        rawETA: 0,
+        smoothedETA: 0,
+        lastUpdate: new Date(),
+        confidence: 1.0, // Complete stages have perfect confidence
+      };
+    }
+
+    // For insufficient data, use fallback speed estimation
+    if (!hasMinimumData || currentSpeed <= 0) {
+      if (history.length === 0) {
+        return null; // No historical data at all - cannot estimate
+      } else if (history.length >= 2) {
+        // Use simple average of available speeds
+        currentSpeed = history.reduce((sum, point) => sum + point.speed, 0) / history.length;
+      } else if (history.length === 1) {
+        // Use the single available speed
+        currentSpeed = history[0].speed;
+      }
+    }
 
     if (currentSpeed <= 0) {
-      return null; // Invalid speed calculation
+      return null; // Still invalid after fallback
+    }
+
+    // Additional check for minimum speed threshold
+    if (currentSpeed < this.config.minimumSpeedThreshold) {
+      return null; // Speed below minimum threshold
     }
 
     // Raw ETA calculation: (remaining items / speed) * 60 seconds
-    const rawETA = (remainingItems / currentSpeed) * 60;
+    const rawETA = (clampedRemainingItems / currentSpeed) * 60;
 
     // Apply smoothing to the ETA calculation
     const previousETA = this.lastETACalculations.get(stage)?.smoothedETA ?? rawETA;
@@ -153,7 +185,7 @@ export class ETAService {
     const calculation: StageETACalculation = {
       stage,
       currentSpeed,
-      remainingItems,
+      remainingItems: clampedRemainingItems,
       rawETA,
       smoothedETA,
       lastUpdate: new Date(),
@@ -184,10 +216,8 @@ export class ETAService {
     >) {
       let stageETA: StageETACalculation | null = null;
 
-      // Only calculate ETA for current and future stages
-      if (stageName === currentStage || this.isStagePending(stageProgress.status)) {
-        stageETA = this.calculateStageETA(stageName, stageProgress);
-      } else if (stageProgress.status === 'completed') {
+      // Calculate ETA for all stages, but handle them differently based on status
+      if (stageProgress.status === 'completed') {
         // Completed stages have zero ETA
         stageETA = {
           stage: stageName,
@@ -198,8 +228,40 @@ export class ETAService {
           lastUpdate: new Date(),
           confidence: 1.0,
         };
+      } else if (stageName === currentStage || this.isStagePending(stageProgress.status)) {
+        // Calculate ETA for current and future stages
+        stageETA = this.calculateStageETA(stageName, stageProgress);
+
+        // If no speed data available for pending stages, create a default estimation
+        if (
+          !stageETA &&
+          this.isStagePending(stageProgress.status) &&
+          stageProgress.itemsTotal > 0
+        ) {
+          const remainingItems = Math.max(
+            0,
+            stageProgress.itemsTotal - stageProgress.itemsProcessed,
+          );
+          // Estimate based on average processing time (assume 1 item per minute as fallback)
+          const estimatedSpeed = 1.0;
+          const estimatedETA = (remainingItems / estimatedSpeed) * 60;
+
+          stageETA = {
+            stage: stageName,
+            currentSpeed: estimatedSpeed,
+            remainingItems,
+            rawETA: estimatedETA,
+            smoothedETA: estimatedETA,
+            lastUpdate: new Date(),
+            confidence: 0.2, // Low confidence for estimated data
+          };
+        }
+      } else if (stageProgress.status === 'running') {
+        // For running stages that are not current (shouldn't happen, but handle gracefully)
+        stageETA = this.calculateStageETA(stageName, stageProgress);
       }
 
+      // Always include stages with valid calculations
       if (stageETA) {
         stageBreakdown.push(stageETA);
         totalEstimatedTime += stageETA.smoothedETA;
@@ -252,22 +314,33 @@ export class ETAService {
    * Calculates confidence in the ETA calculation based on data quality
    */
   private calculateConfidence(history: SpeedDataPoint[], currentSpeed: number): number {
+    if (!history || history.length === 0) {
+      return 0.0; // No data means zero confidence
+    }
+
     if (history.length < this.config.minimumDataPoints) {
-      return 0.1; // Very low confidence with insufficient data
+      // Return confidence based on available data points (minimum 2)
+      const baseConfidence = Math.max(0.1, history.length * 0.15);
+      return Math.min(baseConfidence, 0.4); // Cap at 0.4 for insufficient data
     }
 
     // Calculate speed variance (lower variance = higher confidence)
     const speeds = history.map((point) => point.speed);
-    const meanSpeed = speeds.reduce((sum, speed) => sum + speed, 0) / (speeds.length || 1);
+    const meanSpeed = speeds.reduce((sum, speed) => sum + speed, 0) / speeds.length;
+
+    if (meanSpeed <= 0) {
+      return 0.0; // Invalid mean speed
+    }
+
     const variance =
-      speeds.reduce((sum, speed) => sum + Math.pow(speed - meanSpeed, 2), 0) / (speeds.length || 1);
+      speeds.reduce((sum, speed) => sum + Math.pow(speed - meanSpeed, 2), 0) / speeds.length;
     const standardDeviation = Math.sqrt(variance);
 
     // Coefficient of variation (lower = more consistent = higher confidence)
-    const coefficientOfVariation = meanSpeed > 0 ? standardDeviation / meanSpeed : 1;
+    const coefficientOfVariation = standardDeviation / meanSpeed;
 
-    // Base confidence from data consistency
-    let confidence = Math.max(0.1, Math.min(1.0, 1 - coefficientOfVariation));
+    // Base confidence from data consistency (amplify inconsistency penalty)
+    let confidence = Math.max(0.1, Math.min(1.0, 1 - coefficientOfVariation * 2));
 
     // Boost confidence for more data points
     const dataPointBonus = Math.min(0.3, (history.length - this.config.minimumDataPoints) * 0.1);

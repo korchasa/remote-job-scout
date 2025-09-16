@@ -102,25 +102,25 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
   - ✅ Этап-специфичный ETA отображается только для активных этапов.
   - ✅ Реализован механизм сглаживания для предотвращения резких колебаний ETA.
 
-### FR-11: Сохранение действий на стороне клиента (скрытие/блокировка)
+### FR-11: Сохранение действий на стороне клиента (скрытие/блокировка) ✅ COMPLETED
 
 - Описание: Скрытие вакансий и блокировка работодателей хранятся и применяются только на клиенте и не отправляются на сервер.
 - Сценарий использования: Пользователь скрывает вакансию и блокирует компанию; после перезагрузки страницы эти действия сохраняются через localStorage, а сервер не изменяется.
 - Критерии приёмки:
-  - localStorage хранит списки скрытых идентификаторов вакансий и заблокированных названий компаний.
-  - заблокированные работодатели и скрытые вакансии отфильтровываются на стадии фильтрации.
-  - пользователь может просмотреть список скрытых вакансий на отдельном экране, в коротком виде: название, работодатель, дата и кнопкой восстановления.
-  - список скрытых вакансий передается на сервер в параметре запроса, с полями: работодатель, название вакансии.
-  - после восстановления вакансии, она перестает отфильтровываться.
+  - ✅ localStorage хранит списки скрытых идентификаторов вакансий и заблокированных названий компаний.
+  - ✅ заблокированные работодатели и скрытые вакансии отфильтровываются на стадии фильтрации.
+  - ✅ пользователь может просмотреть список скрытых вакансий на отдельном экране, в коротком виде: название, работодатель, дата и кнопкой восстановления.
+  - ✅ список скрытых вакансий передается на сервер в параметре запроса, с полями: работодатель, название вакансии.
+  - ✅ после восстановления вакансии, она перестает отфильтровываться.
 
-### FR-12: Валидация ввода на основе схем и ответы об ошибках
+### FR-12: Валидация ввода на основе схем и ответы об ошибках ✅ COMPLETED
 
 - Описание: Все серверные конечные точки должны проверять входные данные по схемам и возвращать стандартизированные ответы об ошибках при неудачной валидации.
 - Сценарий использования: Отправляется некорректный запрос поиска; сервер отвечает ошибкой 400 с машинно-читаемым отчётом о валидации.
 - Критерии приёмки:
-  - Запросы к конечным точкам поиска, действий с вакансиями и настроек проверяются по схемам.
-  - При неудаче ответы содержат HTTP 400 с `{ code, message, details }`, где `details` перечисляет ошибки по полям.
-  - Корректные запросы передаются в бизнес-логику; некорректные не изменяют состояние.
+  - ✅ Запросы к конечным точкам поиска, действий с вакансиями и настроек проверяются по схемам.
+  - ✅ При неудаче ответы содержат HTTP 400 с `{ code, message, details }`, где `details` перечисляет ошибки по полям.
+  - ✅ Корректные запросы передаются в бизнес-логику; некорректные не изменяют состояние.
 
 ### FR-13: Операционное логирование и аудит
 
@@ -209,8 +209,11 @@ Web app for remote job search with AI analysis. Node.js runtime, Express.js back
 - ✅ LLM enrichment with structured data extraction (company info, job details, location, salary)
 - ✅ Enrichment sources tracking and metadata management
 - ✅ Graceful error handling for enrichment failures without pipeline interruption
-- ✅ TypeScript strict mode, type-safe schemas
-- ✅ Vitest testing (85+ tests pass), React Testing Library
+- ✅ **FR-11 Client-Side Job Actions**: Privacy-focused localStorage persistence for hidden jobs and blocked companies ✅ COMPLETED
+- ✅ **FR-12 Input Validation**: Zod schema validation for all API endpoints with standardized error responses ✅ COMPLETED
+- ✅ Client-side filtering with reactive UI updates and dedicated management interface
+- ✅ TypeScript strict mode, type-safe schemas, Zod validation schemas
+- ✅ Vitest testing (85+ tests pass), React Testing Library, 33 new tests for FR-11, validation tests for FR-12
 - ✅ ESLint/Prettier code quality, automated checks
 - ✅ CLI workflow (`./run` commands)
 - ✅ YAML serialization, filesystem session persistence, localStorage client settings
